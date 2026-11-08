@@ -214,7 +214,7 @@ export default {
     const path = url.pathname;
     if (request.method === "OPTIONS") return new Response(null, { headers: cors(request) });
     if (path === "/api/health" && request.method === "GET") {
-      const database = { configured: Boolean(env.DB), coreSchemaReady: false, shareSchemaReady: false };
+      const database = { configured: Boolean(env.DB), coreSchemaReady: false, shareSchemaReady: false, itinerarySchemaReady: false };
       if (env.DB) {
         try {
           const result = await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table'").all();
@@ -222,11 +222,12 @@ export default {
           database.coreSchemaReady = ["users","trips","trip_stops","posts","likes","comments","follows","saved_trips","reports","blocks"].every(name => tables.has(name));
           database.shareSchemaReady = ["share_links","share_rate_limits"].every(name => tables.has(name));
           database.authSchemaReady = tables.has("auth_sessions");
+          database.itinerarySchemaReady = tables.has("itinerary_items");
         } catch {
           database.querySucceeded = false;
         }
       }
-      return json(request, { ok: true, service: "tabi-log-api", version: "1.5-cloud-sync", database });
+      return json(request, { ok: true, service: "tabi-log-api", version: "1.6-itinerary", database });
     }
     if (path === "/api/auth/session" && request.method === "POST") return createAuthSession(request, env);
     if (path === "/api/auth/logout" && request.method === "POST") return logoutSession(request, env);
@@ -254,12 +255,29 @@ export default {
         if (!tripMap.has(row.id)) tripMap.set(row.id, {
           id: row.id, title: row.title, area: row.area, description: row.description,
           visibility: row.visibility, start_date: row.start_date, end_date: row.end_date,
-          source: row.source, stops: [], actual: []
+          source: row.source, stops: [], actual: [], dayPlans: []
         });
         if (row.stop_name) {
           tripMap.get(row.id).stops.push(row.stop_name);
           if (row.stop_note === "visited") tripMap.get(row.id).actual.push(row.stop_name);
         }
+      }
+      const itineraryRows = await env.DB.prepare(
+        "SELECT i.id,i.trip_id,i.day_date,i.name,i.start_time,i.end_time,i.note,i.sort_order,i.visited FROM itinerary_items i JOIN trips t ON t.id=i.trip_id WHERE t.user_id=? AND t.source='native' ORDER BY i.trip_id,i.day_date,i.sort_order"
+      ).bind(user.id).all();
+      for (const row of itineraryRows.results || []) {
+        const trip = tripMap.get(row.trip_id);
+        if (!trip) continue;
+        let day = trip.dayPlans.find(item => item.date === row.day_date);
+        if (!day) {
+          day = { date: row.day_date, items: [] };
+          trip.dayPlans.push(day);
+        }
+        day.items.push({
+          id: row.id, name: row.name, startTime: row.start_time || "",
+          endTime: row.end_time || "", note: row.note || "",
+          sortOrder: row.sort_order, visited: Boolean(row.visited)
+        });
       }
       const postRows = await env.DB.prepare(
         "SELECT id,trip_id,title,story,place_name,visibility,captured_at,created_at FROM posts WHERE user_id=? ORDER BY created_at DESC LIMIT 200"
@@ -291,10 +309,31 @@ export default {
           name: cleanText(stop, 100), sort: index,
           visited: actualStops.includes(stop)
         })).filter(stop => stop.name);
-        normalizedTrips.push({ id, title, area, description, visibility, startDate, endDate, stops });
+        const dayPlans = [];
+        if (Array.isArray(item.dayPlans)) {
+          for (const day of item.dayPlans.slice(0, 31)) {
+            const dayDate = validDate(day?.date);
+            if (!dayDate || dayDate === undefined) return bad(request, "日程の日付を確認してください");
+            const items = Array.isArray(day.items) ? day.items.slice(0, 100) : [];
+            for (const entry of items) {
+              const itemId = cleanText(entry?.id, 64);
+              const name = cleanText(entry?.name, 120);
+              const startTime = cleanText(entry?.startTime, 5);
+              const endTime = cleanText(entry?.endTime, 5);
+              const note = cleanText(entry?.note, 500);
+              if (!itemId || !name || (startTime && !/^([01]\\d|2[0-3]):[0-5]\\d$/.test(startTime)) || (endTime && !/^([01]\\d|2[0-3]):[0-5]\\d$/.test(endTime))) {
+                return bad(request, "日程の内容または時刻を確認してください");
+              }
+              dayPlans.push({ id: itemId, date: dayDate, name, startTime, endTime, note, sort: Number.isInteger(entry.sortOrder) ? Math.max(0, Math.min(entry.sortOrder, 999)) : dayPlans.length, visited: Boolean(entry.visited) });
+            }
+          }
+        }
+        normalizedTrips.push({ id, title, area, description, visibility, startDate, endDate, stops, dayPlans });
       }
       const totalStops = normalizedTrips.reduce((sum, item) => sum + item.stops.length, 0);
+      const totalItineraryItems = normalizedTrips.reduce((sum, item) => sum + item.dayPlans.length, 0);
       if (totalStops > 500) return bad(request, "立ち寄り先が多すぎます。一度に同期できるのは500件までです", 413);
+      if (totalItineraryItems > 1000) return bad(request, "日程の項目が多すぎます。一度に同期できるのは1000件までです", 413);
       const ownedTripIds = new Set(normalizedTrips.map(item => item.id));
       for (const item of normalizedTrips) {
         const existing = await env.DB.prepare("SELECT user_id FROM trips WHERE id=?").bind(item.id).first();
@@ -327,6 +366,12 @@ export default {
           statements.push(env.DB.prepare(
             "INSERT INTO trip_stops(id,trip_id,name,note,sort_order,location_precision) VALUES(?,?,?,?,?,'hidden')"
           ).bind(uuid(), item.id, stop.name, stop.visited ? "visited" : "", stop.sort));
+        }
+        statements.push(env.DB.prepare("DELETE FROM itinerary_items WHERE trip_id=?").bind(item.id));
+        for (const entry of item.dayPlans) {
+          statements.push(env.DB.prepare(
+            "INSERT INTO itinerary_items(id,trip_id,day_date,name,start_time,end_time,note,sort_order,visited) VALUES(?,?,?,?,?,?,?,?,?)"
+          ).bind(entry.id, item.id, entry.date, entry.name, entry.startTime, entry.endTime, entry.note, entry.sort, entry.visited ? 1 : 0));
         }
       }
       for (const item of normalizedPosts) {
