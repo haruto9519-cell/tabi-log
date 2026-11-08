@@ -131,7 +131,12 @@ async function syncCloudData(){
   for(const t of remoteTrips){
    const local=trips.find(item=>item.id===t.id);
    if(!local){trips.push(t);continue;}
-   const hasLocalCoordinates=Array.isArray(local.stopLocations)&&local.stopLocations.some(p=>Number.isFinite(Number(p?.latitude))&&Number.isFinite(Number(p?.longitude)));
+   const hasLocalCoordinates=Array.isArray(local.stopLocations)&&local.stopLocations.some(p=>
+    p?.latitude!==null&&p?.latitude!==undefined&&p?.latitude!==""&&
+    p?.longitude!==null&&p?.longitude!==undefined&&p?.longitude!==""&&
+    Number.isFinite(Number(p.latitude))&&Number.isFinite(Number(p.longitude))&&
+    Number(p.latitude)>=-90&&Number(p.latitude)<=90&&Number(p.longitude)>=-180&&Number(p.longitude)<=180
+   );
    if(!hasLocalCoordinates&&Array.isArray(t.stopLocations)&&t.stopLocations.length)local.stopLocations=t.stopLocations;
    if((!Array.isArray(local.stops)||!local.stops.length)&&t.stops?.length)local.stops=t.stops;
    if((!Array.isArray(local.actual)||!local.actual.length)&&t.actual?.length)local.actual=t.actual;
@@ -252,7 +257,7 @@ function renderMap(){
  const locations=Array.isArray(t.stopLocations)?t.stopLocations:[];
  const valid=locations.filter(p=>{
   const lat=Number(p?.latitude),lon=Number(p?.longitude);
-  return p?.name&&Number.isFinite(lat)&&lat>=-90&&lat<=90&&Number.isFinite(lon)&&lon>=-180&&lon<=180;
+  return p?.name&&p?.latitude!==null&&p?.latitude!==undefined&&p?.latitude!==""&&p?.longitude!==null&&p?.longitude!==undefined&&p?.longitude!==""&&Number.isFinite(lat)&&lat>=-90&&lat<=90&&Number.isFinite(lon)&&lon>=-180&&lon<=180;
  });
  if(!valid.length){
   host.insertAdjacentHTML("beforeend",'<div class="map-overlay-empty">この旅行には有効な地図座標がありません。立ち寄り先の座標を確認してください。</div>');
