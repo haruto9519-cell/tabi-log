@@ -291,7 +291,7 @@ export default {
           database.querySucceeded = false;
         }
       }
-      return json(request, { ok: true, service: "tabi-log-api", version: "1.8-aileron-import", database });
+      return json(request, { ok: true, service: "tabi-log-api", version: "1.9-coordinate-preservation", database });
     }
     if (path === "/api/auth/session" && request.method === "POST") return createAuthSession(request, env);
     if (path === "/api/auth/logout" && request.method === "POST") return logoutSession(request, env);
