@@ -313,8 +313,8 @@ export default {
       const statements = [
         env.DB.prepare("UPDATE plan_imports SET claimed_at=?,claimed_by=? WHERE id=? AND claimed_at IS NULL AND expires_at>?")
           .bind(now, user.id, record.id, now),
-        env.DB.prepare("INSERT INTO trips(id,user_id,title,area,description,visibility,source,external_plan_id,start_date,end_date,budget_amount,budget_currency) SELECT ?,?,?,?,?,'private','aileron',?,NULL,NULL,?,? WHERE EXISTS(SELECT 1 FROM plan_imports WHERE id=? AND claimed_by=? AND claimed_at=?)")
-          .bind(tripId, user.id, plan.title, plan.area, plan.description, record.id, plan.budgetAmount, plan.budgetCurrency, record.id, user.id, now)
+        env.DB.prepare("INSERT INTO trips(id,user_id,title,area,description,visibility,source,external_plan_id,start_date,end_date,budget_amount,budget_currency) SELECT ?,?,?,?,?,'private','aileron',?,?,?,?,? WHERE EXISTS(SELECT 1 FROM plan_imports WHERE id=? AND claimed_by=? AND claimed_at=?)")
+          .bind(tripId, user.id, plan.title, plan.area, plan.description, record.id, plan.startDate, plan.endDate, plan.budgetAmount, plan.budgetCurrency, record.id, user.id, now)
       ];
       for (const stop of plan.stops) {
         statements.push(env.DB.prepare("INSERT INTO trip_stops(id,trip_id,name,note,sort_order,location_precision,latitude,longitude,external_place_id) SELECT ?,?,?,?,?,'approximate',?,?,? WHERE EXISTS(SELECT 1 FROM trips WHERE id=? AND user_id=?)")
