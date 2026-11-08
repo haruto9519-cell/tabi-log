@@ -238,6 +238,7 @@ async function syncCloudData(){
     if(!post.mediaKey||post.cloudMediaSynced)continue;
     const blob=await mediaGet(post.mediaKey);
     if(!blob)continue;
+    if(!["image/jpeg","image/png","image/webp"].includes(blob.type))continue;
     const previousDriveFileId=post.driveFileId||null;
     const newDriveFileId=await uploadPhotoToDrive(post,blob);
     post.driveFileId=newDriveFileId;
