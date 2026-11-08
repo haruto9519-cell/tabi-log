@@ -5,14 +5,14 @@
 <meta name="theme-color" content="#10263d">
 <meta name="description" content="旅行の計画、日程、写真、日記、費用をひとつにまとめる個人旅行記録サービス。">
 <title>旅ログ — 自分の旅を、ひとつに。</title>
-<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""><link rel="stylesheet" href="styles.css">
 </head>
 <body>
 <header class="topbar">
  <a class="brand" href="#home"><span class="brand-icon">旅</span><span>旅ログ</span></a>
  <nav><a href="#mytrips">旅行一覧</a><a href="#diary">日記・思い出</a><a href="#mypage">マイページ</a></nav>
  <div class="auth-area"><div id="googleLogin"></div><div id="authStatus" aria-live="polite"></div></div>
- <div class="header-actions"><button class="btn ghost" id="openTrip">＋ 旅行を作成</button><button class="btn gold" id="openPost">＋ 思い出を記録</button></div>
+ <div class="header-actions"><button class="btn ghost" id="openTrip">Aileronからプランを取り込む</button><button class="btn gold" id="openPost">＋ 思い出を記録</button></div>
 </header>
 <main id="home">
 <section class="hero">
@@ -20,7 +20,7 @@
   <span class="kicker">YOUR PERSONAL TRAVEL JOURNAL</span>
   <h1>自分の旅を、<br><em>ひとつに。</em></h1>
   <p>旅程も、訪れた場所も、写真も、日記も。<br>旅の前から旅のあとまで、ひとつの場所に残そう。</p>
-  <div class="hero-buttons"><a class="btn gold" href="#mytrips">旅行を整理する</a><button class="btn outline-light" id="heroTrip">新しい旅行をつくる</button></div>
+  <div class="hero-buttons"><a class="btn gold" href="#mytrips">旅行を整理する</a><button class="btn outline-light" id="heroTrip">Aileronで旅行プランを作る</button></div>
   <div class="hero-note"><span>01 計画する</span><i></i><span>02 記録する</span><i></i><span>03 振り返る・共有する</span></div>
  </div>
  <div class="hero-visual">
@@ -38,12 +38,12 @@
  <div class="stat-message">旅のすべてを、自分のペースで。</div>
 </section>
 <section id="mytrips" class="section muted-section">
- <div class="section-heading"><div><span class="kicker">MY JOURNEYS</span><h2>旅行をまとめて管理する。</h2><p>旅行ごとに日程・訪問先・記録を整理。予定と実際の旅をひとつに。</p></div><button class="btn navy" id="newTrip2">＋ 新しい旅行</button></div>
+ <div class="section-heading"><div><span class="kicker">MY JOURNEYS</span><h2>旅の計画を地図ごと引き継ぐ。</h2><p>Aileronで作成した旅行プランを取り込み、訪問先のピンに写真や思い出を重ねていきます。</p></div><button class="btn navy" id="newTrip2">Aileronで旅行プランを作る</button></div>
  <div class="planner-layout">
   <div class="trip-column"><div class="subhead"><b>あなたの旅行</b><span id="tripTotal"></span></div><div id="tripCards"></div></div>
   <div class="map-card">
    <div class="map-header"><div><b id="mapTitle">訪問先リスト</b><small>選択した旅行の立ち寄り先</small></div><span class="map-pill">PLACE LIST</span></div>
-   <div id="routeMap" class="route-map" style="display:grid;place-items:center;background:#edf2ef"><div style="text-align:center;padding:24px;color:#647780"><div style="font-size:30px;margin-bottom:8px">📍</div><b>訪問先を整理</b><p style="font-size:11px;line-height:1.7">実地図・GPS・経路検索は今後接続します。現在は訪問先リストを管理できます。</p></div><div id="mapPins" hidden></div></div>
+   <div id="routeMap" class="route-map" aria-label="旅行の訪問先地図"></div>
    <div id="mapStopList" class="map-stop-list"></div>
   </div>
  </div>
@@ -136,6 +136,6 @@
 <!-- 旧データ互換用。SNS画面としては表示しません。 -->
 <section hidden aria-hidden="true"><input id="feedSearch"><select id="feedSort"><option value="recommend">おすすめ</option></select><button class="chip" data-category="すべて"></button><div id="feed"></div></section>
 <div id="toast" role="status" aria-live="polite"></div>
-<script id="googleIdentityScript" src="https://accounts.google.com/gsi/client" async defer></script><script src="config.js"></script><script src="app.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script><script id="googleIdentityScript" src="https://accounts.google.com/gsi/client" async defer></script><script src="config.js"></script><script src="app.js"></script>
 <script>document.addEventListener("DOMContentLoaded",()=>{const b=document.getElementById("openDiaryEntry");if(b)b.addEventListener("click",()=>document.getElementById("openPost")?.click());});</script>
 </body></html>
