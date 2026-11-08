@@ -226,7 +226,7 @@ export default {
           database.querySucceeded = false;
         }
       }
-      return json(request, { ok: true, service: "tabi-log-api", version: "1.3-google-auth", database });
+      return json(request, { ok: true, service: "tabi-log-api", version: "1.4-session-auth", database });
     }
     if (path === "/api/auth/session" && request.method === "POST") return createAuthSession(request, env);
     if (path === "/api/auth/logout" && request.method === "POST") return logoutSession(request, env);
