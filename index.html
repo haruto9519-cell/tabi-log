@@ -10,9 +10,9 @@
 <body>
 <header class="topbar">
  <a class="brand" href="#home"><span class="brand-icon">旅</span><span>旅ログ</span></a>
- <nav><a href="#mytrips">マイ旅行</a><a href="#diary">思い出</a><a href="#mypage">プロフィール</a></nav>
+ <nav><a href="#community">みんなの旅</a><a href="#mytrips">マイ旅行</a><a href="#diary">思い出</a><a href="#mypage">プロフィール</a></nav>
  <div class="auth-area"><div id="googleLogin"></div><div id="authStatus" aria-live="polite"></div></div>
- <div class="header-actions"><button class="btn ghost" id="openTrip">Aileronからプランを取り込む</button><button class="btn gold" id="openPost">＋ 思い出を記録</button></div>
+ <div class="header-actions"><button class="btn ghost" id="openTrip">Aileronでプランを作る</button><button class="btn gold" id="openPost">＋ 思い出を記録</button></div>
 </header>
 <main id="home">
 <section id="importAuthNotice" class="import-auth-notice" hidden aria-live="polite">
@@ -46,6 +46,7 @@
  <div><b id="statSaved">0</b><span>保存した旅</span></div>
  <div class="stat-message">旅のすべてを、自分のペースで。</div>
 </section>
+<section id="community" class="section community-section"><div class="section-heading"><div><span class="kicker">TRAVEL COMMUNITY</span><h2>みんなの旅の記録。</h2><p>公開された旅行の思い出を見て、次の旅のヒントを見つけよう。</p></div></div><div id="communityFeed" class="community-feed"><div class="empty-state">公開された記録を読み込んでいます。</div></div></section>
 <section id="mytrips" class="section muted-section">
  <div class="section-heading"><div><span class="kicker">MY JOURNEYS</span><h2>旅の計画を地図ごと引き継ぐ。</h2><p>Aileronで作成した旅行プランを取り込み、訪問先のピンに写真や思い出を重ねていきます。</p></div><button class="btn navy" id="newTrip2">Aileronで旅行プランを作る</button></div>
  <div class="planner-layout">
@@ -127,7 +128,7 @@
  <label>思い出・日記<textarea name="story" required maxlength="2000" placeholder="訪れた場所、体験したこと、感じたことを残そう"></textarea></label>
  <div class="photo-source-options"><label>📷 カメラで撮影<input name="mediaCamera" type="file" accept="image/jpeg,image/png,image/webp" capture="environment"></label><label>🖼️ 写真ライブラリから選択<input name="mediaLibrary" type="file" accept="image/jpeg,image/png,image/webp"></label></div>
  <p class="hint">写真は現在この端末内に保存されます。Google Drive連携後は写真のみクラウド保存・別端末表示に対応します。記録は初期状態で自分のみです。</p>
- <input type="hidden" name="category" value="旅の記録"><input type="hidden" name="visibility" value="private">
+ <label>公開範囲<select name="visibility"><option value="private">自分のみ</option><option value="public">みんなに公開</option></select></label><input type="hidden" name="category" value="旅の記録">
  <button class="btn navy full" type="submit">記録を保存</button>
 </form></dialog>
 <dialog id="saveSuccessDialog" class="save-success-dialog"><div class="save-success-content"><div class="save-success-check" aria-hidden="true">✓</div><span class="kicker">SAVED SUCCESSFULLY</span><h3 id="saveSuccessTitle">写真を保存しました</h3><p id="saveSuccessMessage">旅の思い出に追加されました。</p><button type="button" class="btn navy full" id="closeSaveSuccess">OK</button></div></dialog>
