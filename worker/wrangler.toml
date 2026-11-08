@@ -11,3 +11,6 @@ database_id = "a0a64951-c309-49c6-bd2b-8990299080e2"
 
 # AUTH_VALIDATE_URL はCloudflare側の環境変数で設定
 # AILERON_IMPORT_ENABLED は初期状態 false
+
+[vars]
+GOOGLE_CLIENT_ID = "371718160492-k2a9splus2glu417sonj784ajpqq4401.apps.googleusercontent.com"
