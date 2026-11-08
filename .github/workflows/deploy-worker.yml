@@ -22,5 +22,22 @@ jobs:
           node-version: 22
       - name: Check Worker syntax
         run: node --check src/index.js
+      - name: Check Cloudflare credentials
+        run: |
+          test -n "$CLOUDFLARE_API_TOKEN" || { echo "::error::GitHub Actions secret CLOUDFLARE_API_TOKEN is not set"; exit 1; }
+          test -n "$CLOUDFLARE_ACCOUNT_ID" || { echo "::error::GitHub Actions secret CLOUDFLARE_ACCOUNT_ID is not set"; exit 1; }
       - name: Deploy Worker
         run: npx --yes wrangler@4 deploy --config wrangler.toml
+      - name: Verify deployed Worker
+        run: |
+          for attempt in $(seq 1 12); do
+            response="$(curl -fsS https://tabi-log.haruto-9519.workers.dev/api/health || true)"
+            echo "$response"
+            if echo "$response" | grep -q '"version":"1.9-coordinate-preservation"'; then
+              echo "Worker deployment verified"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "::error::The deployed Worker did not report the expected version"
+          exit 1
