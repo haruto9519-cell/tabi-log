@@ -261,6 +261,20 @@ function renderMap(){
   const diary=posts.filter(post=>post.tripId===t.id&&String(post.place||"").trim()===p.name);
   const count=document.createElement("div");count.className="map-pin-count";count.textContent=diary.length?diary.length+"件の記録":"まだ写真・日記はありません";popup.append(count);
   const photoBox=document.createElement("div");photoBox.className="map-pin-photos";popup.append(photoBox);
+  const addPhoto=document.createElement("button");addPhoto.type="button";addPhoto.className="map-pin-add-photo";addPhoto.textContent="📷 この場所に写真を追加";
+  addPhoto.addEventListener("click",()=>{
+   selectedTrip=t.id;
+   refreshTripSelect();
+   const form=$("#postForm");
+   form.elements.tripId.value=t.id;
+   refreshPostPlaces(t.id);
+   form.elements.place.value=p.name;
+   form.elements.title.value=p.name+"の写真";
+   form.elements.story.value="";
+   routeLeafletMap.closePopup();
+   openDialog("#postDialog");
+  });
+  popup.append(addPhoto);
   marker.bindPopup(popup);
   marker.on("popupopen",async()=>{
    photoBox.replaceChildren();
