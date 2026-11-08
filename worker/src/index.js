@@ -105,13 +105,49 @@ async function verifyGoogleIdToken(token, env) {
     return null;
   }
 }
-async function userFrom(request, env) {
-  const origin = request.headers.get("Origin") || "";
-  if (!ALLOWED_ORIGINS.has(origin)) return null;
+function bearerToken(request) {
   const auth = request.headers.get("authorization") || "";
   const match = auth.match(/^Bearer\s+(\S+)$/i);
-  if (!match) return null;
-  return verifyGoogleIdToken(match[1], env);
+  return match ? match[1] : null;
+}
+async function userFrom(request, env) {
+  const origin = request.headers.get("Origin") || "";
+  const token = bearerToken(request);
+  if (!ALLOWED_ORIGINS.has(origin) || !token || token.length > 100) return null;
+  const tokenHash = await sha256(token);
+  const now = Math.floor(Date.now() / 1000);
+  const row = await env.DB.prepare(
+    "SELECT s.user_id,u.display_name FROM auth_sessions s JOIN users u ON u.id=s.user_id WHERE s.token_hash=? AND s.revoked_at IS NULL AND s.expires_at>?"
+  ).bind(tokenHash, now).first();
+  return row ? { id: row.user_id, name: row.display_name, tokenHash } : null;
+}
+async function createAuthSession(request, env) {
+  if (!env.DB) return bad(request, "認証データベースが未設定です", 503);
+  const origin = request.headers.get("Origin") || "";
+  if (!ALLOWED_ORIGINS.has(origin)) return bad(request, "許可されていない接続元です", 403);
+  const googleToken = bearerToken(request);
+  if (!googleToken) return bad(request, "Googleログイン情報がありません", 401);
+  const user = await verifyGoogleIdToken(googleToken, env);
+  if (!user) return bad(request, "Googleログインを確認できませんでした。もう一度お試しください", 401);
+  await env.DB.prepare("INSERT INTO users(id,display_name) VALUES(?,?) ON CONFLICT(id) DO UPDATE SET display_name=excluded.display_name")
+    .bind(user.id, user.name).run();
+  const sessionToken = randomToken(32);
+  const tokenHash = await sha256(sessionToken);
+  const now = Math.floor(Date.now() / 1000);
+  const expiresAt = now + 7 * 24 * 60 * 60;
+  await env.DB.prepare("DELETE FROM auth_sessions WHERE expires_at<=? OR revoked_at IS NOT NULL").bind(now).run();
+  await env.DB.prepare("INSERT INTO auth_sessions(token_hash,user_id,created_at,expires_at) VALUES(?,?,?,?)")
+    .bind(tokenHash, user.id, now, expiresAt).run();
+  return json(request, { ok: true, sessionToken, expiresAt, user: { id: user.id, name: user.name } });
+}
+async function logoutSession(request, env) {
+  const origin = request.headers.get("Origin") || "";
+  const token = bearerToken(request);
+  if (!ALLOWED_ORIGINS.has(origin) || !token || token.length > 100) return bad(request, "ログイン状態を確認できません", 401);
+  const tokenHash = await sha256(token);
+  await env.DB.prepare("UPDATE auth_sessions SET revoked_at=? WHERE token_hash=? AND revoked_at IS NULL")
+    .bind(Math.floor(Date.now() / 1000), tokenHash).run();
+  return json(request, { ok: true });
 }
 async function createShare(request, env) {
   if (!env.DB) return bad(request, "共有APIのデータベースが未設定です", 503);
@@ -185,12 +221,15 @@ export default {
           const tables = new Set((result.results || []).map(row => row.name));
           database.coreSchemaReady = ["users","trips","trip_stops","posts","likes","comments","follows","saved_trips","reports","blocks"].every(name => tables.has(name));
           database.shareSchemaReady = ["share_links","share_rate_limits"].every(name => tables.has(name));
+          database.authSchemaReady = tables.has("auth_sessions");
         } catch {
           database.querySucceeded = false;
         }
       }
       return json(request, { ok: true, service: "tabi-log-api", version: "1.3-google-auth", database });
     }
+    if (path === "/api/auth/session" && request.method === "POST") return createAuthSession(request, env);
+    if (path === "/api/auth/logout" && request.method === "POST") return logoutSession(request, env);
     if (path === "/api/shares" && request.method === "POST") return createShare(request, env);
     const shareMatch = path.match(/^\/api\/shares\/([A-Za-z0-9_-]+)$/);
     if (shareMatch && request.method === "GET") return readShare(request, env, shareMatch[1]);
@@ -201,7 +240,7 @@ export default {
       return json(request, { ok: true, items: r.results || [] });
     }
     const user = await userFrom(request, env);
-    if (!user) return bad(request, "ログイン機能が未接続です。認証プロバイダーを設定してください。", 401);
+    if (!user) return bad(request, "ログイン状態を確認できません。再度ログインしてください。", 401);
     await env.DB.prepare("INSERT OR IGNORE INTO users(id,display_name) VALUES(?,?)").bind(user.id, user.name).run();
     if (path === "/api/me" && request.method === "GET") {
       return json(request, { ok: true, user: { id: user.id, name: user.name } });
