@@ -270,7 +270,13 @@ function renderAll(){renderFeed();renderTrips();renderDiary();renderProfile();re
 function openDialog(id){$(id).showModal()}function closeDialog(id){$(id).close()}
 $$("[data-close]").forEach(b=>b.addEventListener("click",()=>closeDialog("#"+b.dataset.close)));
 $("#openTrip").onclick=()=>location.href="https://tabi-hikaku.pages.dev/";$("#newTrip2").onclick=()=>location.href="https://tabi-hikaku.pages.dev/";$("#heroTrip").onclick=()=>location.href="https://tabi-hikaku.pages.dev/";$("#openPost").onclick=()=>{refreshTripSelect();openDialog("#postDialog")};
-function refreshTripSelect(){$("#postTripSelect").innerHTML='<option value="">旅程に紐づけない</option>'+trips.filter(t=>t.isMine).map(t=>`<option value="${t.id}">${esc(t.title)}</option>`).join("");}
+function refreshPostPlaces(tripId){
+ const trip=trips.find(t=>t.id===tripId),host=$("#postPlaceOptions");if(!host)return;
+ const places=[...new Set([...(trip?.stops||[]),...(trip?.stopLocations||[]).map(p=>p.name).filter(Boolean)])];
+ host.innerHTML=places.map(name=>'<option value="'+esc(name)+'"></option>').join("");
+}
+function refreshTripSelect(){$("#postTripSelect").innerHTML='<option value="">旅程に紐づけない</option>'+trips.filter(t=>t.isMine).map(t=>`<option value="${t.id}">${esc(t.title)}</option>`).join("");refreshPostPlaces($("#postTripSelect").value);}
+$("#postTripSelect").addEventListener("change",e=>refreshPostPlaces(e.target.value));
 $("#tripForm").addEventListener("submit",e=>{e.preventDefault();let f=new FormData(e.currentTarget),startDate=String(f.get("date")||""),endDate=String(f.get("endDate")||"");if(startDate&&endDate&&endDate<startDate){toast("終了日は開始日以降にしてください");return;}let stops=String(f.get("stops")||"").split(/[,、]/).map(s=>s.trim()).filter(Boolean),t={id:uid(),title:f.get("title"),area:f.get("area"),date:startDate,endDate,description:f.get("description"),visibility:f.get("visibility")||"private",budgetAmount:Number(f.get("budgetAmount")||0),budgetCurrency:String(f.get("budgetCurrency")||"JPY"),stops,actual:[],dayPlans:[],isMine:true,owner:"me",source:"native"};trips.unshift(t);selectedTrip=t.id;save();e.currentTarget.reset();closeDialog("#tripDialog");renderAll();toast("旅程を作成しました");});
 $("#itineraryForm").addEventListener("submit",e=>{
  e.preventDefault();
