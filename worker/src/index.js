@@ -212,9 +212,13 @@ function cleanAileronPlan(input) {
   if (!title || !area || !Number.isSafeInteger(budgetAmount) || budgetAmount < 0 || budgetAmount > 100000000 ||
       !/^[A-Z]{3}$/.test(budgetCurrency) || !Number.isInteger(travelers) || travelers < 1 || travelers > 20) return null;
   const stops = Array.isArray(input.stops) ? input.stops.slice(0, 20).map((item, index) => {
-    const name = cleanText(item?.name, 100), latitude = Number(item?.latitude), longitude = Number(item?.longitude);
+    const name = cleanText(item?.name, 100);
+    const rawLatitude = item?.latitude, rawLongitude = item?.longitude;
+    const latitude = Number(rawLatitude), longitude = Number(rawLongitude);
     const nights = Number(item?.nights || 0);
-    if (!name || !Number.isFinite(latitude) || latitude < -90 || latitude > 90 ||
+    if (!name || rawLatitude === null || rawLatitude === undefined || rawLatitude === "" ||
+        rawLongitude === null || rawLongitude === undefined || rawLongitude === "" ||
+        !Number.isFinite(latitude) || latitude < -90 || latitude > 90 ||
         !Number.isFinite(longitude) || longitude < -180 || longitude > 180 ||
         !Number.isInteger(nights) || nights < 0 || nights > 30) return null;
     return { name, latitude, longitude, nights, sortOrder: index, externalPlaceId: cleanText(item?.externalPlaceId, 120) };
