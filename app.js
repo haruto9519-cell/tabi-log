@@ -5,6 +5,47 @@ async function mediaPut(key,blob){const db=await openMediaDB();return new Promis
 async function mediaGet(key){const db=await openMediaDB();return new Promise((res,rej)=>{const r=db.transaction(STORE).objectStore(STORE).get(key);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});}
 const uid=()=>crypto.randomUUID();
 const API_BASE=(window.TABI_LOG_API_BASE||"").replace(/\/$/,"");
+const GOOGLE_CLIENT_ID=window.TABI_LOG_GOOGLE_CLIENT_ID||"";
+let googleIdToken=null, signedInUser=null;
+function renderAuth(){
+ const host=$("#googleLogin"),status=$("#authStatus");
+ if(!host||!status)return;
+ host.innerHTML="";
+ if(signedInUser){
+  status.innerHTML='<span class="auth-name">'+esc(signedInUser.name||"Googleユーザー")+'</span> <button type="button" class="auth-signout" id="googleSignOut">ログアウト</button>';
+  $("#googleSignOut").onclick=()=>{googleIdToken=null;signedInUser=null;if(window.google?.accounts?.id)window.google.accounts.id.disableAutoSelect();renderAuth();toast("ログアウトしました");};
+  return;
+ }
+ status.textContent="";
+ if(window.google?.accounts?.id&&GOOGLE_CLIENT_ID){
+  window.google.accounts.id.renderButton(host,{theme:"outline",size:"large",shape:"pill",text:"signin_with",locale:"ja"});
+ }else{
+  host.innerHTML='<span class="auth-loading">Googleログインを読み込み中…</span>';
+ }
+}
+async function handleGoogleCredential(response){
+ if(!response?.credential){toast("Googleログイン情報を取得できませんでした");return;}
+ googleIdToken=response.credential;
+ try{
+  const res=await fetch(API_BASE+"/api/me",{headers:{authorization:"Bearer "+googleIdToken}});
+  const data=await res.json();
+  if(!res.ok||!data.ok)throw new Error(data.error||"ログインを確認できませんでした");
+  signedInUser=data.user;
+  renderAuth();
+  toast("Googleログインしました");
+ }catch(error){
+  googleIdToken=null;signedInUser=null;renderAuth();
+  toast(error.message||"ログインに失敗しました");
+ }
+}
+function initGoogleSignIn(){
+ if(!GOOGLE_CLIENT_ID){$("#googleLogin").textContent="ログイン設定を確認中";return;}
+ if(!window.google?.accounts?.id){$("#googleLogin").textContent="Googleログインを読み込めません。ページを再読み込みしてください";return;}
+ window.google.accounts.id.initialize({client_id:GOOGLE_CLIENT_ID,callback:handleGoogleCredential,auto_select:false});
+ renderAuth();
+}
+window.addEventListener("load",initGoogleSignIn,{once:true});
+
 let shareRecords={};
 const seedPosts=[
 {id:"s1",title:"朝いちばんの清水寺",place:"清水寺・京都",story:"人が少ない時間に訪れた京都の朝。境内から見える街並みがきれいでした。",author:"mika",date:"2026-11-07 08:32",category:"文化・歴史",visual:"v1",symbol:"⛩",likes:24,liked:false,saved:false,visibility:"public",tripId:"t1"},
