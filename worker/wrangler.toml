@@ -1,0 +1,11 @@
+name = "tabi-log-api"
+main = "src/index.js"
+compatibility_date = "2026-11-08"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "tabi-log-db"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
+
+# AUTH_VALIDATE_URL はCloudflare側の環境変数で設定
+# AILERON_IMPORT_ENABLED は初期状態 false
