@@ -25,7 +25,7 @@ async function readJson(request, maxBytes = 20000) {
   }
 }
 const validVisibility = value => ["private", "followers", "public"].includes(value) ? value : null;
-const validDate = value => !value || (typeof value === "string" && /^\\d{4}-\\d{2}-\\d{2}$/.test(value)) ? (value || null) : undefined;
+const validDate = value => !value || (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) ? (value || null) : undefined;
 const uuid = () => crypto.randomUUID();
 const randomToken = (bytes = 32) => {
   const data = crypto.getRandomValues(new Uint8Array(bytes));
