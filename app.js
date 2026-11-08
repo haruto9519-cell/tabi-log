@@ -122,8 +122,8 @@ async function syncCloudData(){
   for(const t of remoteTrips){const local=trips.find(item=>item.id===t.id);if(!local)trips.push(t);else if((!Array.isArray(local.dayPlans)||!local.dayPlans.length)&&t.dayPlans?.length)local.dayPlans=t.dayPlans;}
   const postIds=new Set(posts.map(p=>p.id));
   for(const p of remotePosts)if(!postIds.has(p.id))posts.push(p);
-  const expenseIds=new Set(expenses.map(item=>item.id));
-  for(const item of remoteExpenses)if(!expenseIds.has(item.id))expenses.push(item);
+  // Signed-in cloud data is authoritative for expenses so deletions on another device do not reappear.
+  expenses.splice(0,expenses.length,...remoteExpenses);
   if(!selectedTrip&&trips.length)selectedTrip=trips[0].id;
   for(const [k,v] of Object.entries({posts,trips,expenses}))localStorage.setItem("tabilog_"+k,JSON.stringify(v));
   cloudSyncHydrating=false;
