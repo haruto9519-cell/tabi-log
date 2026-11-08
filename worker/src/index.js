@@ -3,7 +3,7 @@ const CORS_ORIGINS = new Set([...ALLOWED_ORIGINS, "https://tabi-hikaku.pages.dev
 const cors = (request) => {
   const origin = request.headers.get("Origin") || "";
   const headers = {
-    "access-control-allow-methods": "GET,POST,DELETE,OPTIONS",
+    "access-control-allow-methods": "GET,POST,PUT,DELETE,OPTIONS",
     "access-control-allow-headers": "content-type,authorization",
     "vary": "Origin"
   };
@@ -277,7 +277,7 @@ export default {
     const path = url.pathname;
     if (request.method === "OPTIONS") return new Response(null, { headers: cors(request) });
     if (path === "/api/health" && request.method === "GET") {
-      const database = { configured: Boolean(env.DB), coreSchemaReady: false, shareSchemaReady: false, itinerarySchemaReady: false, expensesSchemaReady: false, planImportsSchemaReady: false, stopCoordinatesSchemaReady: false };
+      const database = { configured: Boolean(env.DB), mediaStorageReady: Boolean(env.MEDIA), coreSchemaReady: false, shareSchemaReady: false, itinerarySchemaReady: false, expensesSchemaReady: false, planImportsSchemaReady: false, stopCoordinatesSchemaReady: false };
       if (env.DB) {
         try {
           const result = await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table'").all();
@@ -342,6 +342,38 @@ export default {
     if (path === "/api/me" && request.method === "GET") {
       return json(request, { ok: true, user: { id: user.id, name: user.name } });
     }
+    const mediaMatch = path.match(/^\/api\/media\/([A-Za-z0-9_-]{1,80})$/);
+    if (mediaMatch && ["GET", "PUT", "DELETE"].includes(request.method)) {
+      if (!env.MEDIA) return bad(request, "写真・動画のクラウド保存先が未設定です", 503);
+      if (!user) return bad(request, "写真・動画を扱うにはログインしてください", 401);
+      const postId = mediaMatch[1];
+      const post = await env.DB.prepare("SELECT id,media_key,media_type FROM posts WHERE id=? AND user_id=?").bind(postId, user.id).first();
+      if (!post) return bad(request, "対象の日記が見つかりません", 404);
+      if (request.method === "PUT") {
+        const contentType = (request.headers.get("content-type") || "").split(";")[0].trim().toLowerCase();
+        const allowed = new Set(["image/jpeg", "image/png", "image/webp", "video/mp4", "video/webm"]);
+        const maxBytes = contentType.startsWith("video/") ? 20 * 1024 * 1024 : 5 * 1024 * 1024;
+        const declaredLength = Number(request.headers.get("content-length") || 0);
+        if (!allowed.has(contentType)) return bad(request, "対応していない写真・動画形式です", 415);
+        if (declaredLength > maxBytes) return bad(request, "ファイルサイズの上限を超えています", 413);
+        const bytes = await request.arrayBuffer();
+        if (!bytes.byteLength || bytes.byteLength > maxBytes) return bad(request, "ファイルサイズの上限を超えているか、ファイルが空です", 413);
+        const key = (await sha256(user.id)).slice(0, 32) + "/" + postId;
+        await env.MEDIA.put(key, bytes, { httpMetadata: { contentType } });
+        await env.DB.prepare("UPDATE posts SET media_key=?,media_type=? WHERE id=? AND user_id=?").bind(key, contentType, postId, user.id).run();
+        return json(request, { ok: true, mediaType: contentType });
+      }
+      if (request.method === "GET") {
+        if (!post.media_key) return bad(request, "写真・動画が登録されていません", 404);
+        const object = await env.MEDIA.get(post.media_key);
+        if (!object) return bad(request, "写真・動画ファイルが見つかりません", 404);
+        return new Response(object.body, { headers: { ...cors(request), "content-type": post.media_type || object.httpMetadata?.contentType || "application/octet-stream", "cache-control": "private, no-store", "x-content-type-options": "nosniff" } });
+      }
+      if (post.media_key) await env.MEDIA.delete(post.media_key);
+      await env.DB.prepare("UPDATE posts SET media_key=NULL,media_type=NULL WHERE id=? AND user_id=?").bind(postId, user.id).run();
+      return json(request, { ok: true });
+    }
+
     const visitedMatch = path.match(/^\/api\/trips\/([A-Za-z0-9_-]{1,80})\/visited$/);
     if (visitedMatch && request.method === "POST") {
       const parsed = await readJson(request, 2048);
@@ -394,7 +426,7 @@ export default {
         "SELECT id,trip_id,expense_date,category,amount,currency,note FROM travel_expenses WHERE user_id=? ORDER BY expense_date DESC,created_at DESC LIMIT 1000"
       ).bind(user.id).all();
       const postRows = await env.DB.prepare(
-        "SELECT id,trip_id,title,story,place_name,visibility,captured_at,created_at FROM posts WHERE user_id=? ORDER BY created_at DESC LIMIT 200"
+        "SELECT id,trip_id,title,story,place_name,media_key,media_type,visibility,captured_at,created_at FROM posts WHERE user_id=? ORDER BY created_at DESC LIMIT 200"
       ).bind(user.id).all();
       return json(request, { ok: true, trips: [...tripMap.values()], posts: postRows.results || [], expenses: expenseRows.results || [] });
     }
@@ -546,6 +578,8 @@ export default {
     }
     const postDeleteMatch = path.match(/^\/api\/posts\/([A-Za-z0-9_-]+)$/);
     if (postDeleteMatch && request.method === "DELETE") {
+      const existingPost = await env.DB.prepare("SELECT media_key FROM posts WHERE id=? AND user_id=?").bind(postDeleteMatch[1], user.id).first();
+      if (existingPost?.media_key && env.MEDIA) await env.MEDIA.delete(existingPost.media_key);
       const result = await env.DB.prepare("DELETE FROM posts WHERE id=? AND user_id=?").bind(postDeleteMatch[1], user.id).run();
       return json(request, { ok: true, deleted: Boolean(result.meta?.changes) });
     }
