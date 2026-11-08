@@ -321,6 +321,20 @@ export default {
     if (path === "/api/me" && request.method === "GET") {
       return json(request, { ok: true, user: { id: user.id, name: user.name } });
     }
+    const visitedMatch = path.match(/^\/api\/trips\/([A-Za-z0-9_-]{1,80})\/visited$/);
+    if (visitedMatch && request.method === "POST") {
+      const parsed = await readJson(request, 2048);
+      if (parsed.error) return parsed.error;
+      const name = cleanText(parsed.data?.name, 100);
+      const visited = parsed.data?.visited === true;
+      if (!name) return bad(request, "訪問先の名前が必要です");
+      const owned = await env.DB.prepare("SELECT id FROM trips WHERE id=? AND user_id=? AND source='aileron'").bind(visitedMatch[1], user.id).first();
+      if (!owned) return bad(request, "連携した旅行が見つかりません", 404);
+      const result = await env.DB.prepare("UPDATE trip_stops SET note=? WHERE trip_id=? AND name=?")
+        .bind(visited ? "visited" : "", visitedMatch[1], name).run();
+      if (!result.meta?.changes) return bad(request, "地図上の訪問先が見つかりません", 404);
+      return json(request, { ok: true, name, visited });
+    }
     if (path === "/api/sync" && request.method === "GET") {
       const tripRows = await env.DB.prepare(
         "SELECT t.id,t.title,t.area,t.description,t.visibility,t.start_date,t.end_date,t.budget_amount,t.budget_currency,t.source,s.name AS stop_name,s.note AS stop_note,s.sort_order,s.latitude AS stop_latitude,s.longitude AS stop_longitude,s.external_place_id FROM trips t LEFT JOIN trip_stops s ON s.trip_id=t.id WHERE t.user_id=? AND t.source IN ('native','aileron') ORDER BY t.created_at DESC,s.sort_order ASC"
