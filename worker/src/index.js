@@ -62,7 +62,7 @@ function cleanShare(input) {
       date: cleanText(x?.date, 30)
     })).filter(x => x.title || x.place || x.story) : [],
     author: cleanText(input.author, 40),
-    aileronUrl: "https://tabi-hikaku.pages.dev/",
+    aileronUrl: "https://aileron-japan-travel.pages.dev/",
     tabiLogUrl: "https://tabi-log.pages.dev/"
   };
   if (!trip.title || !trip.area) return null;
