@@ -419,10 +419,29 @@ export default {
         const plannedStops = Array.isArray(item.stops) ? item.stops.slice(0, 40) : [];
         const actualStops = Array.isArray(item.actual) ? item.actual.slice(0, 40) : [];
         const stopNames = [...plannedStops, ...actualStops.filter(name => !plannedStops.includes(name))];
-        const stops = stopNames.map((stop, index) => ({
-          name: cleanText(stop, 100), sort: index,
-          visited: actualStops.includes(stop)
-        })).filter(stop => stop.name);
+        const suppliedLocations = Array.isArray(item.stopLocations) ? item.stopLocations.slice(0, 40) : [];
+        const existingLocationRows = await env.DB.prepare(
+          "SELECT name,latitude,longitude,external_place_id FROM trip_stops WHERE trip_id=?"
+        ).bind(id).all();
+        const existingLocations = new Map((existingLocationRows.results || []).map(row => [row.name, row]));
+        const stops = stopNames.map((stop, index) => {
+          const name = cleanText(stop, 100);
+          const supplied = suppliedLocations.find(point => cleanText(point?.name, 100) === name);
+          const previous = existingLocations.get(name);
+          const rawLatitude = supplied?.latitude ?? previous?.latitude;
+          const rawLongitude = supplied?.longitude ?? previous?.longitude;
+          const latitude = rawLatitude === null || rawLatitude === undefined || rawLatitude === "" ? null : Number(rawLatitude);
+          const longitude = rawLongitude === null || rawLongitude === undefined || rawLongitude === "" ? null : Number(rawLongitude);
+          const hasCoordinates = Number.isFinite(latitude) && latitude >= -90 && latitude <= 90 &&
+            Number.isFinite(longitude) && longitude >= -180 && longitude <= 180;
+          return {
+            name, sort: index, visited: actualStops.includes(stop),
+            latitude: hasCoordinates ? latitude : null,
+            longitude: hasCoordinates ? longitude : null,
+            externalPlaceId: cleanText(supplied?.externalPlaceId ?? previous?.external_place_id ?? "", 120),
+            hasCoordinates
+          };
+        }).filter(stop => stop.name);
         const dayPlans = [];
         if (Array.isArray(item.dayPlans)) {
           for (const day of item.dayPlans.slice(0, 31)) {
@@ -496,8 +515,9 @@ export default {
         statements.push(env.DB.prepare("DELETE FROM trip_stops WHERE trip_id=?").bind(item.id));
         for (const stop of item.stops) {
           statements.push(env.DB.prepare(
-            "INSERT INTO trip_stops(id,trip_id,name,note,sort_order,location_precision) VALUES(?,?,?,?,?,'hidden')"
-          ).bind(uuid(), item.id, stop.name, stop.visited ? "visited" : "", stop.sort));
+            "INSERT INTO trip_stops(id,trip_id,name,note,sort_order,location_precision,latitude,longitude,external_place_id) VALUES(?,?,?,?,?,?,?,?,?)"
+          ).bind(uuid(), item.id, stop.name, stop.visited ? "visited" : "", stop.sort,
+            stop.hasCoordinates ? "approximate" : "hidden", stop.latitude, stop.longitude, stop.externalPlaceId || null));
         }
         statements.push(env.DB.prepare("DELETE FROM itinerary_items WHERE trip_id=?").bind(item.id));
         for (const entry of item.dayPlans) {
