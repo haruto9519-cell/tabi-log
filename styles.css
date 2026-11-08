@@ -115,3 +115,20 @@ input:focus,textarea:focus,select:focus{outline:2px solid #d7b77f55;border-color
 .expense-row strong{font-size:12px;color:var(--navy);white-space:nowrap}
 .expense-actions{display:flex;gap:10px}
 @media(max-width:640px){.expense-row{grid-template-columns:1fr auto}.expense-actions{grid-column:1/-1;justify-content:flex-end}.expense-budget-numbers b{font-size:17px}}
+
+/* Real map and location-linked memory pins */
+.route-map{height:420px;min-height:320px;background:#e8eeeb;border-radius:10px;overflow:hidden;position:relative;z-index:1}
+.map-overlay-empty{position:absolute;z-index:500;left:50%;top:16px;transform:translateX(-50%);max-width:calc(100% - 32px);width:max-content;background:rgba(255,255,255,.95);padding:10px 15px;border:1px solid #dce4e4;border-radius:9px;color:#526572;font-size:12px;box-shadow:0 3px 12px rgba(16,38,61,.1);pointer-events:none}
+.map-unavailable{padding:35px 20px;text-align:center;color:#647780;font-size:13px}
+.tabi-map-marker-wrap{background:transparent;border:0}
+.tabi-map-marker{display:grid;place-items:center;width:30px;height:30px;border:2px solid #fff;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:#173447;color:#fff;font-size:11px;font-weight:700;box-shadow:0 2px 7px rgba(0,0,0,.25)}
+.tabi-map-marker.visited{background:#25815e}
+.tabi-map-marker{line-height:1}
+.tabi-map-popup{min-width:170px;max-width:240px;color:#173447}
+.tabi-map-popup strong{font-size:14px}
+.map-pin-state,.map-pin-count{font-size:11px;color:#687780;margin-top:4px}
+.map-pin-photos{display:flex;gap:5px;overflow-x:auto;margin-top:8px}
+.map-pin-photos img{width:76px;height:64px;object-fit:cover;border-radius:5px}
+.stop-pill{border:0;cursor:pointer}
+.stop-pill:hover{background:#e8ddca}
+@media(max-width:640px){.route-map{height:340px;min-height:280px}}
