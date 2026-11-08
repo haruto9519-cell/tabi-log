@@ -4,7 +4,7 @@ function openMediaDB(){return new Promise((resolve,reject)=>{const r=indexedDB.o
 async function mediaPut(key,blob){const db=await openMediaDB();return new Promise((res,rej)=>{const tx=db.transaction(STORE,"readwrite");tx.objectStore(STORE).put(blob,key);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error);});}
 async function mediaGet(key){const db=await openMediaDB();return new Promise((res,rej)=>{const r=db.transaction(STORE).objectStore(STORE).get(key);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});}
 const uid=()=>crypto.randomUUID();
-const API_BASE=(window.TABI_LOG_API_BASE||"").replace(/\\/$/,"");
+const API_BASE=(window.TABI_LOG_API_BASE||"").replace(/\/$/,"");
 let shareRecords={};
 const seedPosts=[
 {id:"s1",title:"朝いちばんの清水寺",place:"清水寺・京都",story:"人が少ない時間に訪れた京都の朝。境内から見える街並みがきれいでした。",author:"mika",date:"2026-11-07 08:32",category:"文化・歴史",visual:"v1",symbol:"⛩",likes:24,liked:false,saved:false,visibility:"public",tripId:"t1"},
@@ -53,7 +53,7 @@ if(b.dataset.comment){let c=prompt("コメントを入力（この端末内の�
 if(b.dataset.remix){let t=trips.find(x=>x.id===p.tripId);if(t){trips.unshift({...t,id:uid(),title:t.title+"（参考）",stops:[...t.stops],actual:[],isMine:true,owner:"me",visibility:"private"})}else{trips.unshift({id:uid(),title:p.title+"を参考にした旅",area:p.place,description:"投稿を参考に作成",stops:[p.place],actual:[],isMine:true,owner:"me",visibility:"private"})}save();renderAll();toast("参考旅程を作成しました")}
 if(b.dataset.report){let reason=prompt("通報理由を入力してください（テスト用）");if(reason?.trim())toast("通報内容をこの画面では送信せず、テスト記録として受け付けました")}
 });
-$("#tripCards").addEventListener("click",e=>{let b=e.target.closest("button");if(!b)return;let t=trips.find(x=>x.id===b.dataset.selectTrip||x.id===b.dataset.addStop||x.id===b.dataset.copyTrip||x.id===b.dataset.actual||x.id===b.dataset.deleteTrip||x.id===b.dataset.shareTrip);if(!t)return;
+$("#tripCards").addEventListener("click",async e=>{let b=e.target.closest("button");if(!b)return;let t=trips.find(x=>x.id===b.dataset.selectTrip||x.id===b.dataset.addStop||x.id===b.dataset.copyTrip||x.id===b.dataset.actual||x.id===b.dataset.deleteTrip||x.id===b.dataset.shareTrip);if(!t)return;
 if(b.dataset.selectTrip){selectedTrip=t.id;renderTrips()}
 if(b.dataset.addStop){let s=prompt("追加する立ち寄り先");if(s?.trim()){t.stops.push(s.trim());save();renderTrips();toast("行き先を追加しました")}}
 if(b.dataset.copyTrip){trips.unshift({...t,id:uid(),title:t.title+"（コピー）",stops:[...t.stops],actual:[],isMine:true,owner:"me",visibility:"private"});save();renderAll();toast("旅程をコピーしました")}
