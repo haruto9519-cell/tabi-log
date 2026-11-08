@@ -60,7 +60,7 @@ async function createShare(request, env) {
   const length = Number(request.headers.get("content-length") || 0);
   if (length > 20000) return bad(request, "記録が大きすぎます。文章や立ち寄り先を減らしてください", 413);
   const raw = await request.text();
-  if (raw.length > 20000) return bad(request, "記録が大きすぎます。文章や立ち寄り先を減らしてください", 413);
+  if (new TextEncoder().encode(raw).byteLength > 20000) return bad(request, "記録が大きすぎます。文章や立ち寄り先を減らしてください", 413);
   let body;
   try { body = JSON.parse(raw); } catch { return bad(request, "JSON形式を確認してください"); }
   const payload = cleanShare(body?.trip);
@@ -69,12 +69,12 @@ async function createShare(request, env) {
   const ipHash = await sha256(ip + (env.RATE_LIMIT_SALT || "tabi-log-rate-v1"));
   const now = Math.floor(Date.now() / 1000);
   const windowStart = Math.floor(now / 600) * 600;
-  // Retain only active share links and recent rate-limit windows.
-  await env.DB.prepare("DELETE FROM share_links WHERE expires_at <= ? OR revoked_at IS NOT NULL").bind(now).run();
-  await env.DB.prepare("DELETE FROM share_rate_limits WHERE window_start < ?").bind(now - 86400).run();
   await env.DB.prepare("INSERT INTO share_rate_limits(ip_hash, window_start, hits) VALUES(?,?,1) ON CONFLICT(ip_hash,window_start) DO UPDATE SET hits=hits+1").bind(ipHash, windowStart).run();
   const rate = await env.DB.prepare("SELECT hits FROM share_rate_limits WHERE ip_hash=? AND window_start=?").bind(ipHash, windowStart).first();
   if ((rate?.hits || 0) > 8) return bad(request, "共有リンクの作成回数が上限に達しました。10分ほど待ってから再度お試しください", 429);
+  // Cleanup runs only after the caller passes the rate limit.
+  await env.DB.prepare("DELETE FROM share_links WHERE expires_at <= ? OR revoked_at IS NOT NULL").bind(now).run();
+  await env.DB.prepare("DELETE FROM share_rate_limits WHERE window_start < ?").bind(now - 86400).run();
   const token = randomToken();
   const revokeKey = randomToken();
   const tokenHash = await sha256(token);
@@ -102,9 +102,11 @@ async function readShare(request, env, token) {
 }
 async function revokeShare(request, env, token) {
   if (!env.DB || !/^[A-Za-z0-9_-]{40,50}$/.test(token)) return bad(request, "共有記録が見つかりません", 404);
+  const raw = await request.text();
+  if (new TextEncoder().encode(raw).byteLength > 1024) return bad(request, "リクエストが大きすぎます", 413);
   let body;
-  try { body = await request.json(); } catch { return bad(request, "無効化キーが必要です"); }
-  if (typeof body.revokeKey !== "string" || body.revokeKey.length < 40) return bad(request, "無効化キーが正しくありません", 403);
+  try { body = JSON.parse(raw); } catch { return bad(request, "無効化キーが必要です"); }
+  if (!body || typeof body.revokeKey !== "string" || !/^[A-Za-z0-9_-]{40,50}$/.test(body.revokeKey)) return bad(request, "無効化キーが正しくありません", 403);
   const tokenHash = await sha256(token);
   const revokeHash = await sha256(body.revokeKey);
   const row = await env.DB.prepare("SELECT id,revoke_hash FROM share_links WHERE token_hash=?").bind(tokenHash).first();
