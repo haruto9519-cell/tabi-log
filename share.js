@@ -1,5 +1,5 @@
 const root=document.querySelector("#shareContent");
-const api=(window.TABI_LOG_API_BASE||"").replace(/\\/$/,"");
+const api=(window.TABI_LOG_API_BASE||"").replace(/\/$/,"");
 const token=new URLSearchParams(location.search).get("token");
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const date=s=>{if(!s)return "";const d=new Date(s);return Number.isNaN(d.getTime())?esc(s):d.toLocaleDateString("ja-JP",{year:"numeric",month:"long",day:"numeric"})};
