@@ -293,6 +293,7 @@ export default {
     const importMatch = path.match(/^\/api\/imports\/([A-Za-z0-9_-]{40,50})$/);
     const user = await userFrom(request, env);
     if (importMatch && request.method === "POST") {
+      if (!user) return bad(request, "旅ログにGoogleログインしてから連携してください", 401);
       if (!env.DB) return bad(request, "旅行連携データベースが未設定です", 503);
       const tokenHash = await sha256(importMatch[1]);
       const record = await env.DB.prepare("SELECT id,payload_json,expires_at,claimed_at FROM plan_imports WHERE token_hash=?").bind(tokenHash).first();
