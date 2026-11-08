@@ -1,0 +1,23 @@
+name: Validate Tabi Log
+on:
+  pull_request:
+  push:
+    branches: [main]
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check JavaScript syntax
+        run: |
+          node --check app.js
+          node --check share.js
+          node --check worker/src/index.js
+      - name: Check required share files
+        run: |
+          test -f config.js
+          test -f share.html
+          test -f worker/migrations/0002_share_links.sql
