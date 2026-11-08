@@ -128,7 +128,15 @@ async function syncCloudData(){
    visibility:p.visibility||"private",mediaKey:null,comments:[]
   }));
   const tripIds=new Set(trips.map(t=>t.id));
-  for(const t of remoteTrips){const local=trips.find(item=>item.id===t.id);if(!local)trips.push(t);else if((!Array.isArray(local.dayPlans)||!local.dayPlans.length)&&t.dayPlans?.length)local.dayPlans=t.dayPlans;}
+  for(const t of remoteTrips){
+   const local=trips.find(item=>item.id===t.id);
+   if(!local){trips.push(t);continue;}
+   const hasLocalCoordinates=Array.isArray(local.stopLocations)&&local.stopLocations.some(p=>Number.isFinite(Number(p?.latitude))&&Number.isFinite(Number(p?.longitude)));
+   if(!hasLocalCoordinates&&Array.isArray(t.stopLocations)&&t.stopLocations.length)local.stopLocations=t.stopLocations;
+   if((!Array.isArray(local.stops)||!local.stops.length)&&t.stops?.length)local.stops=t.stops;
+   if((!Array.isArray(local.actual)||!local.actual.length)&&t.actual?.length)local.actual=t.actual;
+   if((!Array.isArray(local.dayPlans)||!local.dayPlans.length)&&t.dayPlans?.length)local.dayPlans=t.dayPlans;
+  }
   const postIds=new Set(posts.map(p=>p.id));
   for(const p of remotePosts)if(!postIds.has(p.id))posts.push(p);
   // Signed-in cloud data is authoritative for expenses so deletions on another device do not reappear.
@@ -406,7 +414,27 @@ if(b.dataset.shareTrip){
  const payload={trip:{title:t.title,area:t.area,date:t.date,description:t.description,stops:t.stops||[],visited:t.actual||[],locations:t.stopLocations||[],entries,author:profile.name}};
  try{const res=await fetch(API_BASE+"/api/shares",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(payload)});const data=await res.json();if(!res.ok||!data.ok)throw new Error(data.error||"共有リンクを作成できませんでした");shareRecords[t.id]={url:data.url,revokeKey:data.revokeKey,expiresAt:data.expiresAt};save();renderTrips();try{await navigator.clipboard.writeText(data.url);toast("共有URLを発行してコピーしました")}catch{prompt("共有URLを発行しました。コピーしてください",data.url)}}catch(err){toast(err.message||"共有URLの発行に失敗しました")}
 }
-if(b.dataset.deleteTrip&&confirm("この旅程を削除しますか？\n関連する日程・支出も削除されます。")){try{if(signedInUser&&sessionToken){const res=await fetch(API_BASE+"/api/trips/"+encodeURIComponent(t.id),{method:"DELETE",headers:{authorization:"Bearer "+sessionToken}});const data=await res.json();if(!res.ok||!data.ok||!data.deleted)throw new Error(data.error||"クラウド側の削除に失敗しました");}trips=trips.filter(x=>x.id!==t.id);expenses=expenses.filter(item=>item.tripId!==t.id);if(selectedTrip===t.id)selectedTrip=trips[0]?.id||null;save();renderAll();toast("旅程を削除しました");}catch(error){toast(error.message||"旅程を削除できませんでした");}}
+ if(b.dataset.deleteTrip){
+  if(!confirm("この旅程を削除しますか？\\n関連する日程・支出も削除されます。"))return;
+  const tripId=t.id;
+  try{
+   clearTimeout(cloudSyncTimer);cloudSyncQueued=false;
+   while(cloudSyncBusy)await new Promise(resolve=>setTimeout(resolve,80));
+   clearTimeout(cloudSyncTimer);
+   if(signedInUser&&sessionToken){
+    if(!API_BASE)throw new Error("削除APIに接続できません。時間をおいて再読み込みしてください");
+    const res=await fetch(API_BASE+"/api/trips/"+encodeURIComponent(tripId),{method:"DELETE",headers:{authorization:"Bearer "+sessionToken}});
+    const data=await res.json();
+    if(!res.ok||!data.ok||!data.deleted)throw new Error(data.error||"クラウド側の削除に失敗しました");
+   }
+   trips=trips.filter(x=>x.id!==tripId);
+   expenses=expenses.filter(item=>item.tripId!==tripId);
+   delete shareRecords[tripId];
+   if(selectedTrip===tripId)selectedTrip=trips[0]?.id||null;
+   save();renderAll();toast("旅程を削除しました");
+  }catch(error){toast(error.message||"旅程を削除できませんでした");}
+  return;
+ }
 });
 $("#feedSearch").addEventListener("input",renderFeed);$("#feedSort").addEventListener("change",e=>{feedSort=e.target.value;renderFeed()});$$(".chip").forEach(b=>b.addEventListener("click",()=>{$$(".chip").forEach(x=>x.classList.remove("active"));b.classList.add("active");category=b.dataset.category;renderFeed()}));
 renderAll();
