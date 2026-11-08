@@ -341,7 +341,7 @@ function renderExpenses(){
 }
 function renderAll(){renderFeed();renderTrips();renderDiary();renderProfile();renderExpenses();}
 function openDialog(id){$(id).showModal()}function closeDialog(id){$(id).close()}
-$("[data-close]").forEach(b=>b.addEventListener("click",()=>closeDialog("#"+b.dataset.close)));
+$$("[data-close]").forEach(b=>b.addEventListener("click",()=>closeDialog("#"+b.dataset.close)));
 $("#closeSaveSuccess").addEventListener("click",()=>closeDialog("#saveSuccessDialog"));
 $("#openTrip").onclick=()=>location.href="https://tabi-hikaku.pages.dev/";$("#newTrip2").onclick=()=>location.href="https://tabi-hikaku.pages.dev/";$("#heroTrip").onclick=()=>location.href="https://tabi-hikaku.pages.dev/";$("#openPost").onclick=()=>{refreshTripSelect();openDialog("#postDialog")};
 function refreshPostPlaces(tripId){
