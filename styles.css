@@ -91,3 +91,27 @@ input:focus,textarea:focus,select:focus{outline:2px solid #d7b77f55;border-color
 .itinerary-item-actions{grid-column:2;display:flex;gap:12px;flex-wrap:wrap}
 .itinerary-item-actions .action{font-size:9px}
 @media(max-width:540px){.itinerary-item{grid-template-columns:1fr;gap:6px}.itinerary-item-actions{grid-column:1}.itinerary-time{font-size:9px}}
+
+/* Travel budget and expense management */
+.expense-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;margin:18px 0}
+.expense-budget-card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:17px}
+.expense-budget-head,.expense-budget-numbers{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.expense-budget-head b,.expense-budget-head small{display:block}
+.expense-budget-head b{font-size:12px;color:var(--navy)}
+.expense-budget-head small,.expense-budget-head span,.expense-budget-numbers small{font-size:9px;color:var(--muted)}
+.expense-budget-numbers{margin-top:17px}
+.expense-budget-numbers div{display:grid;gap:4px}
+.expense-budget-numbers b{font-size:20px;color:var(--navy);font-variant-numeric:tabular-nums}
+.expense-progress{height:7px;background:#edf1f3;border-radius:10px;overflow:hidden;margin-top:14px}
+.expense-progress span{display:block;height:100%;background:var(--gold);border-radius:10px}
+.expense-progress-label{display:block;text-align:right;color:var(--muted);font-size:9px;margin-top:5px}
+.expense-category-list{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
+.expense-category-list span{font-size:9px;padding:5px 8px;background:#f2f5f5;border-radius:20px;color:#657781}
+.expense-list{display:grid;gap:8px}
+.expense-row{display:grid;grid-template-columns:1fr auto auto;gap:14px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:9px;padding:13px 16px}
+.expense-row b,.expense-row small{display:block}
+.expense-row b{font-size:11px;color:var(--navy)}
+.expense-row small,.expense-row p{font-size:9px;color:var(--muted);margin:4px 0 0}
+.expense-row strong{font-size:12px;color:var(--navy);white-space:nowrap}
+.expense-actions{display:flex;gap:10px}
+@media(max-width:640px){.expense-row{grid-template-columns:1fr auto}.expense-actions{grid-column:1/-1;justify-content:flex-end}.expense-budget-numbers b{font-size:17px}}
