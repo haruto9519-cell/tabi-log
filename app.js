@@ -335,7 +335,7 @@ if(b.dataset.shareTrip){
  const existing=shareRecords[t.id];
  if(existing){try{await navigator.clipboard.writeText(existing.url);toast("共有URLをコピーしました")}catch{prompt("共有URLをコピーしてください",existing.url)}return}
  const entries=posts.filter(p=>p.tripId===t.id&&p.author===profile.name).map(p=>({title:p.title,place:p.place,story:p.story,date:p.date}));
- const payload={trip:{title:t.title,area:t.area,date:t.date,description:t.description,stops:t.stops||[],visited:t.actual||[],entries,author:profile.name}};
+ const payload={trip:{title:t.title,area:t.area,date:t.date,description:t.description,stops:t.stops||[],visited:t.actual||[],locations:t.stopLocations||[],entries,author:profile.name}};
  try{const res=await fetch(API_BASE+"/api/shares",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(payload)});const data=await res.json();if(!res.ok||!data.ok)throw new Error(data.error||"共有リンクを作成できませんでした");shareRecords[t.id]={url:data.url,revokeKey:data.revokeKey,expiresAt:data.expiresAt};save();renderTrips();try{await navigator.clipboard.writeText(data.url);toast("共有URLを発行してコピーしました")}catch{prompt("共有URLを発行しました。コピーしてください",data.url)}}catch(err){toast(err.message||"共有URLの発行に失敗しました")}
 }
 if(b.dataset.deleteTrip&&confirm("この旅程を削除しますか？")){trips=trips.filter(x=>x.id!==t.id);expenses=expenses.filter(item=>item.tripId!==t.id);if(selectedTrip===t.id)selectedTrip=trips[0]?.id||null;save();if(signedInUser&&sessionToken){try{const res=await fetch(API_BASE+"/api/trips/"+encodeURIComponent(t.id),{method:"DELETE",headers:{authorization:"Bearer "+sessionToken}});const data=await res.json();if(!res.ok||!data.ok)throw new Error(data.error||"クラウド側の削除に失敗しました")}catch(error){toast("端末内では削除しました。クラウド同期は次回ログイン時に確認します")}}renderAll();toast("旅程を削除しました")}
