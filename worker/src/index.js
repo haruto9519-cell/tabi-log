@@ -214,7 +214,7 @@ export default {
     const path = url.pathname;
     if (request.method === "OPTIONS") return new Response(null, { headers: cors(request) });
     if (path === "/api/health" && request.method === "GET") {
-      const database = { configured: Boolean(env.DB), coreSchemaReady: false, shareSchemaReady: false, itinerarySchemaReady: false };
+      const database = { configured: Boolean(env.DB), coreSchemaReady: false, shareSchemaReady: false, itinerarySchemaReady: false, expensesSchemaReady: false };
       if (env.DB) {
         try {
           const result = await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table'").all();
@@ -223,11 +223,12 @@ export default {
           database.shareSchemaReady = ["share_links","share_rate_limits"].every(name => tables.has(name));
           database.authSchemaReady = tables.has("auth_sessions");
           database.itinerarySchemaReady = tables.has("itinerary_items");
+          database.expensesSchemaReady = tables.has("travel_expenses");
         } catch {
           database.querySucceeded = false;
         }
       }
-      return json(request, { ok: true, service: "tabi-log-api", version: "1.6-itinerary", database });
+      return json(request, { ok: true, service: "tabi-log-api", version: "1.7-expenses", database });
     }
     if (path === "/api/auth/session" && request.method === "POST") return createAuthSession(request, env);
     if (path === "/api/auth/logout" && request.method === "POST") return logoutSession(request, env);
@@ -279,18 +280,23 @@ export default {
           sortOrder: row.sort_order, visited: Boolean(row.visited)
         });
       }
+      const expenseRows = await env.DB.prepare(
+        "SELECT id,trip_id,expense_date,category,amount,currency,note FROM travel_expenses WHERE user_id=? ORDER BY expense_date DESC,created_at DESC LIMIT 1000"
+      ).bind(user.id).all();
       const postRows = await env.DB.prepare(
         "SELECT id,trip_id,title,story,place_name,visibility,captured_at,created_at FROM posts WHERE user_id=? ORDER BY created_at DESC LIMIT 200"
       ).bind(user.id).all();
-      return json(request, { ok: true, trips: [...tripMap.values()], posts: postRows.results || [] });
+      return json(request, { ok: true, trips: [...tripMap.values()], posts: postRows.results || [], expenses: expenseRows.results || [] });
     }
     if (path === "/api/sync" && request.method === "POST") {
       const parsed = await readJson(request, 200000);
       if (parsed.error) return parsed.error;
       const tripInput = Array.isArray(parsed.data.trips) ? parsed.data.trips.slice(0, 100) : [];
       const postInput = Array.isArray(parsed.data.posts) ? parsed.data.posts.slice(0, 100) : [];
+      const expenseInput = Array.isArray(parsed.data.expenses) ? parsed.data.expenses.slice(0, 1000) : [];
       const normalizedTrips = [];
       const normalizedPosts = [];
+      const normalizedExpenses = [];
       for (const item of tripInput) {
         const id = cleanText(item?.id, 64);
         const title = cleanText(item?.title, 70);
@@ -356,6 +362,24 @@ export default {
         if (existing && existing.user_id !== user.id) return bad(request, "他のアカウントの日記は更新できません", 409);
         normalizedPosts.push({ id, title, story, place, visibility, tripId, capturedAt });
       }
+      const allowedExpenseCategories = new Set(["交通費","宿泊費","食費","観光費","買い物","その他"]);
+      for (const item of expenseInput) {
+        const id = cleanText(item?.id, 64);
+        const tripId = cleanText(item?.trip_id, 64);
+        const expenseDate = validDate(item?.expense_date);
+        const category = cleanText(item?.category, 20);
+        const amount = Number(item?.amount);
+        const currency = cleanText(item?.currency || "JPY", 3).toUpperCase();
+        const note = cleanText(item?.note, 300);
+        if (!id || !tripId || !expenseDate || expenseDate === undefined || !allowedExpenseCategories.has(category) ||
+            !Number.isSafeInteger(amount) || amount < 0 || amount > 100000000 || !/^[A-Z]{3}$/.test(currency)) {
+          return bad(request, "支出データの形式を確認してください");
+        }
+        const owned = ownedTripIds.has(tripId) || Boolean(await env.DB.prepare("SELECT id FROM trips WHERE id=? AND user_id=? AND source='native'").bind(tripId, user.id).first());
+        if (!owned) return bad(request, "支出に指定された旅行が見つかりません", 404);
+        normalizedExpenses.push({ id, tripId, expenseDate, category, amount, currency, note });
+      }
+      if (normalizedExpenses.length > 1000) return bad(request, "支出の件数が多すぎます", 413);
       const statements = [];
       for (const item of normalizedTrips) {
         statements.push(env.DB.prepare(
@@ -373,6 +397,12 @@ export default {
             "INSERT INTO itinerary_items(id,trip_id,day_date,name,start_time,end_time,note,sort_order,visited) VALUES(?,?,?,?,?,?,?,?,?)"
           ).bind(entry.id, item.id, entry.date, entry.name, entry.startTime, entry.endTime, entry.note, entry.sort, entry.visited ? 1 : 0));
         }
+        statements.push(env.DB.prepare("DELETE FROM travel_expenses WHERE trip_id=? AND user_id=?").bind(item.id, user.id));
+        for (const expense of normalizedExpenses.filter(entry => entry.tripId === item.id)) {
+          statements.push(env.DB.prepare(
+            "INSERT INTO travel_expenses(id,user_id,trip_id,expense_date,category,amount,currency,note) VALUES(?,?,?,?,?,?,?,?)"
+          ).bind(expense.id, user.id, expense.tripId, expense.expenseDate, expense.category, expense.amount, expense.currency, expense.note));
+        }
       }
       for (const item of normalizedPosts) {
         statements.push(env.DB.prepare(
@@ -380,7 +410,7 @@ export default {
         ).bind(item.id, user.id, item.tripId, item.title, item.story, item.place, item.visibility, item.capturedAt || null));
       }
       if (statements.length) await env.DB.batch(statements);
-      return json(request, { ok: true, tripsSaved: normalizedTrips.length, postsSaved: normalizedPosts.length });
+      return json(request, { ok: true, tripsSaved: normalizedTrips.length, postsSaved: normalizedPosts.length, expensesSaved: normalizedExpenses.length });
     }
     const postDeleteMatch = path.match(/^\/api\/posts\/([A-Za-z0-9_-]+)$/);
     if (postDeleteMatch && request.method === "DELETE") {
