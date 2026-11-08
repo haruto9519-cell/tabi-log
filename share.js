@@ -22,7 +22,7 @@ function drawShareCard(t){
  c.fillStyle="rgba(255,255,255,.08)";c.fillRect(790,70,340,490);
  c.fillStyle="#d7ad6c";c.font="bold 18px Arial,sans-serif";c.fillText("PLAN YOUR NEXT TRIP",830,130);
  c.fillStyle="#ffffff";c.font="bold 30px Arial,sans-serif";c.fillText("Aileron",830,180);
- c.fillStyle="#d8e3e8";c.font="18px Arial,sans-serif";c.fillText("tabi-hikaku.pages.dev",830,216);
+ c.fillStyle="#d8e3e8";c.font="18px Arial,sans-serif";c.fillText("aileron-japan-travel.pages.dev",830,216);
  c.fillStyle="#d7ad6c";c.font="bold 18px Arial,sans-serif";c.fillText("SAVE YOUR MEMORIES",830,315);
  c.fillStyle="#ffffff";c.font="bold 30px Arial,sans-serif";c.fillText("Tabi Log",830,365);
  c.fillStyle="#d8e3e8";c.font="18px Arial,sans-serif";c.fillText("tabi-log.pages.dev",830,401);
@@ -40,7 +40,7 @@ function setupShareTools(t){
   canvas.toBlob(blob=>{if(!blob)return;const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="tabi-log-share-card.png";a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);},"image/png");
  });
  host.querySelector("#copyShareCaption").addEventListener("click",async()=>{
-  const caption="こんな旅をしてきました。\n"+(t.title||"旅の記録")+"｜"+(t.area||"")+"\n\nこの旅のプランを作る： https://tabi-hikaku.pages.dev/\n旅の写真・記録を見る： "+location.href;
+  const caption="こんな旅をしてきました。\n"+(t.title||"旅の記録")+"｜"+(t.area||"")+"\n\nこの旅のプランを作る： https://aileron-japan-travel.pages.dev/\n旅の写真・記録を見る： "+location.href;
   try{await navigator.clipboard.writeText(caption);host.querySelector("#copyShareCaption").textContent="コピーしました";}catch{prompt("投稿文をコピーしてください",caption);}
  });
 }
@@ -71,7 +71,7 @@ async function load(){
    ((t.visited||[]).length?'<section class="share-section"><h2>訪れた場所</h2><div class="share-stops">'+t.visited.map(x=>'<span class="share-stop">✓ '+esc(x)+'</span>').join("")+'</div></section>':'')+
    renderSharedMap(t.locations||[]) +
    ((t.entries||[]).length?'<section class="share-section"><h2>旅の日記</h2>'+t.entries.map(x=>'<article class="share-entry"><small>'+esc(date(x.date))+' '+(x.place?'· '+esc(x.place):'')+'</small><h3>'+esc(x.title)+'</h3><p>'+esc(x.story)+'</p></article>').join("")+'</section>':'')+
-   '<section class="share-section share-service-links"><h2>この旅を参考に、次の旅へ</h2><a class="btn navy" href="https://tabi-hikaku.pages.dev/" target="_blank" rel="noopener">Aileronで旅行プランを作る</a> <a class="btn gold" href="https://tabi-log.pages.dev/" target="_blank" rel="noopener">Tabi Logで旅を記録する</a></section>';
+   '<section class="share-section share-service-links"><h2>この旅を参考に、次の旅へ</h2><a class="btn navy" href="https://aileron-japan-travel.pages.dev/" target="_blank" rel="noopener">Aileronで旅行プランを作る</a> <a class="btn gold" href="https://tabi-log.pages.dev/" target="_blank" rel="noopener">Tabi Logで旅を記録する</a></section>';
   setupShareTools(t);
   mountSharedMap(t.locations||[]);
  }catch(e){root.innerHTML='<div class="share-error">'+esc(e.message||"読み込みに失敗しました")+'</div>'}
