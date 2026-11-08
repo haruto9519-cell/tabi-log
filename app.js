@@ -131,13 +131,11 @@ async function syncCloudData(){
   for(const t of remoteTrips){
    const local=trips.find(item=>item.id===t.id);
    if(!local){trips.push(t);continue;}
-   const hasLocalCoordinates=Array.isArray(local.stopLocations)&&local.stopLocations.some(p=>
-    p?.latitude!==null&&p?.latitude!==undefined&&p?.latitude!==""&&
-    p?.longitude!==null&&p?.longitude!==undefined&&p?.longitude!==""&&
-    Number.isFinite(Number(p.latitude))&&Number.isFinite(Number(p.longitude))&&
-    Number(p.latitude)>=-90&&Number(p.latitude)<=90&&Number(p.longitude)>=-180&&Number(p.longitude)<=180
-   );
-   if(!hasLocalCoordinates&&Array.isArray(t.stopLocations)&&t.stopLocations.length)local.stopLocations=t.stopLocations;
+   const validLocation=point=>Boolean(point?.name&&point.latitude!==null&&point.latitude!==undefined&&point.latitude!==""&&point.longitude!==null&&point.longitude!==undefined&&point.longitude!==""&&Number.isFinite(Number(point.latitude))&&Number(point.latitude)>=-90&&Number(point.latitude)<=90&&Number.isFinite(Number(point.longitude))&&Number(point.longitude)>=-180&&Number(point.longitude)<=180);
+   const mergedLocations=new Map();
+   for(const point of (Array.isArray(t.stopLocations)?t.stopLocations:[]))if(validLocation(point))mergedLocations.set(String(point.name).trim(),point);
+   for(const point of (Array.isArray(local.stopLocations)?local.stopLocations:[]))if(validLocation(point)&&!mergedLocations.has(String(point.name).trim()))mergedLocations.set(String(point.name).trim(),point);
+   if(mergedLocations.size)local.stopLocations=[...mergedLocations.values()];
    if((!Array.isArray(local.stops)||!local.stops.length)&&t.stops?.length)local.stops=t.stops;
    if((!Array.isArray(local.actual)||!local.actual.length)&&t.actual?.length)local.actual=t.actual;
    if((!Array.isArray(local.dayPlans)||!local.dayPlans.length)&&t.dayPlans?.length)local.dayPlans=t.dayPlans;
