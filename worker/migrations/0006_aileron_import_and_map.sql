@@ -1,5 +1,4 @@
-ALTER TABLE trip_stops ADD COLUMN latitude REAL;
-ALTER TABLE trip_stops ADD COLUMN longitude REAL;
+-- trip_stops already has latitude/longitude in 0001_init.sql.
 ALTER TABLE trip_stops ADD COLUMN external_place_id TEXT;
 
 CREATE TABLE IF NOT EXISTS plan_imports (
