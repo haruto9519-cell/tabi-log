@@ -143,7 +143,20 @@ export default {
     const url = new URL(request.url);
     const path = url.pathname;
     if (request.method === "OPTIONS") return new Response(null, { headers: cors(request) });
-    if (path === "/api/health" && request.method === "GET") return json(request, { ok: true, service: "tabi-log-api", version: "1.1-share-links" });
+    if (path === "/api/health" && request.method === "GET") {
+      const database = { configured: Boolean(env.DB), coreSchemaReady: false, shareSchemaReady: false };
+      if (env.DB) {
+        try {
+          const result = await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table'").all();
+          const tables = new Set((result.results || []).map(row => row.name));
+          database.coreSchemaReady = ["users","trips","trip_stops","posts","likes","comments","follows","saved_trips","reports","blocks"].every(name => tables.has(name));
+          database.shareSchemaReady = ["share_links","share_rate_limits"].every(name => tables.has(name));
+        } catch {
+          database.querySucceeded = false;
+        }
+      }
+      return json(request, { ok: true, service: "tabi-log-api", version: "1.2-schema-health", database });
+    }
     if (path === "/api/shares" && request.method === "POST") return createShare(request, env);
     const shareMatch = path.match(/^\/api\/shares\/([A-Za-z0-9_-]+)$/);
     if (shareMatch && request.method === "GET") return readShare(request, env, shareMatch[1]);
