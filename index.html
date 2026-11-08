@@ -91,6 +91,16 @@
  <input type="hidden" name="category" value="旅の記録"><input type="hidden" name="visibility" value="private">
  <button class="btn navy full" type="submit">記録を保存</button>
 </form></dialog>
+<dialog id="diaryEditDialog"><form id="diaryEditForm">
+ <div class="dialog-title"><div><span class="kicker">EDIT MEMORY</span><h3>日記を編集</h3></div><button type="button" class="close" data-close="diaryEditDialog">×</button></div>
+ <input type="hidden" name="id">
+ <label>タイトル<input name="title" required maxlength="70"></label>
+ <div class="two-fields"><label>場所<input name="place" required maxlength="80"></label><label>日時<input name="capturedAt" type="datetime-local"></label></div>
+ <label>思い出・日記<textarea name="story" required maxlength="2000"></textarea></label>
+ <label>公開設定<select name="visibility"><option value="private">自分のみ</option><option value="public">公開</option></select></label>
+ <p class="hint">写真・動画は現在の端末内のデータを維持します。文章の変更はログイン中にクラウドへ同期されます。</p>
+ <button class="btn navy full" type="submit">変更を保存</button>
+</form></dialog>
 <dialog id="profileDialog"><form id="profileForm"><div class="dialog-title"><div><span class="kicker">PROFILE</span><h3>プロフィール編集</h3></div><button type="button" class="close" data-close="profileDialog">×</button></div><label>表示名<input name="name" maxlength="30" required></label><label>自己紹介<textarea name="bio" maxlength="140"></textarea></label><button class="btn navy full" type="submit">保存</button></form></dialog>
 <dialog id="privacyDialog"><div class="dialog-inner"><div class="dialog-title"><div><span class="kicker">PRIVACY</span><h3>プライバシーと共有</h3></div><button class="close" data-close="privacyDialog">×</button></div><p>旅ログでは、旅行記録を自分だけで管理することを基本にします。</p><ul><li>旅行・日記は自分のみを初期設定にします</li><li>共有は旅行ごとに専用URLを発行した場合のみ行います</li><li>共有URLは知っている人が閲覧できるリンクとして扱います</li><li>正確な位置情報の自動取得・公開は行いません</li></ul><button class="btn navy full" data-close="privacyDialog">確認</button></div></dialog>
 <!-- 旧データ互換用。SNS画面としては表示しません。 -->
