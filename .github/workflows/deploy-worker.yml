@@ -1,13 +1,12 @@
-name: Deploy Tabi Log Worker
+name: Inspect Tabi Log D1 schema
 on:
   push:
     branches: [main]
     paths:
-      - "worker/**"
       - ".github/workflows/deploy-worker.yml"
   workflow_dispatch:
 jobs:
-  deploy:
+  inspect:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -20,34 +19,5 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Check Worker syntax
-        run: node --check src/index.js
-      - name: Check Cloudflare credentials
-        run: |
-          test -n "$CLOUDFLARE_API_TOKEN" || { echo "::error::GitHub Actions secret CLOUDFLARE_API_TOKEN is not set"; exit 1; }
-          test -n "$CLOUDFLARE_ACCOUNT_ID" || { echo "::error::GitHub Actions secret CLOUDFLARE_ACCOUNT_ID is not set"; exit 1; }
-      - name: Apply pending D1 migrations
-        run: npx --yes wrangler@4 d1 migrations apply tabi-log-db --remote --config wrangler.toml
-      - name: Deploy Worker
-        run: npx --yes wrangler@4 deploy --config wrangler.toml
-      - name: Verify deployed Worker and D1 schema
-        run: |
-          for attempt in $(seq 1 12); do
-            response="$(curl -fsS https://tabi-log.haruto-9519.workers.dev/api/health || true)"
-            echo "$response"
-            if echo "$response" | grep -q '"version":"1.9-coordinate-preservation"' &&
-               echo "$response" | grep -q '"configured":true' &&
-               echo "$response" | grep -q '"coreSchemaReady":true' &&
-               echo "$response" | grep -q '"shareSchemaReady":true' &&
-               echo "$response" | grep -q '"authSchemaReady":true' &&
-               echo "$response" | grep -q '"itinerarySchemaReady":true' &&
-               echo "$response" | grep -q '"expensesSchemaReady":true' &&
-               echo "$response" | grep -q '"planImportsSchemaReady":true' &&
-               echo "$response" | grep -q '"stopCoordinatesSchemaReady":true'; then
-              echo "Worker and D1 schema verified"
-              exit 0
-            fi
-            sleep 5
-          done
-          echo "::error::Worker or D1 schema verification failed"
-          exit 1
+      - name: Inspect existing trips and stop columns
+        run: npx --yes wrangler@4 d1 execute tabi-log-db --remote --config wrangler.toml --command "PRAGMA table_info(trips); PRAGMA table_info(trip_stops);"
