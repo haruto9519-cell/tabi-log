@@ -189,3 +189,38 @@
 - 保存時は既存の `save()` を通じてローカル保存し、ログイン中は既存 `/api/sync` によりクラウドへ同期。
 - 編集ダイアログとイベント処理を追加。JavaScript構文検査・編集UI参照の静的検査はOK。
 - GitHub反映済み。Cloudflare Pages公開後の実機操作と別ブラウザ同期は未検証。
+
+
+## 10. 日別旅程管理の実装（2026-11-08）
+
+### 実装内容
+- 旅行に開始日・終了日を登録できるようにした。
+- 旅行カードに「日程を管理」を追加。
+- 日付単位で予定を追加・編集・削除できる。
+- 予定ごとに名称、開始時刻、終了時刻、メモ、訪問済み状態を管理。
+- 時刻順に表示し、訪問済み／未訪問を切り替えられる。
+- 旅行期間外の日程を追加できないようにし、終了時刻が開始時刻より前の場合も拒否。
+- 日程はD1の `itinerary_items` テーブルに保存し、既存の認証付き `/api/sync` でユーザー単位に同期する。
+- 旅行削除時は外部キーのカスケード削除で日程も削除する設計。
+
+### 追加ファイル・コミット
+- D1 migration: `worker/migrations/0004_itinerary_items.sql`
+- migration commit: `a7f087762508871999d7759951d95dbdb7a51488`
+- Worker sync: `dd72c8558093b1cefaa63db28757203c5ec8ad32`
+- HTML dialog: `ccecd853977db7c5bc767a13b4fd6698f60c8226`
+- app sync model: `84b6e9d53db5f8a4fc07f7dc2630d19046f75cdb`
+- itinerary UI/CRUD: `8b4875e159d19f408ebffdc0c3312e90baf8b323`
+- itinerary styling: `7d5f954cd268687d539803fbb57c5b79b92ab067`
+- date validation / cross-day edit fix: `c5333e914ebb1c6924231173a4536391199345d0`
+
+### 検査
+- app.js 構文検査: OK
+- Worker module 構文検査: OK
+- itinerary dialogの必須DOM ID: 不足なし
+- Worker GET/POST同期処理とDB保存SQL: コード上で確認済み
+
+### 未完了
+- Cloudflare D1へ `0004_itinerary_items.sql` を適用する必要がある。
+- Workerの新バージョンをデプロイし、healthで `itinerarySchemaReady: true` を確認する必要がある。
+- Pages本番環境で日程の追加・編集・削除・再読み込み・別ブラウザ同期を実機検証する必要がある。
+- 手動の順序変更ボタンは未実装。現在は開始時刻順で自動表示する。
