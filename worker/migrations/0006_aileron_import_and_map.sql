@@ -1,6 +1,5 @@
--- trip_stops already has latitude/longitude in 0001_init.sql.
-ALTER TABLE trip_stops ADD COLUMN external_place_id TEXT;
-
+-- latitude, longitude, and external_place_id already exist in the deployed trip_stops table.
+-- Create only the Aileron import-token table in this migration.
 CREATE TABLE IF NOT EXISTS plan_imports (
   id TEXT PRIMARY KEY,
   token_hash TEXT NOT NULL UNIQUE,
