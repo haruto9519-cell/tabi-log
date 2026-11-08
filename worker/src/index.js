@@ -527,8 +527,16 @@ export default {
     }
     const tripDeleteMatch = path.match(/^\/api\/trips\/([A-Za-z0-9_-]+)$/);
     if (tripDeleteMatch && request.method === "DELETE") {
-      const result = await env.DB.prepare("DELETE FROM trips WHERE id=? AND user_id=? AND source='native'").bind(tripDeleteMatch[1], user.id).run();
-      return json(request, { ok: true, deleted: Boolean(result.meta?.changes) });
+      const tripId = tripDeleteMatch[1];
+      const ownedTrip = await env.DB.prepare("SELECT id FROM trips WHERE id=? AND user_id=?").bind(tripId, user.id).first();
+      if (!ownedTrip) return bad(request, "削除できる旅程が見つかりません", 404);
+      await env.DB.batch([
+        env.DB.prepare("DELETE FROM itinerary_items WHERE trip_id=?").bind(tripId),
+        env.DB.prepare("DELETE FROM travel_expenses WHERE trip_id=? AND user_id=?").bind(tripId, user.id),
+        env.DB.prepare("DELETE FROM trip_stops WHERE trip_id=?").bind(tripId),
+        env.DB.prepare("DELETE FROM trips WHERE id=? AND user_id=?").bind(tripId, user.id)
+      ]);
+      return json(request, { ok: true, deleted: true });
     }
     if (path === "/api/trips" && request.method === "GET") {
       const result = await env.DB.prepare("SELECT id,title,area,description,visibility,start_date,end_date,source,created_at,updated_at FROM trips WHERE user_id=? ORDER BY created_at DESC LIMIT 100").bind(user.id).all();
