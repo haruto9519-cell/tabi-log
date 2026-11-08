@@ -10,7 +10,7 @@ const cors = (request) => {
 };
 const json = (request, data, status = 200, extra = {}) => new Response(JSON.stringify(data), {
   status,
-  headers: { "content-type": "application/json; charset=utf-8", "x-content-type-options": "nosniff", ...cors(request), ...extra }
+  headers: { "content-type": "application/json; charset=utf-8", "x-content-type-options": "nosniff", "cache-control": "no-store", ...cors(request), ...extra }
 });
 const bad = (request, error, status = 400) => json(request, { ok: false, error }, status);
 const uuid = () => crypto.randomUUID();
