@@ -10,7 +10,7 @@
 <body>
 <header class="topbar">
  <a class="brand" href="#home"><span class="brand-icon">旅</span><span>旅ログ</span></a>
- <nav><a href="#mytrips">旅行一覧</a><a href="#diary">日記・思い出</a><a href="#mypage">マイページ</a></nav>
+ <nav><a href="#mytrips">マイ旅行</a><a href="#diary">思い出</a><a href="#mypage">プロフィール</a></nav>
  <div class="auth-area"><div id="googleLogin"></div><div id="authStatus" aria-live="polite"></div></div>
  <div class="header-actions"><button class="btn ghost" id="openTrip">Aileronからプランを取り込む</button><button class="btn gold" id="openPost">＋ 思い出を記録</button></div>
 </header>
@@ -28,8 +28,8 @@
  <div class="hero-content">
   <span class="kicker">YOUR PERSONAL TRAVEL JOURNAL</span>
   <h1>自分の旅を、<br><em>ひとつに。</em></h1>
-  <p>旅程も、訪れた場所も、写真も、日記も。<br>旅の前から旅のあとまで、ひとつの場所に残そう。</p>
-  <div class="hero-buttons"><a class="btn gold" href="#mytrips">旅行を整理する</a><button class="btn outline-light" id="heroTrip">Aileronで旅行プランを作る</button></div>
+  <p>Aileronで作った旅行プランに、訪れた場所・写真・動画・思い出を重ねて、旅の記録として残そう。</p>
+  <div class="hero-buttons"><a class="btn gold" href="#mytrips">旅行を整理する</a><button class="btn outline-light" id="heroTrip">Aileronでプランを作る</button></div>
   <div class="hero-note"><span>01 計画する</span><i></i><span>02 記録する</span><i></i><span>03 振り返る・共有する</span></div>
  </div>
  <div class="hero-visual">
@@ -61,7 +61,7 @@
  <div class="section-heading"><div><span class="kicker">MY TRAVEL DIARY</span><h2>旅の思い出を振り返る。</h2><p>写真・場所・その日の気持ちを、時系列で残そう。</p></div><button class="btn navy" id="openDiaryEntry" type="button">＋ 日記を追加</button></div>
  <div id="diaryTimeline" class="timeline"></div>
 </section>
-<section id="expenses" class="section muted-section">
+<section id="expenses" class="section muted-section" hidden>
  <div class="section-heading"><div><span class="kicker">TRAVEL BUDGET</span><h2>旅の予算と支出を管理する。</h2><p>旅行ごとの予算、費目別の支出、予算との差額を確認できます。</p></div><button class="btn navy" id="openExpense" type="button">＋ 支出を記録</button></div>
  <div id="expenseSummary" class="expense-summary"></div>
  <div id="expenseList" class="expense-list"></div>
@@ -83,7 +83,7 @@
  <label>メモ（任意）<input name="note" maxlength="300" placeholder="例：新幹線・往復"></label>
  <button class="btn navy full" type="submit">支出を保存</button>
 </form></dialog>
-<dialog id="tripDialog"><form id="tripForm">
+<dialog id="tripDialog" hidden><form id="tripForm">
  <div class="dialog-title"><div><span class="kicker">NEW JOURNEY</span><h3>旅行をつくる</h3></div><button type="button" class="close" data-close="tripDialog">×</button></div>
  <label>旅行のタイトル<input name="title" required maxlength="70" placeholder="例：京都・奈良 2泊3日"></label>
  <div class="two-fields"><label>エリア・目的地<input name="area" required maxlength="60" placeholder="京都・奈良"></label><label>開始日<input name="date" type="date"></label></div>
@@ -94,7 +94,7 @@
  <p class="hint">ログイン中は旅行データをクラウドにも同期します。写真・動画は端末内に保存されます。</p>
  <button class="btn navy full" type="submit">旅行を作成</button>
 </form></dialog>
-<dialog id="itineraryDialog"><form id="itineraryForm">
+<dialog id="itineraryDialog" hidden><form id="itineraryForm">
  <div class="dialog-title"><div><span class="kicker">DAY BY DAY PLAN</span><h3 id="itineraryHeading">旅行の日程</h3></div><button type="button" class="close" data-close="itineraryDialog">×</button></div>
  <input type="hidden" name="tripId">
  <input type="hidden" name="itemId">
@@ -106,7 +106,7 @@
  <div class="itinerary-list-heading"><b>この旅行の日程</b><span id="itineraryCount">0件</span></div>
  <div id="itineraryItems" class="itinerary-items"></div>
 </form></dialog>
-<dialog id="tripEditDialog"><form id="tripEditForm">
+<dialog id="tripEditDialog" hidden><form id="tripEditForm">
  <div class="dialog-title"><div><span class="kicker">EDIT JOURNEY</span><h3>旅行を編集</h3></div><button type="button" class="close" data-close="tripEditDialog">×</button></div>
  <input type="hidden" name="id">
  <label>旅行のタイトル<input name="title" required maxlength="70"></label>
