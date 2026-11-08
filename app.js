@@ -108,8 +108,7 @@ async function syncCloudData(){
    id:t.id,title:t.title,area:t.area,date:t.start_date||"",endDate:t.end_date||"",
    description:t.description||"",visibility:t.visibility||"private",
    stops:Array.isArray(t.stops)?t.stops:[],actual:Array.isArray(t.actual)?t.actual:[],
-    dayPlans:Array.isArray(t.dayPlans)?t.dayPlans.map(day=>({date:day.date,items:(day.items||[]).map((item,index)=>({id:item.id||uid(),name:item.name,startTime:item.startTime||"",endTime:item.endTime||"",note:item.note||"",sortOrder:Number.isInteger(item.sortOrder)?item.sortOrder:index,visited:Boolean(item.visited)}))})):[],
-   dayPlans:Array.isArray(t.dayPlans)?t.dayPlans:[],
+   dayPlans:Array.isArray(t.dayPlans)?t.dayPlans.map(day=>({date:day.date,items:(day.items||[]).map((item,index)=>({id:item.id||uid(),name:item.name,startTime:item.startTime||"",endTime:item.endTime||"",note:item.note||"",sortOrder:Number.isInteger(item.sortOrder)?item.sortOrder:index,visited:Boolean(item.visited)}))})):[],
    isMine:true,owner:"me",source:"native"
   }));
   const remotePosts=(remote.posts||[]).map(p=>({
@@ -129,7 +128,15 @@ async function syncCloudData(){
    trips:trips.filter(t=>t.isMine||t.source==="native").slice(0,100).map(t=>({
     id:t.id,title:t.title,area:t.area,description:t.description||"",
     visibility:t.visibility||"private",start_date:t.date||"",end_date:t.endDate||"",
-    stops:Array.isArray(t.stops)?t.stops:[],actual:Array.isArray(t.actual)?t.actual:[]
+    stops:Array.isArray(t.stops)?t.stops:[],actual:Array.isArray(t.actual)?t.actual:[],
+    dayPlans:Array.isArray(t.dayPlans)?t.dayPlans.map(day=>({
+     date:day.date,
+     items:(day.items||[]).map((item,index)=>({
+      id:item.id,name:item.name,startTime:item.startTime||"",endTime:item.endTime||"",
+      note:item.note||"",sortOrder:Number.isInteger(item.sortOrder)?item.sortOrder:index,
+      visited:Boolean(item.visited)
+     }))
+    })): []
    })),
    posts:posts.filter(p=>p.author===profile.name).slice(0,100).map(p=>({
     id:p.id,trip_id:p.tripId||null,title:p.title,story:p.story,place_name:p.place,
