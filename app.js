@@ -75,7 +75,7 @@ async function logoutFromApp(){
  sessionToken="";
  signedInUser=null;
  activeAccountStorageId=null;
- posts=seedPosts;trips=seedTrips;expenses=[];saved=[];following=[];blocked=[];
+ posts=[];trips=[];expenses=[];saved=[];following=[];blocked=[];
  profile={name:"旅好きユーザー",bio:"旅の記録を、少しずつ。"};shareRecords={};selectedTrip=null;
  sessionStorage.removeItem(SESSION_KEY);
  if(window.google?.accounts?.id)window.google.accounts.id.disableAutoSelect();
@@ -128,8 +128,8 @@ function activateAccountStorage(user){
   for(const key of keys){
    try{
     const raw=localStorage.getItem(accountStorageKey(userId,key));
-    loaded[key]=raw===null?LOCAL_STATE_DEFAULTS[key]:JSON.parse(raw);
-   }catch{loaded[key]=LOCAL_STATE_DEFAULTS[key];}
+    loaded[key]=raw===null?JSON.parse(JSON.stringify(LOCAL_STATE_DEFAULTS[key])):JSON.parse(raw);
+   }catch{loaded[key]=JSON.parse(JSON.stringify(LOCAL_STATE_DEFAULTS[key]));}
   }
   posts=loaded.posts;trips=loaded.trips;expenses=loaded.expenses;saved=loaded.saved;
   following=loaded.following;blocked=loaded.blocked;profile=loaded.profile;shareRecords=loaded.shares;
