@@ -154,3 +154,6 @@ input:focus,textarea:focus,select:focus{outline:2px solid #d7b77f55;border-color
 .import-google-login{display:flex;justify-content:center;min-height:42px;margin:0 auto 10px}
 .import-auth-card small{font-size:10px;color:#82909a}
 @media(max-width:540px){.import-auth-notice{padding:18px 12px}.import-auth-card{padding:23px 16px}}
+
+/* Photo confirmation and deletion controls */
+.map-pin-photo-item{display:inline-flex;flex-direction:column;gap:5px;vertical-align:top;margin:4px}.map-pin-photos img{display:block;max-width:112px;max-height:92px;object-fit:cover;border-radius:7px}.map-pin-photo-delete{border:1px solid #ead5d5;background:#fff7f7;color:#a34d4d;border-radius:6px;padding:6px 8px;font:inherit;font-size:10px;font-weight:700;cursor:pointer}.map-pin-photo-delete:disabled{opacity:.5;cursor:wait}#toast.show{animation:tabi-toast-pop .32s ease-out}@keyframes tabi-toast-pop{0%{opacity:0;transform:translate(-50%,18px) scale(.96)}70%{transform:translate(-50%,-2px) scale(1.01)}100%{opacity:1;transform:translate(-50%,0) scale(1)}}
