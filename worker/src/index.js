@@ -49,13 +49,20 @@ function cleanShare(input) {
     description: cleanText(input.description, 500),
     stops: cleanList(input.stops, 30, 100),
     visited: cleanList(input.visited, 30, 100),
+    locations: Array.isArray(input.locations) ? input.locations.slice(0, 30).map(x => ({
+      name: cleanText(x?.name, 100),
+      latitude: Number(x?.latitude),
+      longitude: Number(x?.longitude)
+    })).filter(x => x.name && Number.isFinite(x.latitude) && x.latitude >= -90 && x.latitude <= 90 && Number.isFinite(x.longitude) && x.longitude >= -180 && x.longitude <= 180) : [],
     entries: Array.isArray(input.entries) ? input.entries.slice(0, 40).map(x => ({
       title: cleanText(x?.title, 80),
       place: cleanText(x?.place, 100),
       story: cleanText(x?.story, 600),
       date: cleanText(x?.date, 30)
     })).filter(x => x.title || x.place || x.story) : [],
-    author: cleanText(input.author, 40)
+    author: cleanText(input.author, 40),
+    aileronUrl: "https://tabi-hikaku.pages.dev/",
+    tabiLogUrl: "https://tabi-log.pages.dev/"
   };
   if (!trip.title || !trip.area) return null;
   return trip;
