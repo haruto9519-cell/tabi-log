@@ -32,7 +32,7 @@ Aileronとは独立した、旅行計画・旅の記録・共有リンクのテ�
 - 公開範囲、フォロー、いいね、コメント、通報などの一部UIはブラウザ内デモであり、ユーザー間の実通信・運営への通報送信は未接続です。
 - ルート表示はサンプル画像であり、実地図・GPS・経路検索とは未接続です。
 - Google Identity Servicesのログイン画面とWorker側のIDトークン署名・audience・issuer・有効期限検証を実装済み。実環境へのデプロイとログイン動作確認は未完了です。
-- ログインは本人確認の初期段階です。旅程・投稿のサーバー同期、公開フィード、ユーザー間権限管理、写真/動画のサーバー保存は未実装です。
+- ログインと期限付きセッション管理は実装段階。旅程・投稿のサーバー同期、公開フィード、ユーザー間権限管理、写真/動画のサーバー保存は未実装です。
 
 ## Cloudflare構成
 
@@ -40,7 +40,7 @@ Aileronとは独立した、旅行計画・旅の記録・共有リンクのテ�
 - Worker: `tabi-log.haruto-9519.workers.dev`
 - D1: `tabi-log-db`
 - D1 binding: `DB`
-- D1 migrations: `worker/migrations/0001_init.sql`, `worker/migrations/0002_share_links.sql`
+- D1 migrations: `worker/migrations/0001_init.sql`, `worker/migrations/0002_share_links.sql`, `worker/migrations/0003_auth_sessions.sql`
 - Worker設定: `worker/wrangler.toml`
 
 ## 本格公開前に必要な作業
