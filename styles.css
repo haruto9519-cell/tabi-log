@@ -7,3 +7,69 @@ dialog{border:0;padding:0;border-radius:14px;width:min(520px,calc(100% - 26px));
 .auth-area{display:flex;align-items:center;gap:8px;min-width:170px;justify-content:flex-end}.auth-area iframe{max-width:210px}.auth-name{font-size:10px;color:var(--navy);font-weight:700}.auth-signout{border:1px solid var(--line);background:#fff;color:var(--navy);border-radius:7px;padding:7px 9px;font-size:10px;cursor:pointer}.auth-loading{font-size:9px;color:var(--muted)}
 @media(max-width:850px){.auth-area{min-width:0}.auth-area iframe{max-width:180px}}
 @media(max-width:540px){.topbar{gap:8px}.auth-area{max-width:145px}.auth-area iframe{max-width:145px}.auth-name{max-width:65px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.header-actions{gap:5px}}
+
+
+/* Tabi Log premium travel journal UI refresh */
+:root{--paper:#f7f8f8;--line:#e7e9e8;--gold:#c7a36b;--navy:#142b40;--navy2:#203f55;--ink:#263846;--muted:#82909a}
+body{background:#f7f8f8;color:#263846;letter-spacing:.01em}
+.topbar{height:76px;padding:0 clamp(20px,5vw,76px);gap:34px;box-shadow:0 2px 14px #172b3a08}
+.brand{font-size:18px;letter-spacing:.12em}
+.brand-icon{border-radius:50%;width:36px;height:36px;background:#142b40;color:#d7b77f}
+nav{gap:30px}
+nav a{font-size:11px;font-weight:600;transition:color .2s}
+nav a:hover{color:#b18a50}
+.btn{border-radius:6px;padding:12px 17px;font-size:11px;letter-spacing:.02em}
+.gold{background:#d7b77f;color:#172d40}
+.navy{background:#142b40}
+.hero{min-height:440px;padding:58px clamp(24px,7vw,104px);background:linear-gradient(115deg,#142b40 0%,#1c3c53 62%,#24465b 100%)}
+.hero h1{font-size:clamp(42px,4.7vw,60px);font-weight:600;letter-spacing:.055em}
+.hero-content>p{font-size:12px;line-height:2.15;color:#d2dce1}
+.hero-visual{height:320px;background:radial-gradient(ellipse at center,#34566b,#1a394f 67%,transparent 68%)}
+.floating-photo{width:154px;border-radius:4px;padding:7px 7px 11px;box-shadow:0 16px 38px #06142155}
+.photo-art{height:100px}
+.quick-stats{gap:clamp(24px,6vw,90px);padding:24px 20px;background:#fff}
+.quick-stats b{font-size:25px;font-weight:600}
+.section{padding:66px clamp(20px,6vw,88px)}
+.section-heading{margin-bottom:28px}
+.section-heading h2{font-size:25px;font-weight:600;letter-spacing:.04em}
+.section-heading p{font-size:11px;line-height:1.9}
+.muted-section{background:#f0f3f3}
+.planner-layout{grid-template-columns:minmax(300px,.9fr) minmax(360px,1.1fr);gap:20px}
+.trip-column,.map-card{border:1px solid #e8ebea;border-radius:8px;padding:20px;box-shadow:0 5px 20px #1b354408}
+.trip-card{border-radius:6px;padding:16px;border-color:#e9eceb;transition:.2s}
+.trip-card:hover{border-color:#c7a36b;box-shadow:0 7px 20px #172b3a0b}
+.trip-card.selected{border-color:#c7a36b;background:#fffdf9}
+.trip-card h3{font-size:13px;font-weight:700}
+.map-header b{font-size:13px}
+.route-map{border-radius:5px}
+.map-pill{background:#f5f2ec;color:#a17e4b}
+.diary-section{background:#fbfcfc}
+.timeline{max-width:920px}
+.timeline-card{border-radius:7px;border-color:#e9eceb;padding:16px;box-shadow:0 4px 18px #172b3a06}
+.timeline-thumb{border-radius:4px}
+.timeline-card h3{font-size:13px}
+.timeline-card p{font-size:10px;line-height:1.9}
+.profile-section{background:#f0f3f3}
+.profile-banner,.settings-row{border-radius:7px;border-color:#e7ebea;box-shadow:0 4px 18px #172b3a06}
+.profile-avatar{border-radius:50%;background:#142b40;color:#d7b77f}
+footer{padding:26px clamp(20px,6vw,88px);background:#142b40}
+dialog{border-radius:9px}
+dialog form,.dialog-inner{padding:28px}
+input,textarea,select{border-radius:5px;border-color:#dfe5e6;padding:11px 12px}
+input:focus,textarea:focus,select:focus{outline:2px solid #d7b77f55;border-color:#c7a36b}
+#toast{border-radius:5px}
+@media(max-width:850px){
+ .topbar{height:68px;padding:0 16px;gap:12px}
+ .planner-layout{grid-template-columns:1fr}
+ .hero{padding:46px 24px}
+ .section{padding:48px 18px}
+}
+@media(max-width:540px){
+ .topbar{height:62px}
+ .hero h1{font-size:41px}
+ .hero-visual{height:210px}
+ .section-heading h2{font-size:21px}
+ .quick-stats{gap:18px}
+ .trip-column,.map-card{padding:14px}
+ .timeline-card{padding:10px}
+}
