@@ -1,0 +1,16 @@
+const json=(data,status=200)=>new Response(JSON.stringify(data),{status,headers:{"content-type":"application/json; charset=utf-8","access-control-allow-origin":"*","access-control-allow-methods":"GET,POST,OPTIONS","access-control-allow-headers":"content-type,authorization"}});
+const bad=(error,status=400)=>json({ok:false,error},status);
+const uuid=()=>crypto.randomUUID();
+async function userFrom(request,env){if(!env.AUTH_VALIDATE_URL)return null;const auth=request.headers.get("authorization");if(!auth)return null;const r=await fetch(env.AUTH_VALIDATE_URL,{headers:{authorization:auth}});if(!r.ok)return null;const d=await r.json();return d?.sub?{id:d.sub,name:d.name||"Traveler"}:null;}
+export default {async fetch(request,env){
+ const u=new URL(request.url),p=u.pathname;
+ if(request.method==="OPTIONS")return new Response(null,{headers:{"access-control-allow-origin":"*","access-control-allow-methods":"GET,POST,OPTIONS","access-control-allow-headers":"content-type,authorization"}});
+ if(p==="/api/health")return json({ok:true,service:"tabi-log-api",version:"1.0-test"});
+ if(p==="/api/feed"&&request.method==="GET"){const r=await env.DB.prepare("SELECT p.id,p.title,p.story,p.place_name,p.media_type,p.created_at,u.display_name FROM posts p JOIN users u ON u.id=p.user_id WHERE p.visibility='public' ORDER BY p.created_at DESC LIMIT 40").all();return json({ok:true,items:r.results||[]});}
+ const user=await userFrom(request,env);if(!user)return bad("ログイン機能が未接続です。認証プロバイダーを設定してください。",401);
+ await env.DB.prepare("INSERT OR IGNORE INTO users(id,display_name) VALUES(?,?)").bind(user.id,user.name).run();
+ if(p==="/api/trips"&&request.method==="POST"){const b=await request.json();if(!b.title||!b.area)return bad("title と area は必須です");const id=uuid();await env.DB.prepare("INSERT INTO trips(id,user_id,title,area,description,visibility,source,external_plan_id) VALUES(?,?,?,?,?,?,?,?)").bind(id,user.id,b.title,b.area,b.description||"",b.visibility||"private",b.source||"native",b.external_plan_id||null).run();return json({ok:true,id},201);}
+ if(p==="/api/posts"&&request.method==="POST"){const b=await request.json();if(!b.title||!b.story||!b.place_name)return bad("title、story、place_name は必須です");const id=uuid();await env.DB.prepare("INSERT INTO posts(id,user_id,trip_id,title,story,place_name,media_key,media_type,visibility,latitude,longitude,location_precision) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)").bind(id,user.id,b.trip_id||null,b.title,b.story,b.place_name,b.media_key||null,b.media_type||null,b.visibility||"private",null,null,"hidden").run();return json({ok:true,id},201);}
+ if(p==="/api/aileron/import"&&request.method==="POST"){if(env.AILERON_IMPORT_ENABLED!=="true")return bad("Aileron連携は現在無効です",403);const b=await request.json();if(!b.external_plan_id||!b.title||!b.area)return bad("external_plan_id、title、area は必須です");const old=await env.DB.prepare("SELECT id FROM trips WHERE source='aileron' AND external_plan_id=?").bind(b.external_plan_id).first();if(old)return json({ok:true,id:old.id,duplicate:true});const id=uuid();await env.DB.prepare("INSERT INTO trips(id,user_id,title,area,description,visibility,source,external_plan_id) VALUES(?,?,?,?,?,'private','aileron',?)").bind(id,user.id,b.title,b.area,b.description||"",b.external_plan_id).run();return json({ok:true,id,duplicate:false},201);}
+ return bad("Not found",404);
+}};
