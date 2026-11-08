@@ -6,14 +6,15 @@ async function mediaGet(key){const db=await openMediaDB();return new Promise((re
 const uid=()=>crypto.randomUUID();
 const API_BASE=(window.TABI_LOG_API_BASE||"").replace(/\/$/,"");
 const GOOGLE_CLIENT_ID=window.TABI_LOG_GOOGLE_CLIENT_ID||"";
-let googleIdToken=null, signedInUser=null;
+const SESSION_KEY="tabiLogSession";
+let sessionToken=sessionStorage.getItem(SESSION_KEY)||"", signedInUser=null, googleInitialized=false;
 function renderAuth(){
  const host=$("#googleLogin"),status=$("#authStatus");
  if(!host||!status)return;
  host.innerHTML="";
  if(signedInUser){
   status.innerHTML='<span class="auth-name">'+esc(signedInUser.name||"Googleユーザー")+'</span> <button type="button" class="auth-signout" id="googleSignOut">ログアウト</button>';
-  $("#googleSignOut").onclick=()=>{googleIdToken=null;signedInUser=null;if(window.google?.accounts?.id)window.google.accounts.id.disableAutoSelect();renderAuth();toast("ログアウトしました");};
+  $("#googleSignOut").onclick=logoutFromApp;
   return;
  }
  status.textContent="";
@@ -23,27 +24,58 @@ function renderAuth(){
   host.innerHTML='<span class="auth-loading">Googleログインを読み込み中…</span>';
  }
 }
+async function restoreSession(){
+ if(!sessionToken){renderAuth();return;}
+ try{
+  const res=await fetch(API_BASE+"/api/me",{headers:{authorization:"Bearer "+sessionToken}});
+  const data=await res.json();
+  if(!res.ok||!data.ok)throw new Error(data.error||"セッションの期限が切れています");
+  signedInUser=data.user;
+ }catch{
+  sessionToken="";
+  sessionStorage.removeItem(SESSION_KEY);
+  signedInUser=null;
+ }
+ renderAuth();
+}
 async function handleGoogleCredential(response){
  if(!response?.credential){toast("Googleログイン情報を取得できませんでした");return;}
- googleIdToken=response.credential;
  try{
-  const res=await fetch(API_BASE+"/api/me",{headers:{authorization:"Bearer "+googleIdToken}});
+  const res=await fetch(API_BASE+"/api/auth/session",{method:"POST",headers:{authorization:"Bearer "+response.credential}});
   const data=await res.json();
-  if(!res.ok||!data.ok)throw new Error(data.error||"ログインを確認できませんでした");
+  if(!res.ok||!data.ok||!data.sessionToken)throw new Error(data.error||"ログインを確認できませんでした");
+  sessionToken=data.sessionToken;
+  sessionStorage.setItem(SESSION_KEY,sessionToken);
   signedInUser=data.user;
   renderAuth();
   toast("Googleログインしました");
  }catch(error){
-  googleIdToken=null;signedInUser=null;renderAuth();
   toast(error.message||"ログインに失敗しました");
  }
 }
+async function logoutFromApp(){
+ const token=sessionToken;
+ try{
+  if(token)await fetch(API_BASE+"/api/auth/logout",{method:"POST",headers:{authorization:"Bearer "+token}});
+ }catch{}
+ sessionToken="";
+ signedInUser=null;
+ sessionStorage.removeItem(SESSION_KEY);
+ if(window.google?.accounts?.id)window.google.accounts.id.disableAutoSelect();
+ renderAuth();
+ toast("ログアウトしました");
+}
 function initGoogleSignIn(){
+ if(googleInitialized)return;
  if(!GOOGLE_CLIENT_ID){$("#googleLogin").textContent="ログイン設定を確認中";return;}
- if(!window.google?.accounts?.id){$("#googleLogin").textContent="Googleログインを読み込めません。ページを再読み込みしてください";return;}
+ if(!window.google?.accounts?.id)return;
+ googleInitialized=true;
  window.google.accounts.id.initialize({client_id:GOOGLE_CLIENT_ID,callback:handleGoogleCredential,auto_select:false});
  renderAuth();
 }
+restoreSession();
+const googleScript=$("#googleIdentityScript");
+if(googleScript)googleScript.addEventListener("load",initGoogleSignIn,{once:true});
 window.addEventListener("load",initGoogleSignIn,{once:true});
 
 let shareRecords={};
