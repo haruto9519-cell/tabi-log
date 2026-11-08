@@ -132,3 +132,13 @@ input:focus,textarea:focus,select:focus{outline:2px solid #d7b77f55;border-color
 .stop-pill{border:0;cursor:pointer}
 .stop-pill:hover{background:#e8ddca}
 @media(max-width:640px){.route-map{height:340px;min-height:280px}}
+
+/* Public trip map and SNS share card */
+.shared-trip-map{height:360px;min-height:280px;border-radius:9px;overflow:hidden;background:#e8eeeb}
+.share-card-tools{margin-top:26px;padding-top:22px}
+.share-card-tools>p{font-size:13px;color:#657681;line-height:1.8}
+.share-card-tools .share-actions{justify-content:flex-start}
+.share-card-tools .share-note{font-size:11px;color:#8a969b}
+.share-service-links{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.share-service-links h2{width:100%}
+@media(max-width:600px){.shared-trip-map{height:300px}.share-service-links .btn{width:100%;text-align:center}}
