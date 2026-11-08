@@ -15,6 +15,15 @@
  <div class="header-actions"><button class="btn ghost" id="openTrip">Aileronからプランを取り込む</button><button class="btn gold" id="openPost">＋ 思い出を記録</button></div>
 </header>
 <main id="home">
+<section id="importAuthNotice" class="import-auth-notice" hidden aria-live="polite">
+ <div class="import-auth-card">
+  <span class="kicker">SAVE YOUR TRIP TO TABI LOG</span>
+  <h2>旅程を保存するにはログインが必要です</h2>
+  <p>Aileronから受け取った旅行プランは、このGoogleアカウントにログインすると自動で取り込まれます。ログイン後にもう一度送信する必要はありません。</p>
+  <div id="importGoogleLogin" class="import-google-login"></div>
+  <small>ログイン後、旅行一覧に戻って取り込み結果を表示します。</small>
+ </div>
+</section>
 <section class="hero">
  <div class="hero-content">
   <span class="kicker">YOUR PERSONAL TRAVEL JOURNAL</span>
