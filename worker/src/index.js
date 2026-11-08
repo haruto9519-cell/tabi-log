@@ -169,7 +169,7 @@ export default {
       if (!title || !area) return bad(request, "title と area は必須です");
       if (!visibility || startDate === undefined || endDate === undefined) return bad(request, "公開範囲または日付が正しくありません");
       const id = uuid();
-      await env.DB.prepare("INSERT INTO trips(id,user_id,title,area,description,visibility,source,external_plan_id,start_date,end_date) VALUES(?,?,?,?,?,'private','native',NULL,?,?)".replace("'private'","?"))
+      await env.DB.prepare("INSERT INTO trips(id,user_id,title,area,description,visibility,source,external_plan_id,start_date,end_date) VALUES(?,?,?,?,?,?,'native',NULL,?,?)")
         .bind(id, user.id, title, area, description, visibility, startDate, endDate).run();
       return json(request, { ok: true, id }, 201);
     }
