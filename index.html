@@ -127,7 +127,7 @@
  <div class="two-fields"><label>場所<input name="place" list="postPlaceOptions" required maxlength="80" placeholder="訪問先のピン名を選ぶか入力"></label><datalist id="postPlaceOptions"></datalist><label>日時<input name="capturedAt" type="datetime-local"></label></div>
  <label>思い出・日記<textarea name="story" required maxlength="2000" placeholder="訪れた場所、体験したこと、感じたことを残そう"></textarea></label>
  <div class="photo-source-options"><label>📷 カメラで撮影<input name="mediaCamera" type="file" accept="image/jpeg,image/png,image/webp" capture="environment"></label><label>🖼️ 写真・動画ライブラリから選択<input name="mediaLibrary" type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm"></label></div>
- <p class="hint">写真・動画は現在この端末内に保存されます。クラウドメディア保存の設定後、共有リンクや別端末表示にも対応します。記録は初期状態で自分のみです。</p>
+ <p class="hint">写真・動画は端末内に保存し、ログイン中はクラウドにも保存します。クラウド保存には管理側のR2設定が必要です。記録は初期状態で自分のみです。</p>
  <label>公開範囲<select name="visibility"><option value="private">自分のみ</option><option value="public">みんなに公開</option></select></label><p class="hint">公開した記録は誰でも閲覧できます。住所・連絡先・顔がはっきり分かる写真・今いる場所など、個人を特定できる情報は載せないでください。</p><input type="hidden" name="category" value="旅の記録">
  <button class="btn navy full" type="submit">記録を保存</button>
 </form></dialog>
@@ -147,6 +147,6 @@
 <!-- 旧データ互換用。SNS画面としては表示しません。 -->
 <section hidden aria-hidden="true"><input id="feedSearch"><select id="feedSort"><option value="recommend">おすすめ</option></select><button class="chip" data-category="すべて"></button><div id="feed"></div></section>
 <div id="toast" role="status" aria-live="polite"></div>
-<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script><script id="googleIdentityScript" src="https://accounts.google.com/gsi/client" async defer></script><script src="config.js"></script><script src="app.js?v=20261108-memory-media-support"></script>
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script><script id="googleIdentityScript" src="https://accounts.google.com/gsi/client" async defer></script><script src="config.js"></script><script src="app.js?v=20261108-cloud-media"></script>
 <script>document.addEventListener("DOMContentLoaded",()=>{const b=document.getElementById("openDiaryEntry");if(b)b.addEventListener("click",()=>document.getElementById("openPost")?.click());});</script>
 </body></html>
