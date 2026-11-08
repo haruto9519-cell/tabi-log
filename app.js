@@ -197,6 +197,7 @@ function renderMap(){
  const t=trips.find(x=>x.id===selectedTrip),host=$("#routeMap"),list=$("#mapStopList");
  $("#mapTitle").textContent=t?t.title:"旅の地図";list.innerHTML="";
  if(!host)return;
+ host.querySelector(".map-overlay-empty")?.remove();
  if(!window.L){host.innerHTML='<div class="map-unavailable">地図を読み込めませんでした。通信環境を確認してください。</div>';return;}
  if(!routeLeafletMap){
   host.innerHTML="";
