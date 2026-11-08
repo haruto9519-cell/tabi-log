@@ -75,6 +75,8 @@ async function logoutFromApp(){
  sessionToken="";
  signedInUser=null;
  activeAccountStorageId=null;
+ posts=seedPosts;trips=seedTrips;expenses=[];saved=[];following=[];blocked=[];
+ profile={name:"旅好きユーザー",bio:"旅の記録を、少しずつ。"};shareRecords={};selectedTrip=null;
  sessionStorage.removeItem(SESSION_KEY);
  if(window.google?.accounts?.id)window.google.accounts.id.disableAutoSelect();
  renderAuth();
