@@ -337,6 +337,11 @@ export default {
       if (statements.length) await env.DB.batch(statements);
       return json(request, { ok: true, tripsSaved: normalizedTrips.length, postsSaved: normalizedPosts.length });
     }
+    const postDeleteMatch = path.match(/^\/api\/posts\/([A-Za-z0-9_-]+)$/);
+    if (postDeleteMatch && request.method === "DELETE") {
+      const result = await env.DB.prepare("DELETE FROM posts WHERE id=? AND user_id=?").bind(postDeleteMatch[1], user.id).run();
+      return json(request, { ok: true, deleted: Boolean(result.meta?.changes) });
+    }
     const tripDeleteMatch = path.match(/^\/api\/trips\/([A-Za-z0-9_-]+)$/);
     if (tripDeleteMatch && request.method === "DELETE") {
       const result = await env.DB.prepare("DELETE FROM trips WHERE id=? AND user_id=? AND source='native'").bind(tripDeleteMatch[1], user.id).run();
