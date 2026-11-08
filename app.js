@@ -198,27 +198,61 @@ function openItinerary(tripId){
  form.elements.dayDate.value=trip.date||new Date().toISOString().slice(0,10);
  $("#itinerarySaveButton").textContent="予定を追加";renderItineraryItems();openDialog("#itineraryDialog");
 }
-let routeLeafletMap=null, routeMapLayer=null;
+let routeLeafletMap=null, routeMapLayer=null, routeTileLayer=null, routeTileFallbackUsed=false;
+function addRouteBaseTiles(){
+ const primary=L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{
+  maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+  crossOrigin:true
+ });
+ primary.on("tileerror",()=>{
+  if(routeTileFallbackUsed||!routeLeafletMap)return;
+  routeTileFallbackUsed=true;
+  primary.remove();
+  routeTileLayer=L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",{
+   subdomains:"abcd",maxZoom:20,
+   attribution:'&copy; OpenStreetMap contributors &copy; CARTO',
+   crossOrigin:true
+  }).addTo(routeLeafletMap);
+ });
+ routeTileLayer=primary.addTo(routeLeafletMap);
+}
 function renderMap(){
  const t=trips.find(x=>x.id===selectedTrip),host=$("#routeMap"),list=$("#mapStopList");
- $("#mapTitle").textContent=t?t.title:"旅の地図";list.innerHTML="";
+ const title=$("#mapTitle");
+ if(title)title.textContent=t?t.title:"旅の地図";
+ if(list)list.innerHTML="";
  if(!host)return;
  host.querySelector(".map-overlay-empty")?.remove();
- if(!window.L){host.innerHTML='<div class="map-unavailable">地図を読み込めませんでした。通信環境を確認してください。</div>';return;}
+ if(!window.L){
+  host.innerHTML='<div class="map-unavailable">地図ライブラリを読み込めませんでした。ページを再読み込みしてください。</div>';
+  return;
+ }
  if(!routeLeafletMap){
   host.innerHTML="";
   routeLeafletMap=L.map(host,{scrollWheelZoom:false}).setView([36.2,138.25],5);
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'}).addTo(routeLeafletMap);
+  addRouteBaseTiles();
   routeMapLayer=L.layerGroup().addTo(routeLeafletMap);
  }
  routeMapLayer.clearLayers();
- if(!t){host.insertAdjacentHTML("beforeend",'<div class="map-overlay-empty">Aileronから旅行プランを取り込むと、ここに地図が表示されます。</div>');return;}
+ if(!t){
+  host.insertAdjacentHTML("beforeend",'<div class="map-overlay-empty">Aileronから旅行プランを取り込むと、ここに地図が表示されます。</div>');
+  setTimeout(()=>routeLeafletMap?.invalidateSize({pan:false}),150);
+  return;
+ }
  const locations=Array.isArray(t.stopLocations)?t.stopLocations:[];
- const valid=locations.filter(p=>Number.isFinite(Number(p.latitude))&&Number.isFinite(Number(p.longitude)));
- if(!valid.length){host.insertAdjacentHTML("beforeend",'<div class="map-overlay-empty">この旅行には地図座標がありません。Aileronからプランを取り込み直すと地図を表示できます。</div>');return;}
+ const valid=locations.filter(p=>{
+  const lat=Number(p?.latitude),lon=Number(p?.longitude);
+  return p?.name&&Number.isFinite(lat)&&lat>=-90&&lat<=90&&Number.isFinite(lon)&&lon>=-180&&lon<=180;
+ });
+ if(!valid.length){
+  host.insertAdjacentHTML("beforeend",'<div class="map-overlay-empty">この旅行には有効な地図座標がありません。立ち寄り先の座標を確認してください。</div>');
+  setTimeout(()=>routeLeafletMap?.invalidateSize({pan:false}),150);
+  return;
+ }
  const bounds=[];
  valid.forEach((p,index)=>{
-  const visited=(t.actual||[]).includes(p.name),point=[Number(p.latitude),Number(p.longitude)];bounds.push(point);
+  const visited=(t.actual||[]).includes(p.name),point=[Number(p.latitude),Number(p.longitude)];
+  bounds.push(point);
   const icon=L.divIcon({className:"tabi-map-marker-wrap",html:'<span class="tabi-map-marker '+(visited?"visited":"planned")+'">'+(index+1)+'</span>',iconSize:[32,38],iconAnchor:[16,34]});
   const marker=L.marker(point,{icon}).addTo(routeMapLayer);
   const popup=document.createElement("div");popup.className="tabi-map-popup";
@@ -235,12 +269,18 @@ function renderMap(){
     try{const blob=await mediaGet(entry.mediaKey);if(!blob)continue;const img=document.createElement("img");img.alt=entry.title||p.name;img.src=URL.createObjectURL(blob);photoBox.append(img);}catch{}
    }
   });
-  const pill=document.createElement("button");pill.type="button";pill.className="stop-pill";pill.textContent=(visited?"✓ ":"")+p.name;pill.addEventListener("click",()=>{routeLeafletMap.setView(point,13);marker.openPopup();});list.append(pill);
+  const pill=document.createElement("button");pill.type="button";pill.className="stop-pill";pill.textContent=(visited?"✓ ":"")+p.name;
+  pill.addEventListener("click",()=>{routeLeafletMap.setView(point,13);marker.openPopup();});
+  if(list)list.append(pill);
  });
  if(valid.length>1)L.polyline(bounds,{color:"#c49a5e",weight:4,opacity:.85,dashArray:"7 7"}).addTo(routeMapLayer);
  routeLeafletMap.fitBounds(bounds,{padding:[28,28],maxZoom:12});
- setTimeout(()=>routeLeafletMap.invalidateSize(),100);
+ setTimeout(()=>routeLeafletMap?.invalidateSize({pan:false}),100);
+ setTimeout(()=>routeLeafletMap?.invalidateSize({pan:false}),450);
 }
+window.addEventListener("resize",()=>{
+ if(routeLeafletMap)setTimeout(()=>routeLeafletMap.invalidateSize({pan:false}),100);
+});
 async function processPendingImport(){
  const token=new URLSearchParams(location.search).get("import");
  if(!token||!signedInUser||!sessionToken)return;
