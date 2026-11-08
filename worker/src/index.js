@@ -189,7 +189,7 @@ export default {
           database.querySucceeded = false;
         }
       }
-      return json(request, { ok: true, service: "tabi-log-api", version: "1.2-schema-health", database });
+      return json(request, { ok: true, service: "tabi-log-api", version: "1.3-google-auth", database });
     }
     if (path === "/api/shares" && request.method === "POST") return createShare(request, env);
     const shareMatch = path.match(/^\/api\/shares\/([A-Za-z0-9_-]+)$/);
