@@ -1,42 +1,39 @@
-# Phase 1 share-link API setup
+# 旅ログ 共有リンクAPI
 
-This change prepares the first server-backed feature for Tabi Log: a user explicitly creates an unlisted share link for a trip. It does **not** turn on account registration or the full social feed.
+## 現在の構成
 
-## Data and privacy
+- Cloudflare Worker: `https://tabi-log.haruto-9519.workers.dev`
+- Cloudflare Pages: `https://tabi-log.pages.dev/`
+- D1 database: `tabi-log-db`
+- D1 binding: `DB`
+- Worker config: `worker/wrangler.toml`
 
-- Only the trip fields explicitly sent to `POST /api/shares` are stored.
-- Private local records are not uploaded automatically.
-- Share URLs are unlisted bearer links: anyone with the URL can view the shared trip.
-- The response includes a one-time `revokeKey`. Keep it in the same browser/device to revoke the link later. Do not share this key.
-- Links expire after 365 days.
-- The API caps the JSON payload at 20 KB and applies an 8-create-per-10-minute limit per hashed client IP.
-- The raw client IP is not stored; only a salted SHA-256 hash is kept for the rate-limit window.
-- Photos/videos are not uploaded by this first share API. R2 media upload is a later step.
+D1の初期スキーマは `worker/migrations/0001_init.sql`、共有リンク用スキーマは `worker/migrations/0002_share_links.sql` です。D1コンソールで両方のテーブルが作成済みであることを確認してください。すでに手動実行済みの場合は同じSQLを再実行しても `IF NOT EXISTS` により既存テーブルを保護します。
 
-## Cloudflare setup
+## データとプライバシー
 
-1. Create a D1 database named `tabi-log-db`.
-2. Copy its database ID into `worker/wrangler.toml` in place of `REPLACE_WITH_D1_DATABASE_ID`.
-3. Run the migration:
-   ```sh
-   npx wrangler d1 migrations apply tabi-log-db --remote
-   ```
-   If using the SQL file directly instead:
-   ```sh
-   npx wrangler d1 execute tabi-log-db --remote --file=worker/migrations/0002_share_links.sql
-   ```
-4. From the `worker` directory, deploy:
-   ```sh
-   npx wrangler deploy
-   ```
-5. Put the deployed Worker URL in `config.js` as `window.TABI_LOG_API_BASE` (without a trailing slash). Use the actual `workers.dev` URL shown by Cloudflare.
-6. Deploy the Pages project. The trip planner then shows `共有URLを発行`; existing links can be copied again or revoked.
-7. Check `GET <worker-url>/api/health` before testing share creation.
+- ローカルの旅程は自動アップロードされません。
+- 共有URLを発行したときに限り、送信された旅程テキストがD1に保存されます。
+- 共有URLは推測困難なトークンを含む限定公開リンクです。URLを知っている人は閲覧できます。
+- 発行レスポンスには一度だけ表示される解除キーが含まれます。解除キーは共有相手に渡さないでください。
+- リンクは365日で期限切れになります。
+- 作成リクエスト本文は20KBまで、作成回数はIPハッシュごとに10分間8回までです。
+- 生のIPアドレスは保存せず、レート制限用のハッシュのみ保存します。
+- 期限切れ・無効化済み共有データと古いレート制限記録は、新規共有作成時に整理します。
+- 写真・動画は共有APIで送信されません。R2保存は未実装です。
 
-## API
+## 確認用API
 
-- `POST /api/shares`: body `{"trip":{...}}`; returns `url`, one-time `revokeKey`, and `expiresAt`.
-- `GET /api/shares/:token`: returns the explicitly shared trip.
-- `DELETE /api/shares/:token`: body `{"revokeKey":"..."}`; revokes the link.
+- `GET /api/health`: Worker稼働確認
+- `POST /api/shares`: 共有URL作成
+- `GET /api/shares/:token`: 共有内容取得
+- `DELETE /api/shares/:token`: 解除キーで共有停止
 
-The share endpoint does not require login because the current prototype has no authentication provider. It therefore must only be used after a clear user action. Do not add automatic uploads of private trips. Before broader public launch, add authentication and abuse monitoring.
+## 本格公開前の必須作業
+
+1. 認証を接続し、ユーザー所有権をサーバー側で検証する
+2. 共有作成・閲覧・解除を異常入力も含めて実機テストする
+3. レート制限とエラー監視を継続確認する
+4. 利用規約、プライバシーポリシー、問い合わせ窓口を整備する
+
+現在の共有APIは明示的な共有操作だけを扱う第一段階です。ログイン、一般公開フィード、写真/動画の共有は提供していません。
