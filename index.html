@@ -84,7 +84,7 @@
  <label>メモ（任意）<input name="note" maxlength="300" placeholder="例：新幹線・往復"></label>
  <button class="btn navy full" type="submit">支出を保存</button>
 </form></dialog>
-<dialog id="tripDialog" hidden><form id="tripForm">
+<dialog id="tripDialog"><form id="tripForm">
  <div class="dialog-title"><div><span class="kicker">NEW JOURNEY</span><h3>旅行をつくる</h3></div><button type="button" class="close" data-close="tripDialog">×</button></div>
  <label>旅行のタイトル<input name="title" required maxlength="70" placeholder="例：京都・奈良 2泊3日"></label>
  <div class="two-fields"><label>エリア・目的地<input name="area" required maxlength="60" placeholder="京都・奈良"></label><label>開始日<input name="date" type="date"></label></div>
@@ -95,7 +95,7 @@
  <p class="hint">ログイン中は旅行データをクラウドにも同期します。写真・動画は端末内に保存されます。</p>
  <button class="btn navy full" type="submit">旅行を作成</button>
 </form></dialog>
-<dialog id="itineraryDialog" hidden><form id="itineraryForm">
+<dialog id="itineraryDialog"><form id="itineraryForm">
  <div class="dialog-title"><div><span class="kicker">DAY BY DAY PLAN</span><h3 id="itineraryHeading">旅行の日程</h3></div><button type="button" class="close" data-close="itineraryDialog">×</button></div>
  <input type="hidden" name="tripId">
  <input type="hidden" name="itemId">
@@ -107,7 +107,7 @@
  <div class="itinerary-list-heading"><b>この旅行の日程</b><span id="itineraryCount">0件</span></div>
  <div id="itineraryItems" class="itinerary-items"></div>
 </form></dialog>
-<dialog id="tripEditDialog" hidden><form id="tripEditForm">
+<dialog id="tripEditDialog"><form id="tripEditForm">
  <div class="dialog-title"><div><span class="kicker">EDIT JOURNEY</span><h3>旅行を編集</h3></div><button type="button" class="close" data-close="tripEditDialog">×</button></div>
  <input type="hidden" name="id">
  <label>旅行のタイトル<input name="title" required maxlength="70"></label>
