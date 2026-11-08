@@ -156,6 +156,14 @@ export default {
     const user = await userFrom(request, env);
     if (!user) return bad(request, "ログイン機能が未接続です。認証プロバイダーを設定してください。", 401);
     await env.DB.prepare("INSERT OR IGNORE INTO users(id,display_name) VALUES(?,?)").bind(user.id, user.name).run();
+    if (path === "/api/trips" && request.method === "GET") {
+      const result = await env.DB.prepare("SELECT id,title,area,description,visibility,start_date,end_date,source,created_at,updated_at FROM trips WHERE user_id=? ORDER BY created_at DESC LIMIT 100").bind(user.id).all();
+      return json(request, { ok: true, items: result.results || [] });
+    }
+    if (path === "/api/posts" && request.method === "GET") {
+      const result = await env.DB.prepare("SELECT id,trip_id,title,story,place_name,media_type,visibility,captured_at,created_at FROM posts WHERE user_id=? ORDER BY created_at DESC LIMIT 100").bind(user.id).all();
+      return json(request, { ok: true, items: result.results || [] });
+    }
     if (path === "/api/trips" && request.method === "POST") {
       const parsed = await readJson(request);
       if (parsed.error) return parsed.error;
