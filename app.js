@@ -348,3 +348,4 @@ if(b.dataset.deleteTrip&&confirm("この旅程を削除しますか？")){trips=
 });
 $("#feedSearch").addEventListener("input",renderFeed);$("#feedSort").addEventListener("change",e=>{feedSort=e.target.value;renderFeed()});$$(".chip").forEach(b=>b.addEventListener("click",()=>{$$(".chip").forEach(x=>x.classList.remove("active"));b.classList.add("active");category=b.dataset.category;renderFeed()}));
 renderAll();
+if(new URLSearchParams(location.search).has("import")&&!signedInUser)toast("Aileronの旅行プランを取り込むには、Googleログインしてください。");
