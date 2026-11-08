@@ -1,5 +1,5 @@
 const ALLOWED_ORIGINS = new Set(["https://tabi-log.pages.dev", "http://localhost:8788", "http://127.0.0.1:8788"]);
-const CORS_ORIGINS = new Set([...ALLOWED_ORIGINS, "https://tabi-hikaku.pages.dev"]);
+const CORS_ORIGINS = new Set([...ALLOWED_ORIGINS, "https://tabi-hikaku.pages.dev", "https://aileron-japan-travel.pages.dev"]);
 const cors = (request) => {
   const origin = request.headers.get("Origin") || "";
   const headers = {
@@ -197,6 +197,9 @@ function cleanAileronPlan(input) {
   if (!input || typeof input !== "object" || Array.isArray(input)) return null;
   const title = cleanText(input.title, 70), area = cleanText(input.area, 80);
   const description = cleanText(input.description, 500);
+  const startDate = cleanText(input.startDate, 10), endDate = cleanText(input.endDate, 10);
+  const validDate = value => !value || (/^\\d{4}-\\d{2}-\\d{2}$/.test(value) && !Number.isNaN(Date.parse(value)) && new Date(value + "T00:00:00.000Z").toISOString().slice(0, 10) === value);
+  if (!validDate(startDate) || !validDate(endDate) || (startDate && endDate && endDate < startDate)) return null;
   const budgetAmount = Number(input.budgetAmount || 0);
   const budgetCurrency = cleanText(input.budgetCurrency || "JPY", 3).toUpperCase();
   const travelers = Number(input.travelers || 1);
@@ -211,12 +214,12 @@ function cleanAileronPlan(input) {
     return { name, latitude, longitude, nights, sortOrder: index, externalPlaceId: cleanText(item?.externalPlaceId, 120) };
   }).filter(Boolean) : [];
   if (!stops.length) return null;
-  return { title, area, description, budgetAmount, budgetCurrency, travelers, origin: cleanText(input.origin, 80), stops };
+  return { title, area, description, startDate: startDate || null, endDate: endDate || null, budgetAmount, budgetCurrency, travelers, origin: cleanText(input.origin, 80), stops };
 }
 async function createPlanImport(request, env) {
   if (!env.DB) return bad(request, "旅行連携データベースが未設定です", 503);
   const origin = request.headers.get("Origin") || "";
-  if (origin !== "https://tabi-hikaku.pages.dev") return bad(request, "許可されていない接続元です", 403);
+  if (origin !== "https://tabi-hikaku.pages.dev" && origin !== "https://aileron-japan-travel.pages.dev") return bad(request, "許可されていない接続元です", 403);
   const parsed = await readJson(request, 30000);
   if (parsed.error) return parsed.error;
   const plan = cleanAileronPlan(parsed.data?.plan);
