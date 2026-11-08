@@ -1,4 +1,5 @@
-const ALLOWED_ORIGINS = new Set(["https://tabi-log.pages.dev", "https://tabi-hikaku.pages.dev", "http://localhost:8788", "http://127.0.0.1:8788"]);
+const ALLOWED_ORIGINS = new Set(["https://tabi-log.pages.dev", "http://localhost:8788", "http://127.0.0.1:8788"]);
+const CORS_ORIGINS = new Set([...ALLOWED_ORIGINS, "https://tabi-hikaku.pages.dev"]);
 const cors = (request) => {
   const origin = request.headers.get("Origin") || "";
   const headers = {
@@ -6,7 +7,7 @@ const cors = (request) => {
     "access-control-allow-headers": "content-type,authorization",
     "vary": "Origin"
   };
-  if (ALLOWED_ORIGINS.has(origin)) headers["access-control-allow-origin"] = origin;
+  if (CORS_ORIGINS.has(origin)) headers["access-control-allow-origin"] = origin;
   return headers;
 };
 const json = (request, data, status = 200, extra = {}) => new Response(JSON.stringify(data), {
@@ -215,7 +216,7 @@ function cleanAileronPlan(input) {
 async function createPlanImport(request, env) {
   if (!env.DB) return bad(request, "旅行連携データベースが未設定です", 503);
   const origin = request.headers.get("Origin") || "";
-  if (!ALLOWED_ORIGINS.has(origin) || origin === "https://tabi-log.pages.dev") return bad(request, "許可されていない接続元です", 403);
+  if (origin !== "https://tabi-hikaku.pages.dev") return bad(request, "許可されていない接続元です", 403);
   const parsed = await readJson(request, 30000);
   if (parsed.error) return parsed.error;
   const plan = cleanAileronPlan(parsed.data?.plan);
