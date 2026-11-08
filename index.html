@@ -114,7 +114,7 @@
  <div class="dialog-title"><div><span class="kicker">TRAVEL MEMORY</span><h3>日記・思い出を記録</h3></div><button type="button" class="close" data-close="postDialog">×</button></div>
  <label>旅行<select name="tripId" id="postTripSelect"><option value="">旅行に紐づけない</option></select></label>
  <label>タイトル<input name="title" required maxlength="70" placeholder="例：朝の清水寺を訪れた"></label>
- <div class="two-fields"><label>場所<input name="place" required maxlength="80" placeholder="清水寺・京都"></label><label>日時<input name="capturedAt" type="datetime-local"></label></div>
+ <div class="two-fields"><label>場所<input name="place" list="postPlaceOptions" required maxlength="80" placeholder="訪問先のピン名を選ぶか入力"></label><datalist id="postPlaceOptions"></datalist><label>日時<input name="capturedAt" type="datetime-local"></label></div>
  <label>思い出・日記<textarea name="story" required maxlength="2000" placeholder="訪れた場所、体験したこと、感じたことを残そう"></textarea></label>
  <label>写真・動画<input name="media" type="file" accept="image/jpeg,image/png,image/webp"></label>
  <p class="hint">写真は現在この端末内に保存されます。Google Drive連携後は写真のみクラウド保存・別端末表示に対応します。記録は初期状態で自分のみです。</p>
