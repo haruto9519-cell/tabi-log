@@ -285,7 +285,8 @@
 - [x] SNS投稿用の画像カードPNG生成と投稿文・URLコピーを追加。
 
 ### 現在の制約・未完了
-- [ ] D1の0006マイグレーション適用とWorker本番反映が必要。これが済むまでAileron連携は本番で動かない。
+- [x] D1の0006マイグレーション適用済み。過去のhealth応答で `planImportsSchemaReady=true`、`stopCoordinatesSchemaReady=true` を確認済み。
+- [ ] 今回追加した海外版CORS許可・旅行日付保存のWorker変更を本番デプロイし、再度health確認する。今回のGitHubコミット後の本番反映は未確認。
 - [ ] Aileronの地図は目的地と、座標を返す観光候補を表示する。点と点を結ぶ線は訪問順の概略線であり、道路・鉄道の実経路ではない。
 - [ ] 旅ログのピン写真表示は現在IndexedDBにある端末内写真が対象。別端末同期・公開共有向けの写真クラウド保存は未実装。
 - [ ] SNSカード画像は現状、タイトル・訪問先・2サービスのURLを描画する。ユーザー写真入りカード、動的OGP画像は未実装。
@@ -294,11 +295,36 @@
 - [ ] 旅ログ内での訪問先の追加・編集・削除、Aileron側のプラン更新後の再同期は今後の実装対象。
 
 ### 本番受け入れテスト
-1. Cloudflare D1で `worker/migrations/0006_aileron_import_and_map.sql` を一度だけ適用する。
-2. Worker healthが `version=1.8-aileron-import`、`planImportsSchemaReady=true`、`stopCoordinatesSchemaReady=true` となることを確認。
-3. Aileronで旅行プランを作り、地図上の観光スポットを追加して「旅ログにプランを連携」。
+1. D1の0006適用済みを前提に、今回のWorker変更を本番デプロイする（migrationを再実行しない）。
+2. Worker healthが `version=1.8-aileron-import`、`planImportsSchemaReady=true`、`stopCoordinatesSchemaReady=true` となることを再確認。
+3. 海外版Aileronで旅行プランを作り、地図上の観光スポットを追加して「Save to Tabi Log／旅ログに保存」。
 4. 旅ログでGoogleログインし、同じ旅行・座標付きピンが取り込まれることを確認。
 5. 日記を追加し、場所に地図ピン名を指定して写真を添付。地図ピンを押して写真が表示されることを確認。
 6. 訪問済み状態が再読み込み・別ブラウザでも維持されることを確認。
 7. シェアURLを発行し、共有ページの地図、両サービスのリンク、PNGカード保存、投稿文コピーを確認。
 8. 非公開データが共有ページへ混入しないこと、共有リンク無効化が動くことを確認。
+
+
+## 12. 海外版Aileron → 旅ログの送信機能（2026-11-08）
+
+### GitHub反映済み
+- 海外版の正しい編集対象は `haruto9519-cell/tabi-hikaku/japan-travel/`。ルート直下は国内版「旅比べ」のため変更しない。
+- 海外版の結果画面に「Save to Tabi Log」ボタンを追加。日本語・英語・韓国語・中国語（簡体／繁体）・スペイン語・フランス語・ドイツ語に表示を切り替える。
+- 目的地座標、選択した観光地、地図化済みの聖地巡礼スポットをまとめ、最大20地点を一時連携APIへ送信する。
+- 予算（JPY）、旅行人数、出発地、開始日・終了日も連携データに含める。
+- 一時連携URL発行後、Tabi Logへ移動する。Tabi Log側で未ログインの場合はGoogleログイン後に取り込む既存フローを利用する。
+- Tabi Log WorkerのCORSと発行元チェックに `https://aileron-japan-travel.pages.dev` を追加。
+- Tabi Log側で旅行開始日・終了日を検証して保存するように変更。
+- SNSカードPNGにはAileronとTabi Log両方のURLを表示し、コピー用投稿文にも両サービスへの導線を含める既存実装を確認。
+
+### 今回のコミット
+- 海外版Aileron画面・連携ボタン: `281adc1b98d3f1729bab61a1ecd295529be1fe35`、多言語ラベル: `e049b489cbbb920b8a2fab0f44ec5ff9307b693e`
+- Tabi Log Worker CORS・日付保存: `0ef7c8e65153c6dbe79b240ac0b8b262ac146c00`
+
+### 未確認
+- Cloudflare Pages／Workerへの今回のコミットの本番デプロイ状態。
+- 実際に海外版からトークンを発行し、Googleログイン後にD1へ旅行・座標付きピンが保存されること。
+- 日付が旅ログの旅行カードに表示されること。
+- 訪問済み状態の再読み込み・別ブラウザ同期。
+- ピンを押したとき、同じ場所に紐づけた端末内写真が表示されること。
+- 写真本体はIndexedDBの端末内保存のまま。別端末間の写真同期はまだできない。
