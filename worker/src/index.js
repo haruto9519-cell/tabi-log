@@ -13,6 +13,19 @@ const json = (request, data, status = 200, extra = {}) => new Response(JSON.stri
   headers: { "content-type": "application/json; charset=utf-8", "x-content-type-options": "nosniff", "cache-control": "no-store", ...cors(request), ...extra }
 });
 const bad = (request, error, status = 400) => json(request, { ok: false, error }, status);
+async function readJson(request, maxBytes = 20000) {
+  const raw = await request.text();
+  if (new TextEncoder().encode(raw).byteLength > maxBytes) return { error: bad(request, "リクエストが大きすぎます", 413) };
+  try {
+    const data = JSON.parse(raw);
+    if (!data || typeof data !== "object" || Array.isArray(data)) return { error: bad(request, "JSONオブジェクトを送信してください") };
+    return { data };
+  } catch {
+    return { error: bad(request, "JSON形式を確認してください") };
+  }
+}
+const validVisibility = value => ["private", "followers", "public"].includes(value) ? value : null;
+const validDate = value => !value || (typeof value === "string" && /^\\d{4}-\\d{2}-\\d{2}$/.test(value)) ? (value || null) : undefined;
 const uuid = () => crypto.randomUUID();
 const randomToken = (bytes = 32) => {
   const data = crypto.getRandomValues(new Uint8Array(bytes));
@@ -49,11 +62,22 @@ function cleanShare(input) {
 async function userFrom(request, env) {
   if (!env.AUTH_VALIDATE_URL) return null;
   const auth = request.headers.get("authorization");
-  if (!auth) return null;
-  const r = await fetch(env.AUTH_VALIDATE_URL, { headers: { authorization: auth } });
-  if (!r.ok) return null;
-  const d = await r.json();
-  return d?.sub ? { id: d.sub, name: d.name || "Traveler" } : null;
+  if (!auth || !/^Bearer\\s+\\S+$/i.test(auth)) return null;
+  try {
+    const endpoint = new URL(env.AUTH_VALIDATE_URL);
+    if (endpoint.protocol !== "https:") return null;
+    const r = await fetch(endpoint.toString(), {
+      headers: { authorization: auth },
+      signal: AbortSignal.timeout(5000)
+    });
+    if (!r.ok) return null;
+    const d = await r.json();
+    return typeof d?.sub === "string" && d.sub.length <= 128
+      ? { id: d.sub, name: cleanText(d.name || "Traveler", 40) || "Traveler" }
+      : null;
+  } catch {
+    return null;
+  }
 }
 async function createShare(request, env) {
   if (!env.DB) return bad(request, "共有APIのデータベースが未設定です", 503);
@@ -133,27 +157,56 @@ export default {
     if (!user) return bad(request, "ログイン機能が未接続です。認証プロバイダーを設定してください。", 401);
     await env.DB.prepare("INSERT OR IGNORE INTO users(id,display_name) VALUES(?,?)").bind(user.id, user.name).run();
     if (path === "/api/trips" && request.method === "POST") {
-      const b = await request.json();
-      if (!b.title || !b.area) return bad(request, "title と area は必須です");
+      const parsed = await readJson(request);
+      if (parsed.error) return parsed.error;
+      const b = parsed.data;
+      const title = cleanText(b.title, 70);
+      const area = cleanText(b.area, 80);
+      const description = cleanText(b.description, 500);
+      const visibility = validVisibility(b.visibility || "private");
+      const startDate = validDate(b.start_date);
+      const endDate = validDate(b.end_date);
+      if (!title || !area) return bad(request, "title と area は必須です");
+      if (!visibility || startDate === undefined || endDate === undefined) return bad(request, "公開範囲または日付が正しくありません");
       const id = uuid();
-      await env.DB.prepare("INSERT INTO trips(id,user_id,title,area,description,visibility,source,external_plan_id) VALUES(?,?,?,?,?,?,?,?)").bind(id, user.id, b.title, b.area, b.description || "", b.visibility || "private", b.source || "native", b.external_plan_id || null).run();
+      await env.DB.prepare("INSERT INTO trips(id,user_id,title,area,description,visibility,source,external_plan_id,start_date,end_date) VALUES(?,?,?,?,?,'private','native',NULL,?,?)".replace("'private'","?"))
+        .bind(id, user.id, title, area, description, visibility, startDate, endDate).run();
       return json(request, { ok: true, id }, 201);
     }
     if (path === "/api/posts" && request.method === "POST") {
-      const b = await request.json();
-      if (!b.title || !b.story || !b.place_name) return bad(request, "title、story、place_name は必須です");
+      const parsed = await readJson(request);
+      if (parsed.error) return parsed.error;
+      const b = parsed.data;
+      const title = cleanText(b.title, 70);
+      const story = cleanText(b.story, 1000);
+      const place = cleanText(b.place_name, 100);
+      const visibility = validVisibility(b.visibility || "private");
+      const tripId = typeof b.trip_id === "string" && b.trip_id ? b.trip_id.slice(0, 64) : null;
+      if (!title || !story || !place) return bad(request, "title、story、place_name は必須です");
+      if (!visibility) return bad(request, "公開範囲が正しくありません");
+      if (tripId) {
+        const ownedTrip = await env.DB.prepare("SELECT id FROM trips WHERE id=? AND user_id=?").bind(tripId, user.id).first();
+        if (!ownedTrip) return bad(request, "指定した旅程が見つかりません", 404);
+      }
       const id = uuid();
-      await env.DB.prepare("INSERT INTO posts(id,user_id,trip_id,title,story,place_name,media_key,media_type,visibility,latitude,longitude,location_precision) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)").bind(id, user.id, b.trip_id || null, b.title, b.story, b.place_name, b.media_key || null, b.media_type || null, b.visibility || "private", null, null, "hidden").run();
+      await env.DB.prepare("INSERT INTO posts(id,user_id,trip_id,title,story,place_name,media_key,media_type,visibility,latitude,longitude,location_precision) VALUES(?,?,?,?,?,?,NULL,NULL,?,NULL,NULL,'hidden')")
+        .bind(id, user.id, tripId, title, story, place, visibility).run();
       return json(request, { ok: true, id }, 201);
     }
     if (path === "/api/aileron/import" && request.method === "POST") {
       if (env.AILERON_IMPORT_ENABLED !== "true") return bad(request, "Aileron連携は現在無効です", 403);
-      const b = await request.json();
-      if (!b.external_plan_id || !b.title || !b.area) return bad(request, "external_plan_id、title、area は必須です");
-      const old = await env.DB.prepare("SELECT id FROM trips WHERE source='aileron' AND external_plan_id=?").bind(b.external_plan_id).first();
+      const parsed = await readJson(request);
+      if (parsed.error) return parsed.error;
+      const b = parsed.data;
+      const externalId = cleanText(b.external_plan_id, 100);
+      const title = cleanText(b.title, 70);
+      const area = cleanText(b.area, 80);
+      const description = cleanText(b.description, 500);
+      if (!externalId || !title || !area) return bad(request, "external_plan_id、title、area は必須です");
+      const old = await env.DB.prepare("SELECT id FROM trips WHERE source='aileron' AND external_plan_id=?").bind(externalId).first();
       if (old) return json(request, { ok: true, id: old.id, duplicate: true });
       const id = uuid();
-      await env.DB.prepare("INSERT INTO trips(id,user_id,title,area,description,visibility,source,external_plan_id) VALUES(?,?,?,?,?,'private','aileron',?)").bind(id, user.id, b.title, b.area, b.description || "", b.external_plan_id).run();
+      await env.DB.prepare("INSERT INTO trips(id,user_id,title,area,description,visibility,source,external_plan_id) VALUES(?,?,?,?,?,'private','aileron',?)").bind(id, user.id, title, area, description, externalId).run();
       return json(request, { ok: true, id, duplicate: false }, 201);
     }
     return bad(request, "Not found", 404);
