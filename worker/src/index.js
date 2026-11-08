@@ -1,4 +1,4 @@
-const ALLOWED_ORIGINS = new Set(["https://tabi-log.pages.dev", "http://localhost:8788", "http://127.0.0.1:8788"]);
+const ALLOWED_ORIGINS = new Set(["https://tabi-log.pages.dev", "https://tabi-hikaku.pages.dev", "http://localhost:8788", "http://127.0.0.1:8788"]);
 const cors = (request) => {
   const origin = request.headers.get("Origin") || "";
   const headers = {
@@ -184,6 +184,41 @@ async function createShare(request, env) {
     expiresAt
   }, 201, { "cache-control": "no-store" });
 }
+
+function cleanAileronPlan(input) {
+  if (!input || typeof input !== "object" || Array.isArray(input)) return null;
+  const title = cleanText(input.title, 70), area = cleanText(input.area, 80);
+  const description = cleanText(input.description, 500);
+  const budgetAmount = Number(input.budgetAmount || 0);
+  const budgetCurrency = cleanText(input.budgetCurrency || "JPY", 3).toUpperCase();
+  const travelers = Number(input.travelers || 1);
+  if (!title || !area || !Number.isSafeInteger(budgetAmount) || budgetAmount < 0 || budgetAmount > 100000000 ||
+      !/^[A-Z]{3}$/.test(budgetCurrency) || !Number.isInteger(travelers) || travelers < 1 || travelers > 20) return null;
+  const stops = Array.isArray(input.stops) ? input.stops.slice(0, 20).map((item, index) => {
+    const name = cleanText(item?.name, 100), latitude = Number(item?.latitude), longitude = Number(item?.longitude);
+    const nights = Number(item?.nights || 0);
+    if (!name || !Number.isFinite(latitude) || latitude < -90 || latitude > 90 ||
+        !Number.isFinite(longitude) || longitude < -180 || longitude > 180 ||
+        !Number.isInteger(nights) || nights < 0 || nights > 30) return null;
+    return { name, latitude, longitude, nights, sortOrder: index, externalPlaceId: cleanText(item?.externalPlaceId, 120) };
+  }).filter(Boolean) : [];
+  if (!stops.length) return null;
+  return { title, area, description, budgetAmount, budgetCurrency, travelers, origin: cleanText(input.origin, 80), stops };
+}
+async function createPlanImport(request, env) {
+  if (!env.DB) return bad(request, "旅行連携データベースが未設定です", 503);
+  const origin = request.headers.get("Origin") || "";
+  if (!ALLOWED_ORIGINS.has(origin) || origin === "https://tabi-log.pages.dev") return bad(request, "許可されていない接続元です", 403);
+  const parsed = await readJson(request, 30000);
+  if (parsed.error) return parsed.error;
+  const plan = cleanAileronPlan(parsed.data?.plan);
+  if (!plan) return bad(request, "Aileronの旅行プラン情報を確認してください");
+  const token = randomToken(32), tokenHash = await sha256(token), id = uuid();
+  const now = Math.floor(Date.now() / 1000), expiresAt = now + 86400;
+  await env.DB.prepare("INSERT INTO plan_imports(id,token_hash,payload_json,created_at,expires_at) VALUES(?,?,?,?,?)")
+    .bind(id, tokenHash, JSON.stringify(plan), now, expiresAt).run();
+  return json(request, { ok: true, importUrl: "https://tabi-log.pages.dev/?import=" + token, expiresAt }, 201);
+}
 async function readShare(request, env, token) {
   if (!env.DB || !/^[A-Za-z0-9_-]{40,50}$/.test(token)) return bad(request, "共有記録が見つかりません", 404);
   const tokenHash = await sha256(token);
@@ -233,6 +268,7 @@ export default {
     if (path === "/api/auth/session" && request.method === "POST") return createAuthSession(request, env);
     if (path === "/api/auth/logout" && request.method === "POST") return logoutSession(request, env);
     if (path === "/api/shares" && request.method === "POST") return createShare(request, env);
+    if (path === "/api/imports" && request.method === "POST") return createPlanImport(request, env);
     const shareMatch = path.match(/^\/api\/shares\/([A-Za-z0-9_-]+)$/);
     if (shareMatch && request.method === "GET") return readShare(request, env, shareMatch[1]);
     if (shareMatch && request.method === "DELETE") return revokeShare(request, env, shareMatch[1]);
@@ -241,7 +277,33 @@ export default {
       const r = await env.DB.prepare("SELECT p.id,p.title,p.story,p.place_name,p.media_type,p.created_at,u.display_name FROM posts p JOIN users u ON u.id=p.user_id WHERE p.visibility='public' ORDER BY p.created_at DESC LIMIT 40").all();
       return json(request, { ok: true, items: r.results || [] });
     }
+
+    const importMatch = path.match(/^\/api\/imports\/([A-Za-z0-9_-]{40,50})$/);
     const user = await userFrom(request, env);
+    if (importMatch && request.method === "POST") {
+      if (!env.DB) return bad(request, "旅行連携データベースが未設定です", 503);
+      const tokenHash = await sha256(importMatch[1]);
+      const record = await env.DB.prepare("SELECT id,payload_json,expires_at,claimed_at FROM plan_imports WHERE token_hash=?").bind(tokenHash).first();
+      const now = Math.floor(Date.now() / 1000);
+      if (!record || record.expires_at <= now || record.claimed_at) return bad(request, "この旅行プランの連携URLは無効か、すでに使用されています", 410);
+      let plan;
+      try { plan = cleanAileronPlan(JSON.parse(record.payload_json)); } catch { plan = null; }
+      if (!plan) return bad(request, "連携する旅行プランを読み込めません", 500);
+      const tripId = uuid();
+      const statements = [
+        env.DB.prepare("UPDATE plan_imports SET claimed_at=?,claimed_by=? WHERE id=? AND claimed_at IS NULL AND expires_at>?")
+          .bind(now, user.id, record.id, now),
+        env.DB.prepare("INSERT INTO trips(id,user_id,title,area,description,visibility,source,external_plan_id,start_date,end_date,budget_amount,budget_currency) SELECT ?,?,?,?,?,'private','aileron',?,NULL,NULL,?,? WHERE EXISTS(SELECT 1 FROM plan_imports WHERE id=? AND claimed_by=? AND claimed_at=?)")
+          .bind(tripId, user.id, plan.title, plan.area, plan.description, record.id, plan.budgetAmount, plan.budgetCurrency, record.id, user.id, now)
+      ];
+      for (const stop of plan.stops) {
+        statements.push(env.DB.prepare("INSERT INTO trip_stops(id,trip_id,name,note,sort_order,location_precision,latitude,longitude,external_place_id) SELECT ?,?,?,?,?,'approximate',?,?,? WHERE EXISTS(SELECT 1 FROM trips WHERE id=? AND user_id=?)")
+          .bind(uuid(), tripId, stop.name, stop.nights ? stop.nights + "泊" : "", stop.sortOrder, stop.latitude, stop.longitude, stop.externalPlaceId || null, tripId, user.id));
+      }
+      const results = await env.DB.batch(statements);
+      if (!results?.[0]?.meta?.changes) return bad(request, "この旅行プランはすでに取り込まれています", 409);
+      return json(request, { ok: true, tripId, title: plan.title, importedStops: plan.stops.length });
+    }
     if (!user) return bad(request, "ログイン状態を確認できません。再度ログインしてください。", 401);
     await env.DB.prepare("INSERT OR IGNORE INTO users(id,display_name) VALUES(?,?)").bind(user.id, user.name).run();
     if (path === "/api/me" && request.method === "GET") {
@@ -249,18 +311,19 @@ export default {
     }
     if (path === "/api/sync" && request.method === "GET") {
       const tripRows = await env.DB.prepare(
-        "SELECT t.id,t.title,t.area,t.description,t.visibility,t.start_date,t.end_date,t.budget_amount,t.budget_currency,t.source,s.name AS stop_name,s.note AS stop_note,s.sort_order FROM trips t LEFT JOIN trip_stops s ON s.trip_id=t.id WHERE t.user_id=? AND t.source='native' ORDER BY t.created_at DESC,s.sort_order ASC"
+        "SELECT t.id,t.title,t.area,t.description,t.visibility,t.start_date,t.end_date,t.budget_amount,t.budget_currency,t.source,s.name AS stop_name,s.note AS stop_note,s.sort_order,s.latitude AS stop_latitude,s.longitude AS stop_longitude,s.external_place_id FROM trips t LEFT JOIN trip_stops s ON s.trip_id=t.id WHERE t.user_id=? AND t.source IN ('native','aileron') ORDER BY t.created_at DESC,s.sort_order ASC"
       ).bind(user.id).all();
       const tripMap = new Map();
       for (const row of tripRows.results || []) {
         if (!tripMap.has(row.id)) tripMap.set(row.id, {
           id: row.id, title: row.title, area: row.area, description: row.description,
           visibility: row.visibility, start_date: row.start_date, end_date: row.end_date, budget_amount: row.budget_amount || 0, budget_currency: row.budget_currency || "JPY",
-          source: row.source, stops: [], actual: [], dayPlans: []
+          source: row.source, stops: [], stopLocations: [], actual: [], dayPlans: []
         });
         if (row.stop_name) {
           tripMap.get(row.id).stops.push(row.stop_name);
           if (row.stop_note === "visited") tripMap.get(row.id).actual.push(row.stop_name);
+          if (Number.isFinite(Number(row.stop_latitude)) && Number.isFinite(Number(row.stop_longitude))) tripMap.get(row.id).stopLocations.push({ name: row.stop_name, latitude: Number(row.stop_latitude), longitude: Number(row.stop_longitude), externalPlaceId: row.external_place_id || "" });
         }
       }
       const itineraryRows = await env.DB.prepare(
