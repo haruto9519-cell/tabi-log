@@ -249,7 +249,7 @@ export default {
     const path = url.pathname;
     if (request.method === "OPTIONS") return new Response(null, { headers: cors(request) });
     if (path === "/api/health" && request.method === "GET") {
-      const database = { configured: Boolean(env.DB), coreSchemaReady: false, shareSchemaReady: false, itinerarySchemaReady: false, expensesSchemaReady: false };
+      const database = { configured: Boolean(env.DB), coreSchemaReady: false, shareSchemaReady: false, itinerarySchemaReady: false, expensesSchemaReady: false, planImportsSchemaReady: false, stopCoordinatesSchemaReady: false };
       if (env.DB) {
         try {
           const result = await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table'").all();
@@ -259,11 +259,15 @@ export default {
           database.authSchemaReady = tables.has("auth_sessions");
           database.itinerarySchemaReady = tables.has("itinerary_items");
           database.expensesSchemaReady = tables.has("travel_expenses");
+          database.planImportsSchemaReady = tables.has("plan_imports");
+          const stopColumns = await env.DB.prepare("PRAGMA table_info(trip_stops)").all();
+          const stopColumnNames = new Set((stopColumns.results || []).map(row => row.name));
+          database.stopCoordinatesSchemaReady = ["latitude","longitude","external_place_id"].every(name => stopColumnNames.has(name));
         } catch {
           database.querySucceeded = false;
         }
       }
-      return json(request, { ok: true, service: "tabi-log-api", version: "1.7-expenses", database });
+      return json(request, { ok: true, service: "tabi-log-api", version: "1.8-aileron-import", database });
     }
     if (path === "/api/auth/session" && request.method === "POST") return createAuthSession(request, env);
     if (path === "/api/auth/logout" && request.method === "POST") return logoutSession(request, env);
@@ -323,7 +327,7 @@ export default {
         if (row.stop_name) {
           tripMap.get(row.id).stops.push(row.stop_name);
           if (row.stop_note === "visited") tripMap.get(row.id).actual.push(row.stop_name);
-          if (Number.isFinite(Number(row.stop_latitude)) && Number.isFinite(Number(row.stop_longitude))) tripMap.get(row.id).stopLocations.push({ name: row.stop_name, latitude: Number(row.stop_latitude), longitude: Number(row.stop_longitude), externalPlaceId: row.external_place_id || "" });
+          if (row.stop_latitude !== null && row.stop_latitude !== undefined && row.stop_longitude !== null && row.stop_longitude !== undefined && Number.isFinite(Number(row.stop_latitude)) && Number.isFinite(Number(row.stop_longitude))) tripMap.get(row.id).stopLocations.push({ name: row.stop_name, latitude: Number(row.stop_latitude), longitude: Number(row.stop_longitude), externalPlaceId: row.external_place_id || "" });
         }
       }
       const itineraryRows = await env.DB.prepare(
