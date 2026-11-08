@@ -284,12 +284,17 @@ export default {
         if (!id || !title || !area || !visibility || startDate === undefined || endDate === undefined) {
           return bad(request, "旅行データの形式を確認してください");
         }
-        const stops = Array.isArray(item.stops) ? item.stops.slice(0, 40).map((stop, index) => ({
+        const plannedStops = Array.isArray(item.stops) ? item.stops.slice(0, 40) : [];
+        const actualStops = Array.isArray(item.actual) ? item.actual.slice(0, 40) : [];
+        const stopNames = [...plannedStops, ...actualStops.filter(name => !plannedStops.includes(name))];
+        const stops = stopNames.map((stop, index) => ({
           name: cleanText(stop, 100), sort: index,
-          visited: Array.isArray(item.actual) && item.actual.includes(stop)
-        })).filter(stop => stop.name) : [];
+          visited: actualStops.includes(stop)
+        })).filter(stop => stop.name);
         normalizedTrips.push({ id, title, area, description, visibility, startDate, endDate, stops });
       }
+      const totalStops = normalizedTrips.reduce((sum, item) => sum + item.stops.length, 0);
+      if (totalStops > 500) return bad(request, "立ち寄り先が多すぎます。一度に同期できるのは500件までです", 413);
       const ownedTripIds = new Set(normalizedTrips.map(item => item.id));
       for (const item of normalizedTrips) {
         const existing = await env.DB.prepare("SELECT user_id FROM trips WHERE id=?").bind(item.id).first();
