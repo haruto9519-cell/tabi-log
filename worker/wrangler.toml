@@ -1,4 +1,4 @@
-name = "tabi-log-api"
+name = "tabi-log"
 main = "src/index.js"
 compatibility_date = "2026-11-08"
 
