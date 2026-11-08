@@ -1,18 +1,90 @@
 <!doctype html>
-<html lang="ja"><head>
+<html lang="ja">
+<head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#10263d"><meta name="description" content="旅の計画も、写真も、思い出も。地図につないで次の旅へ。">
-<title>旅ログ — 旅の記録を、次の旅へ。</title><link rel="stylesheet" href="styles.css"></head>
+<meta name="theme-color" content="#10263d">
+<meta name="description" content="旅行の計画、日程、写真、動画、日記、費用をひとつにまとめる個人旅行記録サービス。">
+<title>旅ログ — 自分の旅を、ひとつに。</title>
+<link rel="stylesheet" href="styles.css">
+</head>
 <body>
-<header class="topbar"><a class="brand" href="#home"><span class="brand-icon">旅</span><span>旅ログ</span></a><nav><a href="#discover">旅を見つける</a><a href="#mytrips">旅程・日記</a><a href="#mypage">マイページ</a></nav><div class="auth-area"><div id="googleLogin"></div><div id="authStatus" aria-live="polite"></div></div><div class="header-actions"><button class="btn ghost" id="openTrip">＋ 旅程</button><button class="btn gold" id="openPost">＋ 記録する</button></div></header>
+<header class="topbar">
+ <a class="brand" href="#home"><span class="brand-icon">旅</span><span>旅ログ</span></a>
+ <nav><a href="#mytrips">旅行一覧</a><a href="#diary">日記・思い出</a><a href="#mypage">マイページ</a></nav>
+ <div class="auth-area"><div id="googleLogin"></div><div id="authStatus" aria-live="polite"></div></div>
+ <div class="header-actions"><button class="btn ghost" id="openTrip">＋ 旅行を作成</button><button class="btn gold" id="openPost">＋ 思い出を記録</button></div>
+</header>
 <main id="home">
-<section class="hero"><div class="hero-content"><span class="kicker">TRAVEL MEMORIES, CONNECTED</span><h1>旅の記録を、<br><em>次の旅</em>へ。</h1><p>計画したルートに、写真と物語を重ねていく。<br>誰かの旅が、あなたの次の目的地になる。</p><div class="hero-buttons"><a class="btn gold" href="#discover">みんなの旅を見る</a><button class="btn outline-light" id="heroTrip">自分の旅をつくる</button></div><div class="hero-note"><span>01 計画する</span><i></i><span>02 記録する</span><i></i><span>03 誰かの旅へ</span></div></div><div class="hero-visual"><div class="hero-map-grid"></div><svg viewBox="0 0 540 360" class="hero-route" aria-hidden="true"><path d="M65 270 C130 60 210 300 280 145 S420 65 480 240" fill="none" stroke="#d7ad6c" stroke-width="4" stroke-dasharray="8 9"/><circle cx="65" cy="270" r="9" fill="#d7ad6c"/><circle cx="280" cy="145" r="9" fill="#d7ad6c"/><circle cx="480" cy="240" r="9" fill="#d7ad6c"/></svg><div class="floating-photo fp1"><div class="photo-art kyoto">⛩</div><b>京都の朝</b><small>08:32 · DAY 1</small></div><div class="floating-photo fp2"><div class="photo-art sea">🌊</div><b>海辺の夕暮れ</b><small>17:46 · DAY 2</small></div><div class="map-tag">YOUR STORY ON THE MAP</div></div></section>
-<section class="quick-stats"><div><b id="statTrips">0</b><span>あなたの旅程</span></div><div><b id="statPosts">0</b><span>旅の記録</span></div><div><b id="statSaved">0</b><span>保存した旅</span></div><div class="stat-message">思い出を残すたび、次の旅が近づく。</div></section>
-<section id="discover" class="section"><div class="section-heading"><div><span class="kicker">DISCOVER JOURNEYS</span><h2>誰かの旅を、のぞいてみる。</h2><p>写真・場所・旅程から、まだ知らない行き先を見つけよう。以下は操作確認用のサンプル投稿です。</p></div><div class="feed-controls"><div class="searchbox">⌕ <input id="feedSearch" placeholder="場所・タイトルで検索"></div><select id="feedSort"><option value="recommend">おすすめ</option><option value="new">新着順</option><option value="popular">人気順</option></select></div></div><div class="category-row"><button class="chip active" data-category="すべて">すべて</button><button class="chip" data-category="街歩き">街歩き</button><button class="chip" data-category="自然">自然</button><button class="chip" data-category="グルメ">グルメ</button><button class="chip" data-category="文化・歴史">文化・歴史</button><button class="chip" data-category="アニメ・ゲーム">アニメ・ゲーム</button></div><div id="feed" class="feed-grid"></div></section>
-<section id="mytrips" class="section muted-section"><div class="section-heading"><div><span class="kicker">MY TRAVEL PLANNER</span><h2>計画から、旅の記録まで。</h2><p>予定した場所と、実際に歩いた場所。ひとつの旅にまとめよう。</p></div><button class="btn navy" id="newTrip2">＋ 新しい旅程</button></div><div class="planner-layout"><div class="trip-column"><div class="subhead"><b>あなたの旅程</b><span id="tripTotal"></span></div><div id="tripCards"></div></div><div class="map-card"><div class="map-header"><div><b id="mapTitle">旅のルート</b><small>ルートプレビュー</small></div><span class="map-pill">SAMPLE MAP</span></div><div id="routeMap" class="route-map"><svg viewBox="0 0 600 340" preserveAspectRatio="none"><path class="river" d="M-20 250 C130 170 170 330 310 220 S470 90 630 150"/><path class="road" d="M0 70 L600 300 M20 330 L530 0 M250 -20 L370 370"/><path id="routePath" class="route-path" d="M90 245 C180 70 300 280 430 100"/></svg><div id="mapPins"></div><span class="map-disclaimer">位置はテスト用のイメージ表示です。実地図・GPSとは未接続。</span></div><div id="mapStopList" class="map-stop-list"></div></div></div></section>
-<section class="section diary-section"><div class="section-heading"><div><span class="kicker">TRAVEL DIARY</span><h2>旅の一日を、時系列で。</h2><p>いつ・どこで・何を感じたか。写真と一緒に振り返ろう。</p></div></div><div id="diaryTimeline" class="timeline"></div></section>
-<section id="mypage" class="section profile-section"><div class="profile-banner"><div class="profile-avatar" id="profileAvatar">旅</div><div class="profile-info"><span class="kicker">YOUR TRAVEL PROFILE</span><h2 id="profileName">旅好きユーザー</h2><p id="profileBio">旅の記録を、少しずつ。</p><div class="profile-counts"><span><b id="profilePostCount">0</b> 投稿</span><span><b id="profileTripCount">0</b> 旅程</span><span><b id="followingCount">0</b> フォロー中</span></div></div><button class="btn light" id="editProfile">プロフィール編集</button></div><div class="settings-row"><div><b>プライバシーと安全</b><p>位置情報や投稿の公開範囲を自分で管理できます。</p></div><button class="btn ghost" id="privacySettings">設定を確認</button></div><div class="settings-row"><div><b>ブロック・通報の管理</b><p>不適切な投稿やアカウントを報告できます。</p></div><button class="btn ghost" id="safetyInfo">安全機能</button></div></section>
-</main><footer><a class="brand footer-brand" href="#home"><span class="brand-icon">旅</span><span>旅ログ</span></a><span>旅の記録を、次の旅へ。</span><small>Independent prototype · Aileron integration-ready</small></footer>
-<dialog id="tripDialog"><form id="tripForm"><div class="dialog-title"><div><span class="kicker">NEW JOURNEY</span><h3>旅程をつくる</h3></div><button type="button" class="close" data-close="tripDialog">×</button></div><label>旅のタイトル<input name="title" required maxlength="70" placeholder="例：京都・奈良 2泊3日"></label><div class="two-fields"><label>エリア<input name="area" required maxlength="60" placeholder="京都・奈良"></label><label>日程<input name="date" type="date"></label></div><label>旅のテーマ<textarea name="description" maxlength="180" placeholder="この旅で楽しみにしていること"></textarea></label><label>公開範囲<select name="visibility"><option value="private">自分のみ（初期設定）</option><option value="public">公開（現在は端末内の設定のみ）</option></select></label><p class="hint">旅程はこのブラウザ内に保存されます。公開設定にしても、共有URLを発行しない限り他の利用者には公開されません。</p><label>最初の立ち寄り先（任意）<input name="stops" placeholder="清水寺, 伏見稲荷大社, 奈良公園"></label><button class="btn navy full" type="submit">旅程を作成</button></form></dialog>
-<dialog id="postDialog"><form id="postForm"><div class="dialog-title"><div><span class="kicker">NEW MEMORY</span><h3>旅の記録を投稿</h3></div><button type="button" class="close" data-close="postDialog">×</button></div><label>投稿する旅程<select name="tripId" id="postTripSelect"><option value="">旅程に紐づけない</option></select></label><label>タイトル<input name="title" required maxlength="70" placeholder="例：朝いちばんの清水寺"></label><div class="two-fields"><label>場所<input name="place" required maxlength="80" placeholder="清水寺・京都"></label><label>カテゴリ<select name="category"><option>街歩き</option><option>自然</option><option>グルメ</option><option>文化・歴史</option><option>アニメ・ゲーム</option></select></label></div><label>思い出・ストーリー<textarea name="story" required maxlength="600" placeholder="その場所で感じたこと、旅のエピソード"></textarea></label><div class="two-fields"><label>撮影日時<input name="capturedAt" type="datetime-local"></label><label>写真・動画<input name="media" type="file" accept="image/*,video/*"></label></div><label>公開範囲<select name="visibility"><option value="private">自分のみ（初期設定）</option><option value="public">公開</option></select></label><label class="check"><input type="checkbox" name="approxLocation"> おおよその場所を公開する（正確な座標は保存しません）</label><p class="hint">このテスト版では投稿とメディアは使用中のブラウザ内に保存されます。他の人にはまだ公開されません。</p><button class="btn navy full" type="submit">記録を保存</button></form></dialog>
-<dialog id="profileDialog"><form id="profileForm"><div class="dialog-title"><div><span class="kicker">PROFILE</span><h3>プロフィール編集</h3></div><button type="button" class="close" data-close="profileDialog">×</button></div><label>表示名<input name="name" maxlength="30" required></label><label>自己紹介<textarea name="bio" maxlength="140"></textarea></label><button class="btn navy full" type="submit">保存</button></form></dialog><dialog id="privacyDialog"><div class="dialog-inner"><div class="dialog-title"><div><span class="kicker">PRIVACY</span><h3>プライバシー設定</h3></div><button class="close" data-close="privacyDialog">×</button></div><p>テスト版では公開範囲を初期状態で「自分のみ」にしています。位置情報は正確な座標を取得・保存しません。</p><ul><li>投稿ごとに公開範囲を選択</li><li>正確な位置情報は初期版で収集しない</li><li>旅行中のリアルタイム位置共有は行わない</li><li>本番公開前にログイン・権限管理を接続</li></ul><button class="btn navy full" data-close="privacyDialog">確認</button></div></dialog><dialog id="safetyDialog"><div class="dialog-inner"><div class="dialog-title"><div><span class="kicker">COMMUNITY SAFETY</span><h3>安全機能</h3></div><button class="close" data-close="safetyDialog">×</button></div><p>投稿メニューから通報できます。ブロックはこのブラウザ内で非表示にするテスト機能です。</p><p>本番公開前に、運営者による通報確認・削除依頼窓口・利用規約・年齢に配慮した運用を整備します。初期テスト版にDM機能はありません。</p><button class="btn navy full" data-close="safetyDialog">確認</button></div></dialog><div id="toast" role="status" aria-live="polite"></div><script id="googleIdentityScript" src="https://accounts.google.com/gsi/client" async defer></script><script src="config.js"></script><script src="app.js"></script></body></html>
+<section class="hero">
+ <div class="hero-content">
+  <span class="kicker">YOUR PERSONAL TRAVEL JOURNAL</span>
+  <h1>自分の旅を、<br><em>ひとつに。</em></h1>
+  <p>旅程も、訪れた場所も、写真も、日記も。<br>旅の前から旅のあとまで、ひとつの場所に残そう。</p>
+  <div class="hero-buttons"><a class="btn gold" href="#mytrips">旅行を整理する</a><button class="btn outline-light" id="heroTrip">新しい旅行をつくる</button></div>
+  <div class="hero-note"><span>01 計画する</span><i></i><span>02 記録する</span><i></i><span>03 振り返る・共有する</span></div>
+ </div>
+ <div class="hero-visual">
+  <div class="hero-map-grid"></div>
+  <svg viewBox="0 0 540 360" class="hero-route" aria-hidden="true"><path d="M65 270 C130 60 210 300 280 145 S420 65 480 240" fill="none" stroke="#d7ad6c" stroke-width="4" stroke-dasharray="8 9"/><circle cx="65" cy="270" r="9" fill="#d7ad6c"/><circle cx="280" cy="145" r="9" fill="#d7ad6c"/><circle cx="480" cy="240" r="9" fill="#d7ad6c"/></svg>
+  <div class="floating-photo fp1"><div class="photo-art kyoto">⛩</div><b>旅の写真</b><small>思い出を整理</small></div>
+  <div class="floating-photo fp2"><div class="photo-art sea">🌊</div><b>旅の日記</b><small>その日の記録</small></div>
+  <div class="map-tag">YOUR JOURNEY, YOUR MEMORY</div>
+ </div>
+</section>
+<section class="quick-stats">
+ <div><b id="statTrips">0</b><span>保存した旅行</span></div>
+ <div><b id="statPosts">0</b><span>日記・思い出</span></div>
+ <div><b id="statSaved">0</b><span>保存した旅</span></div>
+ <div class="stat-message">旅のすべてを、自分のペースで。</div>
+</section>
+<section id="mytrips" class="section muted-section">
+ <div class="section-heading"><div><span class="kicker">MY JOURNEYS</span><h2>旅行をまとめて管理する。</h2><p>旅行ごとに日程・訪問先・記録を整理。予定と実際の旅をひとつに。</p></div><button class="btn navy" id="newTrip2">＋ 新しい旅行</button></div>
+ <div class="planner-layout">
+  <div class="trip-column"><div class="subhead"><b>あなたの旅行</b><span id="tripTotal"></span></div><div id="tripCards"></div></div>
+  <div class="map-card">
+   <div class="map-header"><div><b id="mapTitle">訪問先リスト</b><small>選択した旅行の立ち寄り先</small></div><span class="map-pill">PLACE LIST</span></div>
+   <div id="routeMap" class="route-map" style="display:grid;place-items:center;background:#edf2ef"><div style="text-align:center;padding:24px;color:#647780"><div style="font-size:30px;margin-bottom:8px">📍</div><b>訪問先を整理</b><p style="font-size:11px;line-height:1.7">実地図・GPS・経路検索は今後接続します。現在は訪問先リストを管理できます。</p></div><div id="mapPins" hidden></div></div>
+   <div id="mapStopList" class="map-stop-list"></div>
+  </div>
+ </div>
+</section>
+<section id="diary" class="section diary-section">
+ <div class="section-heading"><div><span class="kicker">MY TRAVEL DIARY</span><h2>旅の思い出を振り返る。</h2><p>写真・動画・場所・その日の気持ちを、時系列で残そう。</p></div><button class="btn navy" id="openDiaryEntry" type="button">＋ 日記を追加</button></div>
+ <div id="diaryTimeline" class="timeline"></div>
+</section>
+<section id="mypage" class="section profile-section">
+ <div class="section-heading"><div><span class="kicker">YOUR PROFILE</span><h2>マイページ</h2><p>旅行記録の設定とプロフィールを管理。</p></div></div>
+ <div class="profile-banner"><div class="profile-avatar" id="profileAvatar">旅</div><div class="profile-info"><h2 id="profileName">旅好きユーザー</h2><p id="profileBio">自分の旅を、少しずつ。</p><div class="profile-counts"><span><b id="profilePostCount">0</b> 記録</span><span><b id="profileTripCount">0</b> 旅行</span><span id="followingCount" hidden>0</span></div></div><button class="btn light" id="editProfile">プロフィール編集</button></div>
+ <div class="settings-row"><div><b>プライバシーと共有</b><p>旅行記録は自分のみを初期設定にし、共有は専用URLを発行したものだけにします。</p></div><button class="btn ghost" id="privacySettings">設定を確認</button></div>
+</section>
+</main>
+<footer><a class="brand footer-brand" href="#home"><span class="brand-icon">旅</span><span>旅ログ</span></a><span>自分の旅を、ひとつに。</span><small>Personal travel journal</small></footer>
+
+<dialog id="tripDialog"><form id="tripForm">
+ <div class="dialog-title"><div><span class="kicker">NEW JOURNEY</span><h3>旅行をつくる</h3></div><button type="button" class="close" data-close="tripDialog">×</button></div>
+ <label>旅行のタイトル<input name="title" required maxlength="70" placeholder="例：京都・奈良 2泊3日"></label>
+ <div class="two-fields"><label>エリア・目的地<input name="area" required maxlength="60" placeholder="京都・奈良"></label><label>開始日<input name="date" type="date"></label></div>
+ <label>旅行のテーマ・メモ<textarea name="description" maxlength="500" placeholder="この旅行で楽しみたいこと、宿泊先や準備メモなど"></textarea></label>
+ <label>最初の訪問先（任意）<input name="stops" maxlength="500" placeholder="清水寺, 伏見稲荷大社, 奈良公園"></label>
+ <p class="hint">旅行データは現在このブラウザに保存されます。クラウド同期は次の開発工程で接続します。</p>
+ <button class="btn navy full" type="submit">旅行を作成</button>
+</form></dialog>
+<dialog id="postDialog"><form id="postForm">
+ <div class="dialog-title"><div><span class="kicker">TRAVEL MEMORY</span><h3>日記・思い出を記録</h3></div><button type="button" class="close" data-close="postDialog">×</button></div>
+ <label>旅行<select name="tripId" id="postTripSelect"><option value="">旅行に紐づけない</option></select></label>
+ <label>タイトル<input name="title" required maxlength="70" placeholder="例：朝の清水寺を訪れた"></label>
+ <div class="two-fields"><label>場所<input name="place" required maxlength="80" placeholder="清水寺・京都"></label><label>日時<input name="capturedAt" type="datetime-local"></label></div>
+ <label>思い出・日記<textarea name="story" required maxlength="2000" placeholder="訪れた場所、体験したこと、感じたことを残そう"></textarea></label>
+ <label>写真・動画<input name="media" type="file" accept="image/*,video/*"></label>
+ <p class="hint">写真・動画は現在この端末内に保存されます。クラウド保存と別端末での復元は今後接続します。記録は初期状態で自分のみです。</p>
+ <input type="hidden" name="category" value="旅の記録"><input type="hidden" name="visibility" value="private">
+ <button class="btn navy full" type="submit">記録を保存</button>
+</form></dialog>
+<dialog id="profileDialog"><form id="profileForm"><div class="dialog-title"><div><span class="kicker">PROFILE</span><h3>プロフィール編集</h3></div><button type="button" class="close" data-close="profileDialog">×</button></div><label>表示名<input name="name" maxlength="30" required></label><label>自己紹介<textarea name="bio" maxlength="140"></textarea></label><button class="btn navy full" type="submit">保存</button></form></dialog>
+<dialog id="privacyDialog"><div class="dialog-inner"><div class="dialog-title"><div><span class="kicker">PRIVACY</span><h3>プライバシーと共有</h3></div><button class="close" data-close="privacyDialog">×</button></div><p>旅ログでは、旅行記録を自分だけで管理することを基本にします。</p><ul><li>旅行・日記は自分のみを初期設定にします</li><li>共有は旅行ごとに専用URLを発行した場合のみ行います</li><li>共有URLは知っている人が閲覧できるリンクとして扱います</li><li>正確な位置情報の自動取得・公開は行いません</li></ul><button class="btn navy full" data-close="privacyDialog">確認</button></div></dialog>
+<!-- 旧データ互換用。SNS画面としては表示しません。 -->
+<section hidden aria-hidden="true"><input id="feedSearch"><select id="feedSort"><option value="recommend">おすすめ</option></select><button class="chip" data-category="すべて"></button><div id="feed"></div></section>
+<div id="toast" role="status" aria-live="polite"></div>
+<script id="googleIdentityScript" src="https://accounts.google.com/gsi/client" async defer></script><script src="config.js"></script><script src="app.js"></script>
+<script>document.addEventListener("DOMContentLoaded",()=>{const b=document.getElementById("openDiaryEntry");if(b)b.addEventListener("click",()=>document.getElementById("openPost")?.click());});</script>
+</body></html>
