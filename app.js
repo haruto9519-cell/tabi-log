@@ -39,6 +39,7 @@ async function restoreSession(){
   const data=await res.json();
   if(!res.ok||!data.ok)throw new Error(data.error||"セッションの期限が切れています");
   signedInUser=data.user;
+  activateAccountStorage(signedInUser);
   await syncCloudData();
   await processPendingImport();
  }catch{
@@ -57,6 +58,7 @@ async function handleGoogleCredential(response){
   sessionToken=data.sessionToken;
   sessionStorage.setItem(SESSION_KEY,sessionToken);
   signedInUser=data.user;
+  activateAccountStorage(signedInUser);
   renderAuth();
   await syncCloudData();
   await processPendingImport();
@@ -72,6 +74,7 @@ async function logoutFromApp(){
  }catch{}
  sessionToken="";
  signedInUser=null;
+ activeAccountStorageId=null;
  sessionStorage.removeItem(SESSION_KEY);
  if(window.google?.accounts?.id)window.google.accounts.id.disableAutoSelect();
  renderAuth();
@@ -97,8 +100,43 @@ const read=(k,d)=>{try{return JSON.parse(localStorage.getItem("tabilog_"+k))??d}
 shareRecords=read("shares",{});
 let posts=read("posts",seedPosts),trips=read("trips",seedTrips),expenses=read("expenses",[]),saved=read("saved",[]),following=read("following",[]),blocked=read("blocked",[]),profile=read("profile",{name:"旅好きユーザー",bio:"旅の記録を、少しずつ。"}),selectedTrip=trips[0]?.id||null,category="すべて",feedSort="recommend",mediaUrls={};
 let cloudSyncTimer=null,cloudSyncBusy=false,cloudSyncHydrating=false,cloudSyncQueued=false,activeItineraryTripId=null;
+let activeAccountStorageId=null;
+const LOCAL_STATE_DEFAULTS={posts:seedPosts,trips:seedTrips,expenses:[],saved:[],following:[],blocked:[],profile:{name:"旅好きユーザー",bio:"旅の記録を、少しずつ。"},shares:{}};
+function accountStorageKey(userId,key){return "tabilog_account_"+encodeURIComponent(String(userId))+"_"+key;}
+function currentLocalState(){return {posts,trips,expenses,saved,following,blocked,profile,shares:shareRecords};}
+function writeLocalState(state,userId=activeAccountStorageId){
+ for(const [key,value] of Object.entries(state)){
+  const storageKey=userId?accountStorageKey(userId,key):"tabilog_"+key;
+  localStorage.setItem(storageKey,JSON.stringify(value));
+ }
+}
+function activateAccountStorage(user){
+ if(!user?.id)return;
+ const userId=String(user.id);
+ if(activeAccountStorageId===userId)return;
+ const keys=Object.keys(LOCAL_STATE_DEFAULTS);
+ const hasAccountState=keys.some(key=>localStorage.getItem(accountStorageKey(userId,key))!==null);
+ const legacyAlreadyMigrated=localStorage.getItem("tabilog_legacy_account_migrated")==="1";
+ if(!hasAccountState&&!legacyAlreadyMigrated){
+  // Migrate the existing guest/device data to the first account only.
+  writeLocalState(currentLocalState(),userId);
+  localStorage.setItem("tabilog_legacy_account_migrated","1");
+ }else{
+  const loaded={};
+  for(const key of keys){
+   try{
+    const raw=localStorage.getItem(accountStorageKey(userId,key));
+    loaded[key]=raw===null?LOCAL_STATE_DEFAULTS[key]:JSON.parse(raw);
+   }catch{loaded[key]=LOCAL_STATE_DEFAULTS[key];}
+  }
+  posts=loaded.posts;trips=loaded.trips;expenses=loaded.expenses;saved=loaded.saved;
+  following=loaded.following;blocked=loaded.blocked;profile=loaded.profile;shareRecords=loaded.shares;
+  selectedTrip=trips[0]?.id||null;
+ }
+ activeAccountStorageId=userId;
+}
 function save(){
- for(const [k,v] of Object.entries({posts,trips,expenses,saved,following,blocked,profile,shares:shareRecords}))localStorage.setItem("tabilog_"+k,JSON.stringify(v));
+ writeLocalState(currentLocalState());
  if(signedInUser&&!cloudSyncHydrating){
   clearTimeout(cloudSyncTimer);
   cloudSyncTimer=setTimeout(()=>syncCloudData(),1200);
@@ -143,9 +181,12 @@ async function syncCloudData(){
   const postIds=new Set(posts.map(p=>p.id));
   for(const p of remotePosts)if(!postIds.has(p.id))posts.push(p);
   // Signed-in cloud data is authoritative for expenses so deletions on another device do not reappear.
-  expenses.splice(0,expenses.length,...remoteExpenses);
+  const firstCloudSyncKey="tabilog_account_"+encodeURIComponent(String(signedInUser.id))+"_cloud_initialized";
+  const isFirstCloudSync=localStorage.getItem(firstCloudSyncKey)!=="1";
+  const mergedExpenses=isFirstCloudSync?[...remoteExpenses,...expenses.filter(local=>!remoteExpenses.some(remoteItem=>remoteItem.id===local.id)&&trips.some(t=>t.id===local.tripId&&t.source==="native"))]:remoteExpenses;
+  expenses.splice(0,expenses.length,...mergedExpenses);
   if(!selectedTrip&&trips.length)selectedTrip=trips[0].id;
-  for(const [k,v] of Object.entries({posts,trips,expenses}))localStorage.setItem("tabilog_"+k,JSON.stringify(v));
+  writeLocalState(currentLocalState());
   cloudSyncHydrating=false;
   const payload={
    trips:trips.filter(t=>t.source==="native").slice(0,100).map(t=>({
@@ -175,6 +216,8 @@ async function syncCloudData(){
   });
   const savedData=await savedResponse.json();
   if(!savedResponse.ok||!savedData.ok)throw new Error(savedData.error||"クラウドへの保存に失敗しました");
+  localStorage.setItem(firstCloudSyncKey,"1");
+  writeLocalState(currentLocalState());
   renderAll();
  }catch(error){
   console.warn("旅ログのクラウド同期に失敗:",error);
