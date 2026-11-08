@@ -221,8 +221,15 @@ async function createPlanImport(request, env) {
   if (parsed.error) return parsed.error;
   const plan = cleanAileronPlan(parsed.data?.plan);
   if (!plan) return bad(request, "Aileronの旅行プラン情報を確認してください");
+  const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+  const ipHash = await sha256(ip + (env.RATE_LIMIT_SALT || "tabi-log-rate-v1"));
+  const now = Math.floor(Date.now() / 1000), windowStart = Math.floor(now / 600) * 600;
+  await env.DB.prepare("INSERT INTO share_rate_limits(ip_hash,window_start,hits) VALUES(?,?,1) ON CONFLICT(ip_hash,window_start) DO UPDATE SET hits=hits+1").bind(ipHash,windowStart).run();
+  const rate = await env.DB.prepare("SELECT hits FROM share_rate_limits WHERE ip_hash=? AND window_start=?").bind(ipHash,windowStart).first();
+  if ((rate?.hits || 0) > 8) return bad(request, "連携URLの発行回数が上限に達しました。10分ほど待ってください", 429);
   const token = randomToken(32), tokenHash = await sha256(token), id = uuid();
-  const now = Math.floor(Date.now() / 1000), expiresAt = now + 86400;
+  const expiresAt = now + 86400;
+  await env.DB.prepare("DELETE FROM plan_imports WHERE expires_at<=? OR claimed_at IS NOT NULL").bind(now).run();
   await env.DB.prepare("INSERT INTO plan_imports(id,token_hash,payload_json,created_at,expires_at) VALUES(?,?,?,?,?)")
     .bind(id, tokenHash, JSON.stringify(plan), now, expiresAt).run();
   return json(request, { ok: true, importUrl: "https://tabi-log.pages.dev/?import=" + token, expiresAt }, 201);
