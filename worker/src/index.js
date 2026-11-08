@@ -95,7 +95,7 @@ async function readShare(request, env, token) {
   if (!row || row.revoked_at || row.expires_at < now) return bad(request, "共有記録が見つからないか、公開期間が終了しています", 404);
   let trip;
   try { trip = JSON.parse(row.payload_json); } catch { return bad(request, "共有記録を読み込めません", 500); }
-  return json(request, { ok: true, trip, expiresAt: row.expires_at }, 200, { "cache-control": "public, max-age=60" });
+  return json(request, { ok: true, trip, expiresAt: row.expires_at }, 200, { "cache-control": "no-store" });
 }
 async function revokeShare(request, env, token) {
   if (!env.DB || !/^[A-Za-z0-9_-]{40,50}$/.test(token)) return bad(request, "共有記録が見つかりません", 404);
