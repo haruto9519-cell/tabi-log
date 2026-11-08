@@ -129,6 +129,8 @@ input:focus,textarea:focus,select:focus{outline:2px solid #d7b77f55;border-color
 .map-pin-state,.map-pin-count{font-size:11px;color:#687780;margin-top:4px}
 .map-pin-photos{display:flex;gap:5px;overflow-x:auto;margin-top:8px}
 .map-pin-photos img{width:76px;height:64px;object-fit:cover;border-radius:5px}
+.map-pin-add-photo{display:block;width:100%;margin-top:10px;padding:9px 11px;border:1px solid #d8c7a7;border-radius:7px;background:#f8f5ef;color:#173447;font:inherit;font-size:12px;font-weight:700;cursor:pointer;text-align:center}
+.map-pin-add-photo:active{background:#eee5d6}
 .stop-pill{border:0;cursor:pointer}
 .stop-pill:hover{background:#e8ddca}
 @media(max-width:640px){.route-map{height:340px;min-height:280px}}
