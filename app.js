@@ -10,9 +10,13 @@ const GOOGLE_CLIENT_ID=window.TABI_LOG_GOOGLE_CLIENT_ID||"";
 const SESSION_KEY="tabiLogSession";
 let sessionToken=sessionStorage.getItem(SESSION_KEY)||"", signedInUser=null, googleInitialized=false;
 function renderAuth(){
- const host=$("#googleLogin"),status=$("#authStatus");
+ const host=$("#googleLogin"),status=$("#authStatus"),importHost=$("#importGoogleLogin");
  if(!host||!status)return;
+ const pendingImport=Boolean(new URLSearchParams(location.search).get("import"));
+ const notice=$("#importAuthNotice");
+ if(notice)notice.hidden=!(pendingImport&&!signedInUser);
  host.innerHTML="";
+ if(importHost)importHost.innerHTML="";
  if(signedInUser){
   status.innerHTML='<span class="auth-name">'+esc(signedInUser.name||"Googleユーザー")+'</span> <button type="button" class="auth-signout" id="googleSignOut">ログアウト</button>';
   $("#googleSignOut").onclick=logoutFromApp;
@@ -21,8 +25,10 @@ function renderAuth(){
  status.textContent="";
  if(window.google?.accounts?.id&&GOOGLE_CLIENT_ID){
   window.google.accounts.id.renderButton(host,{theme:"outline",size:"large",shape:"pill",text:"signin_with",locale:"ja"});
+  if(importHost)window.google.accounts.id.renderButton(importHost,{theme:"filled_blue",size:"large",shape:"pill",text:"signin_with",locale:"ja"});
  }else{
   host.innerHTML='<span class="auth-loading">Googleログインを読み込み中…</span>';
+  if(importHost)importHost.innerHTML='<span class="auth-loading">Googleログインを読み込み中…</span>';
  }
 }
 async function restoreSession(){
