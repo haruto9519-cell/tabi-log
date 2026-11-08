@@ -13,3 +13,7 @@ database_id = "a0a64951-c309-49c6-bd2b-8990299080e2"
 
 [vars]
 GOOGLE_CLIENT_ID = "371718160492-k2a9splus2glu417sonj784ajpqq4401.apps.googleusercontent.com"
+
+[[r2_buckets]]
+binding = "MEDIA"
+bucket_name = "tabi-log-media"
