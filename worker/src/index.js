@@ -1,12 +1,13 @@
+const ALLOWED_ORIGINS = new Set(["https://tabi-log.pages.dev", "http://localhost:8788", "http://127.0.0.1:8788"]);
 const cors = (request) => {
   const origin = request.headers.get("Origin") || "";
-  const allowed = new Set(["https://tabi-log.pages.dev", "http://localhost:8788", "http://127.0.0.1:8788"]);
-  return {
-    "access-control-allow-origin": allowed.has(origin) ? origin : "https://tabi-log.pages.dev",
+  const headers = {
     "access-control-allow-methods": "GET,POST,DELETE,OPTIONS",
     "access-control-allow-headers": "content-type,authorization",
     "vary": "Origin"
   };
+  if (ALLOWED_ORIGINS.has(origin)) headers["access-control-allow-origin"] = origin;
+  return headers;
 };
 const json = (request, data, status = 200, extra = {}) => new Response(JSON.stringify(data), {
   status,
@@ -59,25 +60,58 @@ function cleanShare(input) {
   if (!trip.title || !trip.area) return null;
   return trip;
 }
-async function userFrom(request, env) {
-  if (!env.AUTH_VALIDATE_URL) return null;
-  const auth = request.headers.get("authorization");
-  if (!auth || !/^Bearer\\s+\\S+$/i.test(auth)) return null;
+function decodeBase64Url(value) {
+  const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
+  const padded = normalized + "=".repeat((4 - normalized.length % 4) % 4);
+  const binary = atob(padded);
+  return Uint8Array.from(binary, char => char.charCodeAt(0));
+}
+let googleJwksCache = { keys: [], expiresAt: 0 };
+async function googleSigningKeys() {
+  if (googleJwksCache.expiresAt > Date.now() && googleJwksCache.keys.length) return googleJwksCache.keys;
+  const response = await fetch("https://www.googleapis.com/oauth2/v3/certs", { headers: { "accept": "application/json" } });
+  if (!response.ok) throw new Error("Google signing keys unavailable");
+  const data = await response.json();
+  const cacheControl = response.headers.get("cache-control") || "";
+  const maxAge = Number((cacheControl.match(/max-age=(\d+)/i) || [])[1] || 3600);
+  googleJwksCache = { keys: Array.isArray(data.keys) ? data.keys : [], expiresAt: Date.now() + Math.min(Math.max(maxAge, 60), 86400) * 1000 };
+  return googleJwksCache.keys;
+}
+async function verifyGoogleIdToken(token, env) {
+  if (!env.GOOGLE_CLIENT_ID || typeof token !== "string" || token.length > 10000) return null;
+  const parts = token.split(".");
+  if (parts.length !== 3) return null;
   try {
-    const endpoint = new URL(env.AUTH_VALIDATE_URL);
-    if (endpoint.protocol !== "https:") return null;
-    const r = await fetch(endpoint.toString(), {
-      headers: { authorization: auth },
-      signal: AbortSignal.timeout(5000)
-    });
-    if (!r.ok) return null;
-    const d = await r.json();
-    return typeof d?.sub === "string" && d.sub.length <= 128
-      ? { id: d.sub, name: cleanText(d.name || "Traveler", 40) || "Traveler" }
-      : null;
+    const header = JSON.parse(new TextDecoder().decode(decodeBase64Url(parts[0])));
+    const claims = JSON.parse(new TextDecoder().decode(decodeBase64Url(parts[1])));
+    if (header.alg !== "RS256" || typeof header.kid !== "string") return null;
+    let jwk = (await googleSigningKeys()).find(key => key.kid === header.kid && key.kty === "RSA" && key.use === "sig");
+    if (!jwk) {
+      googleJwksCache.expiresAt = 0;
+      jwk = (await googleSigningKeys()).find(key => key.kid === header.kid && key.kty === "RSA" && key.use === "sig");
+    }
+    if (!jwk) return null;
+    const publicKey = await crypto.subtle.importKey("jwk", jwk, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["verify"]);
+    const signed = new TextEncoder().encode(parts[0] + "." + parts[1]);
+    const validSignature = await crypto.subtle.verify({ name: "RSASSA-PKCS1-v1_5" }, publicKey, decodeBase64Url(parts[2]), signed);
+    if (!validSignature) return null;
+    const now = Math.floor(Date.now() / 1000);
+    const audienceValid = claims.aud === env.GOOGLE_CLIENT_ID || (Array.isArray(claims.aud) && claims.aud.includes(env.GOOGLE_CLIENT_ID));
+    if (!audienceValid || !["accounts.google.com", "https://accounts.google.com"].includes(claims.iss)) return null;
+    if (!Number.isFinite(claims.exp) || claims.exp <= now || (claims.iat && claims.iat > now + 300)) return null;
+    if (typeof claims.sub !== "string" || !claims.sub || claims.sub.length > 128) return null;
+    return { id: claims.sub, name: cleanText(claims.name || "Traveler", 40) || "Traveler" };
   } catch {
     return null;
   }
+}
+async function userFrom(request, env) {
+  const origin = request.headers.get("Origin") || "";
+  if (!ALLOWED_ORIGINS.has(origin)) return null;
+  const auth = request.headers.get("authorization") || "";
+  const match = auth.match(/^Bearer\s+(\S+)$/i);
+  if (!match) return null;
+  return verifyGoogleIdToken(match[1], env);
 }
 async function createShare(request, env) {
   if (!env.DB) return bad(request, "共有APIのデータベースが未設定です", 503);
@@ -169,6 +203,9 @@ export default {
     const user = await userFrom(request, env);
     if (!user) return bad(request, "ログイン機能が未接続です。認証プロバイダーを設定してください。", 401);
     await env.DB.prepare("INSERT OR IGNORE INTO users(id,display_name) VALUES(?,?)").bind(user.id, user.name).run();
+    if (path === "/api/me" && request.method === "GET") {
+      return json(request, { ok: true, user: { id: user.id, name: user.name } });
+    }
     if (path === "/api/trips" && request.method === "GET") {
       const result = await env.DB.prepare("SELECT id,title,area,description,visibility,start_date,end_date,source,created_at,updated_at FROM trips WHERE user_id=? ORDER BY created_at DESC LIMIT 100").bind(user.id).all();
       return json(request, { ok: true, items: result.results || [] });
