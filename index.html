@@ -132,7 +132,7 @@
  <button class="btn navy full" type="submit">変更を保存</button>
 </form></dialog>
 <dialog id="profileDialog"><form id="profileForm"><div class="dialog-title"><div><span class="kicker">PROFILE</span><h3>プロフィール編集</h3></div><button type="button" class="close" data-close="profileDialog">×</button></div><label>表示名<input name="name" maxlength="30" required></label><label>自己紹介<textarea name="bio" maxlength="140"></textarea></label><button class="btn navy full" type="submit">保存</button></form></dialog>
-<dialog id="privacyDialog"><div class="dialog-inner"><div class="dialog-title"><div><span class="kicker">PRIVACY</span><h3>プライバシーと共有</h3></div><button class="close" data-close="privacyDialog">×</button></div><p>旅ログでは、旅行記録を自分だけで管理することを基本にします。</p><ul><li>旅行・日記は自分のみを初期設定にします</li><li>共有は旅行ごとに専用URLを発行した場合のみ行います</li><li>共有URLは知っている人が閲覧できるリンクとして扱います</li><li>正確な位置情報の自動取得・公開は行いません</li></ul><button class="btn navy full" data-close="privacyDialog">確認</button></div></dialog>
+<dialog id="privacyDialog"><div class="dialog-inner"><div class="dialog-title"><div><span class="kicker">PRIVACY</span><h3>プライバシーと共有</h3></div><button class="close" data-close="privacyDialog">×</button></div><p>旅ログでは、旅行記録を自分だけで管理することを基本にします。</p><ul><li>旅行・日記は自分のみを初期設定にします</li><li>共有は旅行ごとに専用URLを発行した場合のみ行います</li><li>共有URLは知っている人が閲覧できるリンクとして扱います</li><li>非公開の日記は共有カードに含めません</li><li>正確な位置情報の自動取得・公開は行いません</li></ul><button class="btn navy full" data-close="privacyDialog">確認</button></div></dialog>
 <!-- 旧データ互換用。SNS画面としては表示しません。 -->
 <section hidden aria-hidden="true"><input id="feedSearch"><select id="feedSort"><option value="recommend">おすすめ</option></select><button class="chip" data-category="すべて"></button><div id="feed"></div></section>
 <div id="toast" role="status" aria-live="polite"></div>
