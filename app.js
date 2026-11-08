@@ -5,7 +5,7 @@ async function mediaPut(key,blob){const db=await openMediaDB();return new Promis
 async function mediaGet(key){const db=await openMediaDB();return new Promise((res,rej)=>{const r=db.transaction(STORE).objectStore(STORE).get(key);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});}
 const uid=()=>crypto.randomUUID();
 const API_BASE=(window.TABI_LOG_API_BASE||"").replace(/\\/$/,"");
-let shareRecords=read("shares",{});
+let shareRecords={};
 const seedPosts=[
 {id:"s1",title:"朝いちばんの清水寺",place:"清水寺・京都",story:"人が少ない時間に訪れた京都の朝。境内から見える街並みがきれいでした。",author:"mika",date:"2026-11-07 08:32",category:"文化・歴史",visual:"v1",symbol:"⛩",likes:24,liked:false,saved:false,visibility:"public",tripId:"t1"},
 {id:"s2",title:"小樽運河の夕暮れ",place:"小樽運河・北海道",story:"夕方の光が水面に映って、ゆっくり歩くだけで満たされる時間。",author:"旅するソラ",date:"2026-11-06 17:46",category:"街歩き",visual:"v2",symbol:"🌅",likes:18,liked:false,saved:false,visibility:"public",tripId:"t2"},
@@ -20,6 +20,7 @@ const seedTrips=[
 {id:"t4",title:"金沢の街歩き",area:"石川",date:"2026-10-18",description:"歴史ある街並みと食を楽しむ。",visibility:"public",stops:["近江町市場","兼六園","ひがし茶屋街"],actual:["近江町市場","ひがし茶屋街"],isMine:true,owner:"me"},
 {id:"t5",title:"富士五湖の朝旅",area:"山梨",date:"2026-10-05",description:"湖畔から富士山を眺める旅。",visibility:"public",stops:["河口湖","大石公園","忍野八海"],actual:["河口湖"],isMine:true,owner:"me"}];
 const read=(k,d)=>{try{return JSON.parse(localStorage.getItem("tabilog_"+k))??d}catch{return d}};
+shareRecords=read("shares",{});
 let posts=read("posts",seedPosts),trips=read("trips",seedTrips),saved=read("saved",[]),following=read("following",[]),blocked=read("blocked",[]),profile=read("profile",{name:"旅好きユーザー",bio:"旅の記録を、少しずつ。"}),selectedTrip=trips[0]?.id||null,category="すべて",feedSort="recommend",mediaUrls={};
 function save(){for(const [k,v] of Object.entries({posts,trips,saved,following,blocked,profile,shares:shareRecords}))localStorage.setItem("tabilog_"+k,JSON.stringify(v));}
 function toast(s){let t=$("#toast");t.textContent=s;t.classList.add("show");clearTimeout(window.toastTimer);window.toastTimer=setTimeout(()=>t.classList.remove("show"),2300)}
