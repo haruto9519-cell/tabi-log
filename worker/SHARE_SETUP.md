@@ -29,7 +29,9 @@ This change prepares the first server-backed feature for Tabi Log: a user explic
    ```sh
    npx wrangler deploy
    ```
-5. Set the Pages frontend's API base URL to the deployed Worker URL. The UI must not enable share creation until `GET /api/health` succeeds and D1 is connected.
+5. Put the deployed Worker URL in `config.js` as `window.TABI_LOG_API_BASE` (without a trailing slash). Use the actual `workers.dev` URL shown by Cloudflare.
+6. Deploy the Pages project. The trip planner then shows `共有URLを発行`; existing links can be copied again or revoked.
+7. Check `GET <worker-url>/api/health` before testing share creation.
 
 ## API
 
