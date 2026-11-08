@@ -64,16 +64,30 @@
  <div class="dialog-title"><div><span class="kicker">NEW JOURNEY</span><h3>旅行をつくる</h3></div><button type="button" class="close" data-close="tripDialog">×</button></div>
  <label>旅行のタイトル<input name="title" required maxlength="70" placeholder="例：京都・奈良 2泊3日"></label>
  <div class="two-fields"><label>エリア・目的地<input name="area" required maxlength="60" placeholder="京都・奈良"></label><label>開始日<input name="date" type="date"></label></div>
+ <label>終了日<input name="endDate" type="date"></label>
  <label>旅行のテーマ・メモ<textarea name="description" maxlength="500" placeholder="この旅行で楽しみたいこと、宿泊先や準備メモなど"></textarea></label>
  <label>最初の訪問先（任意）<input name="stops" maxlength="500" placeholder="清水寺, 伏見稲荷大社, 奈良公園"></label>
  <p class="hint">ログイン中は旅行データをクラウドにも同期します。写真・動画は端末内に保存されます。</p>
  <button class="btn navy full" type="submit">旅行を作成</button>
+</form></dialog>
+<dialog id="itineraryDialog"><form id="itineraryForm">
+ <div class="dialog-title"><div><span class="kicker">DAY BY DAY PLAN</span><h3 id="itineraryHeading">旅行の日程</h3></div><button type="button" class="close" data-close="itineraryDialog">×</button></div>
+ <input type="hidden" name="tripId">
+ <input type="hidden" name="itemId">
+ <label>日付<input name="dayDate" type="date" required></label>
+ <label>訪問先・予定<input name="name" required maxlength="120" placeholder="例：清水寺を見学"></label>
+ <div class="two-fields"><label>開始時刻<input name="startTime" type="time"></label><label>終了時刻<input name="endTime" type="time"></label></div>
+ <label>メモ<textarea name="note" maxlength="500" placeholder="予約情報、住所、持ち物、注意点など"></textarea></label>
+ <button class="btn navy full" type="submit" id="itinerarySaveButton">予定を追加</button>
+ <div class="itinerary-list-heading"><b>この旅行の日程</b><span id="itineraryCount">0件</span></div>
+ <div id="itineraryItems" class="itinerary-items"></div>
 </form></dialog>
 <dialog id="tripEditDialog"><form id="tripEditForm">
  <div class="dialog-title"><div><span class="kicker">EDIT JOURNEY</span><h3>旅行を編集</h3></div><button type="button" class="close" data-close="tripEditDialog">×</button></div>
  <input type="hidden" name="id">
  <label>旅行のタイトル<input name="title" required maxlength="70"></label>
  <div class="two-fields"><label>エリア・目的地<input name="area" required maxlength="60"></label><label>開始日<input name="date" type="date"></label></div>
+ <label>終了日<input name="endDate" type="date"></label>
  <label>旅行のテーマ・メモ<textarea name="description" maxlength="500"></textarea></label>
  <label>訪問先（カンマ区切り）<input name="stops" maxlength="500"></label>
  <label>公開設定<select name="visibility"><option value="private">自分のみ</option><option value="public">公開</option></select></label>
