@@ -1,6 +1,5 @@
-ALTER TABLE trips ADD COLUMN budget_amount INTEGER NOT NULL DEFAULT 0;
-ALTER TABLE trips ADD COLUMN budget_currency TEXT NOT NULL DEFAULT 'JPY';
-
+-- budget_amount and budget_currency already exist in the deployed trips table.
+-- Keep this migration focused on creating the expenses table.
 CREATE TABLE IF NOT EXISTS travel_expenses (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
