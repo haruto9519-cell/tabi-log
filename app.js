@@ -150,6 +150,7 @@ async function syncCloudData(){
     visibility:t.visibility||"private",start_date:t.date||"",end_date:t.endDate||"",
     budget_amount:Number(t.budgetAmount||0),budget_currency:t.budgetCurrency||"JPY",
     stops:Array.isArray(t.stops)?t.stops:[],actual:Array.isArray(t.actual)?t.actual:[],
+    stopLocations:Array.isArray(t.stopLocations)?t.stopLocations:[],
     dayPlans:Array.isArray(t.dayPlans)?t.dayPlans.map(day=>({
      date:day.date,
      items:(day.items||[]).map((item,index)=>({
