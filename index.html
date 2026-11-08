@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#10263d">
-<meta name="description" content="旅行の計画、日程、写真、動画、日記、費用をひとつにまとめる個人旅行記録サービス。">
+<meta name="description" content="旅行の計画、日程、写真、日記、費用をひとつにまとめる個人旅行記録サービス。">
 <title>旅ログ — 自分の旅を、ひとつに。</title>
 <link rel="stylesheet" href="styles.css">
 </head>
@@ -49,7 +49,7 @@
  </div>
 </section>
 <section id="diary" class="section diary-section">
- <div class="section-heading"><div><span class="kicker">MY TRAVEL DIARY</span><h2>旅の思い出を振り返る。</h2><p>写真・動画・場所・その日の気持ちを、時系列で残そう。</p></div><button class="btn navy" id="openDiaryEntry" type="button">＋ 日記を追加</button></div>
+ <div class="section-heading"><div><span class="kicker">MY TRAVEL DIARY</span><h2>旅の思い出を振り返る。</h2><p>写真・場所・その日の気持ちを、時系列で残そう。</p></div><button class="btn navy" id="openDiaryEntry" type="button">＋ 日記を追加</button></div>
  <div id="diaryTimeline" class="timeline"></div>
 </section>
 <section id="mypage" class="section profile-section">
@@ -86,8 +86,8 @@
  <label>タイトル<input name="title" required maxlength="70" placeholder="例：朝の清水寺を訪れた"></label>
  <div class="two-fields"><label>場所<input name="place" required maxlength="80" placeholder="清水寺・京都"></label><label>日時<input name="capturedAt" type="datetime-local"></label></div>
  <label>思い出・日記<textarea name="story" required maxlength="2000" placeholder="訪れた場所、体験したこと、感じたことを残そう"></textarea></label>
- <label>写真・動画<input name="media" type="file" accept="image/*,video/*"></label>
- <p class="hint">写真・動画は現在この端末内に保存されます。クラウド保存と別端末での復元は今後接続します。記録は初期状態で自分のみです。</p>
+ <label>写真・動画<input name="media" type="file" accept="image/jpeg,image/png,image/webp"></label>
+ <p class="hint">写真は現在この端末内に保存されます。Google Drive連携後は写真のみクラウド保存・別端末表示に対応します。記録は初期状態で自分のみです。</p>
  <input type="hidden" name="category" value="旅の記録"><input type="hidden" name="visibility" value="private">
  <button class="btn navy full" type="submit">記録を保存</button>
 </form></dialog>
@@ -98,7 +98,7 @@
  <div class="two-fields"><label>場所<input name="place" required maxlength="80"></label><label>日時<input name="capturedAt" type="datetime-local"></label></div>
  <label>思い出・日記<textarea name="story" required maxlength="2000"></textarea></label>
  <label>公開設定<select name="visibility"><option value="private">自分のみ</option><option value="public">公開</option></select></label>
- <p class="hint">写真・動画は現在の端末内のデータを維持します。文章の変更はログイン中にクラウドへ同期されます。</p>
+ <p class="hint">写真は現在の端末内のデータを維持します。文章の変更はログイン中にクラウドへ同期されます。</p>
  <button class="btn navy full" type="submit">変更を保存</button>
 </form></dialog>
 <dialog id="profileDialog"><form id="profileForm"><div class="dialog-title"><div><span class="kicker">PROFILE</span><h3>プロフィール編集</h3></div><button type="button" class="close" data-close="profileDialog">×</button></div><label>表示名<input name="name" maxlength="30" required></label><label>自己紹介<textarea name="bio" maxlength="140"></textarea></label><button class="btn navy full" type="submit">保存</button></form></dialog>
