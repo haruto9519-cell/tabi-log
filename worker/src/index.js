@@ -249,13 +249,13 @@ export default {
     }
     if (path === "/api/sync" && request.method === "GET") {
       const tripRows = await env.DB.prepare(
-        "SELECT t.id,t.title,t.area,t.description,t.visibility,t.start_date,t.end_date,t.source,s.name AS stop_name,s.note AS stop_note,s.sort_order FROM trips t LEFT JOIN trip_stops s ON s.trip_id=t.id WHERE t.user_id=? AND t.source='native' ORDER BY t.created_at DESC,s.sort_order ASC"
+        "SELECT t.id,t.title,t.area,t.description,t.visibility,t.start_date,t.end_date,t.budget_amount,t.budget_currency,t.source,s.name AS stop_name,s.note AS stop_note,s.sort_order FROM trips t LEFT JOIN trip_stops s ON s.trip_id=t.id WHERE t.user_id=? AND t.source='native' ORDER BY t.created_at DESC,s.sort_order ASC"
       ).bind(user.id).all();
       const tripMap = new Map();
       for (const row of tripRows.results || []) {
         if (!tripMap.has(row.id)) tripMap.set(row.id, {
           id: row.id, title: row.title, area: row.area, description: row.description,
-          visibility: row.visibility, start_date: row.start_date, end_date: row.end_date,
+          visibility: row.visibility, start_date: row.start_date, end_date: row.end_date, budget_amount: row.budget_amount || 0, budget_currency: row.budget_currency || "JPY",
           source: row.source, stops: [], actual: [], dayPlans: []
         });
         if (row.stop_name) {
@@ -305,7 +305,9 @@ export default {
         const visibility = validVisibility(item?.visibility || "private");
         const startDate = validDate(item?.start_date);
         const endDate = validDate(item?.end_date);
-        if (!id || !title || !area || !visibility || startDate === undefined || endDate === undefined) {
+        const budgetAmount = Number(item?.budget_amount || 0);
+        const budgetCurrency = cleanText(item?.budget_currency || "JPY", 3).toUpperCase();
+        if (!id || !title || !area || !visibility || startDate === undefined || endDate === undefined || !Number.isSafeInteger(budgetAmount) || budgetAmount < 0 || budgetAmount > 100000000 || !/^[A-Z]{3}$/.test(budgetCurrency)) {
           return bad(request, "旅行データの形式を確認してください");
         }
         const plannedStops = Array.isArray(item.stops) ? item.stops.slice(0, 40) : [];
@@ -334,7 +336,7 @@ export default {
             }
           }
         }
-        normalizedTrips.push({ id, title, area, description, visibility, startDate, endDate, stops, dayPlans });
+        normalizedTrips.push({ id, title, area, description, visibility, startDate, endDate, budgetAmount, budgetCurrency, stops, dayPlans });
       }
       const totalStops = normalizedTrips.reduce((sum, item) => sum + item.stops.length, 0);
       const totalItineraryItems = normalizedTrips.reduce((sum, item) => sum + item.dayPlans.length, 0);
@@ -383,8 +385,8 @@ export default {
       const statements = [];
       for (const item of normalizedTrips) {
         statements.push(env.DB.prepare(
-          "INSERT INTO trips(id,user_id,title,area,description,visibility,source,external_plan_id,start_date,end_date) VALUES(?,?,?,?,?,?,'native',NULL,?,?) ON CONFLICT(id) DO UPDATE SET title=excluded.title,area=excluded.area,description=excluded.description,visibility=excluded.visibility,start_date=excluded.start_date,end_date=excluded.end_date,updated_at=CURRENT_TIMESTAMP WHERE trips.user_id=excluded.user_id"
-        ).bind(item.id, user.id, item.title, item.area, item.description, item.visibility, item.startDate, item.endDate));
+          "INSERT INTO trips(id,user_id,title,area,description,visibility,source,external_plan_id,start_date,end_date,budget_amount,budget_currency) VALUES(?,?,?,?,?,?,'native',NULL,?,?,?,?) ON CONFLICT(id) DO UPDATE SET title=excluded.title,area=excluded.area,description=excluded.description,visibility=excluded.visibility,start_date=excluded.start_date,end_date=excluded.end_date,budget_amount=excluded.budget_amount,budget_currency=excluded.budget_currency,updated_at=CURRENT_TIMESTAMP WHERE trips.user_id=excluded.user_id"
+        ).bind(item.id, user.id, item.title, item.area, item.description, item.visibility, item.startDate, item.endDate, item.budgetAmount, item.budgetCurrency));
         statements.push(env.DB.prepare("DELETE FROM trip_stops WHERE trip_id=?").bind(item.id));
         for (const stop of item.stops) {
           statements.push(env.DB.prepare(
