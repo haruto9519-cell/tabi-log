@@ -340,7 +340,7 @@ if(b.dataset.shareTrip){
  if(!API_BASE){toast("共有APIはまだ未接続です。Cloudflare Workerの公開後に有効になります");return}
  const existing=shareRecords[t.id];
  if(existing){try{await navigator.clipboard.writeText(existing.url);toast("共有URLをコピーしました")}catch{prompt("共有URLをコピーしてください",existing.url)}return}
- const entries=posts.filter(p=>p.tripId===t.id&&p.author===profile.name).map(p=>({title:p.title,place:p.place,story:p.story,date:p.date}));
+ const entries=posts.filter(p=>p.tripId===t.id&&p.author===profile.name&&p.visibility==="public").map(p=>({title:p.title,place:p.place,story:p.story,date:p.date}));
  const payload={trip:{title:t.title,area:t.area,date:t.date,description:t.description,stops:t.stops||[],visited:t.actual||[],locations:t.stopLocations||[],entries,author:profile.name}};
  try{const res=await fetch(API_BASE+"/api/shares",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(payload)});const data=await res.json();if(!res.ok||!data.ok)throw new Error(data.error||"共有リンクを作成できませんでした");shareRecords[t.id]={url:data.url,revokeKey:data.revokeKey,expiresAt:data.expiresAt};save();renderTrips();try{await navigator.clipboard.writeText(data.url);toast("共有URLを発行してコピーしました")}catch{prompt("共有URLを発行しました。コピーしてください",data.url)}}catch(err){toast(err.message||"共有URLの発行に失敗しました")}
 }
