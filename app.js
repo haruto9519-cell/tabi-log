@@ -31,6 +31,7 @@ async function restoreSession(){
   const data=await res.json();
   if(!res.ok||!data.ok)throw new Error(data.error||"セッションの期限が切れています");
   signedInUser=data.user;
+  await syncCloudData();
  }catch{
   sessionToken="";
   sessionStorage.removeItem(SESSION_KEY);
@@ -48,6 +49,7 @@ async function handleGoogleCredential(response){
   sessionStorage.setItem(SESSION_KEY,sessionToken);
   signedInUser=data.user;
   renderAuth();
+  await syncCloudData();
   toast("Googleログインしました");
  }catch(error){
   toast(error.message||"ログインに失敗しました");
@@ -84,7 +86,68 @@ const seedTrips=[];
 const read=(k,d)=>{try{return JSON.parse(localStorage.getItem("tabilog_"+k))??d}catch{return d}};
 shareRecords=read("shares",{});
 let posts=read("posts",seedPosts),trips=read("trips",seedTrips),saved=read("saved",[]),following=read("following",[]),blocked=read("blocked",[]),profile=read("profile",{name:"旅好きユーザー",bio:"旅の記録を、少しずつ。"}),selectedTrip=trips[0]?.id||null,category="すべて",feedSort="recommend",mediaUrls={};
-function save(){for(const [k,v] of Object.entries({posts,trips,saved,following,blocked,profile,shares:shareRecords}))localStorage.setItem("tabilog_"+k,JSON.stringify(v));}
+let cloudSyncTimer=null,cloudSyncBusy=false,cloudSyncHydrating=false,cloudSyncQueued=false;
+function save(){
+ for(const [k,v] of Object.entries({posts,trips,saved,following,blocked,profile,shares:shareRecords}))localStorage.setItem("tabilog_"+k,JSON.stringify(v));
+ if(signedInUser&&!cloudSyncHydrating){
+  clearTimeout(cloudSyncTimer);
+  cloudSyncTimer=setTimeout(()=>syncCloudData(),1200);
+ }
+}
+async function syncCloudData(){
+ if(!signedInUser||!sessionToken||!API_BASE)return;
+ if(cloudSyncBusy){cloudSyncQueued=true;return;}
+ cloudSyncBusy=true;
+ try{
+  const response=await fetch(API_BASE+"/api/sync",{headers:{authorization:"Bearer "+sessionToken}});
+  const remote=await response.json();
+  if(!response.ok||!remote.ok)throw new Error(remote.error||"クラウドの旅行記録を取得できませんでした");
+  cloudSyncHydrating=true;
+  const remoteTrips=(remote.trips||[]).map(t=>({
+   id:t.id,title:t.title,area:t.area,date:t.start_date||"",endDate:t.end_date||"",
+   description:t.description||"",visibility:t.visibility||"private",
+   stops:Array.isArray(t.stops)?t.stops:[],actual:Array.isArray(t.actual)?t.actual:[],
+   isMine:true,owner:"me",source:"native"
+  }));
+  const remotePosts=(remote.posts||[]).map(p=>({
+   id:p.id,tripId:p.trip_id||"",title:p.title,story:p.story,place:p.place_name,
+   author:profile.name,date:p.captured_at||p.created_at||new Date().toISOString(),
+   category:"旅",visual:"v4",symbol:"📍",likes:0,liked:false,saved:false,
+   visibility:p.visibility||"private",mediaKey:null,comments:[]
+  }));
+  const tripIds=new Set(trips.map(t=>t.id));
+  for(const t of remoteTrips)if(!tripIds.has(t.id))trips.push(t);
+  const postIds=new Set(posts.map(p=>p.id));
+  for(const p of remotePosts)if(!postIds.has(p.id))posts.push(p);
+  if(!selectedTrip&&trips.length)selectedTrip=trips[0].id;
+  for(const [k,v] of Object.entries({posts,trips}))localStorage.setItem("tabilog_"+k,JSON.stringify(v));
+  cloudSyncHydrating=false;
+  const payload={
+   trips:trips.filter(t=>t.isMine||t.source==="native").slice(0,100).map(t=>({
+    id:t.id,title:t.title,area:t.area,description:t.description||"",
+    visibility:t.visibility||"private",start_date:t.date||"",end_date:t.endDate||"",
+    stops:Array.isArray(t.stops)?t.stops:[],actual:Array.isArray(t.actual)?t.actual:[]
+   })),
+   posts:posts.filter(p=>p.author===profile.name).slice(0,100).map(p=>({
+    id:p.id,trip_id:p.tripId||null,title:p.title,story:p.story,place_name:p.place,
+    visibility:p.visibility||"private",captured_at:p.date||""
+   }))
+  };
+  const savedResponse=await fetch(API_BASE+"/api/sync",{
+   method:"POST",headers:{"content-type":"application/json",authorization:"Bearer "+sessionToken},
+   body:JSON.stringify(payload)
+  });
+  const savedData=await savedResponse.json();
+  if(!savedResponse.ok||!savedData.ok)throw new Error(savedData.error||"クラウドへの保存に失敗しました");
+  renderAll();
+ }catch(error){
+  console.warn("旅ログのクラウド同期に失敗:",error);
+ }finally{
+  cloudSyncHydrating=false;
+  cloudSyncBusy=false;
+  if(cloudSyncQueued){cloudSyncQueued=false;clearTimeout(cloudSyncTimer);cloudSyncTimer=setTimeout(()=>syncCloudData(),800);}
+ }
+}
 function toast(s){let t=$("#toast");t.textContent=s;t.classList.add("show");clearTimeout(window.toastTimer);window.toastTimer=setTimeout(()=>t.classList.remove("show"),2300)}
 function esc(s=""){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 function fmt(s){if(!s)return "日付未設定";return new Date(s).toLocaleDateString("ja-JP",{year:"numeric",month:"short",day:"numeric"});}
@@ -129,7 +192,7 @@ if(b.dataset.shareTrip){
  const payload={trip:{title:t.title,area:t.area,date:t.date,description:t.description,stops:t.stops||[],visited:t.actual||[],entries,author:profile.name}};
  try{const res=await fetch(API_BASE+"/api/shares",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(payload)});const data=await res.json();if(!res.ok||!data.ok)throw new Error(data.error||"共有リンクを作成できませんでした");shareRecords[t.id]={url:data.url,revokeKey:data.revokeKey,expiresAt:data.expiresAt};save();renderTrips();try{await navigator.clipboard.writeText(data.url);toast("共有URLを発行してコピーしました")}catch{prompt("共有URLを発行しました。コピーしてください",data.url)}}catch(err){toast(err.message||"共有URLの発行に失敗しました")}
 }
-if(b.dataset.deleteTrip&&confirm("この旅程を削除しますか？")){trips=trips.filter(x=>x.id!==t.id);if(selectedTrip===t.id)selectedTrip=trips[0]?.id||null;save();renderAll();toast("旅程を削除しました")}
+if(b.dataset.deleteTrip&&confirm("この旅程を削除しますか？")){trips=trips.filter(x=>x.id!==t.id);if(selectedTrip===t.id)selectedTrip=trips[0]?.id||null;save();if(signedInUser&&sessionToken){try{const res=await fetch(API_BASE+"/api/trips/"+encodeURIComponent(t.id),{method:"DELETE",headers:{authorization:"Bearer "+sessionToken}});const data=await res.json();if(!res.ok||!data.ok)throw new Error(data.error||"クラウド側の削除に失敗しました")}catch(error){toast("端末内では削除しました。クラウド同期は次回ログイン時に確認します")}}renderAll();toast("旅程を削除しました")}
 });
 $("#feedSearch").addEventListener("input",renderFeed);$("#feedSort").addEventListener("change",e=>{feedSort=e.target.value;renderFeed()});$$(".chip").forEach(b=>b.addEventListener("click",()=>{$$(".chip").forEach(x=>x.classList.remove("active"));b.classList.add("active");category=b.dataset.category;renderFeed()}));
 renderAll();
