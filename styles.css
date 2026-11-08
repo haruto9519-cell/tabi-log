@@ -142,3 +142,13 @@ input:focus,textarea:focus,select:focus{outline:2px solid #d7b77f55;border-color
 .share-service-links{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
 .share-service-links h2{width:100%}
 @media(max-width:600px){.shared-trip-map{height:300px}.share-service-links .btn{width:100%;text-align:center}}
+
+/* Login prompt for incoming Aileron itinerary imports */
+#importAuthNotice[hidden]{display:none}
+.import-auth-notice{padding:30px 20px;background:#f0f3f3}
+.import-auth-card{max-width:760px;margin:0 auto;padding:28px 32px;background:#fff;border:1px solid #e3e9e8;border-radius:9px;box-shadow:0 8px 28px #172b3a0a;text-align:center}
+.import-auth-card h2{margin:9px 0 10px;color:#142b40;font-size:clamp(20px,3vw,27px)}
+.import-auth-card p{max-width:590px;margin:0 auto 18px;color:#687984;font-size:12px;line-height:1.9}
+.import-google-login{display:flex;justify-content:center;min-height:42px;margin:0 auto 10px}
+.import-auth-card small{font-size:10px;color:#82909a}
+@media(max-width:540px){.import-auth-notice{padding:18px 12px}.import-auth-card{padding:23px 16px}}
