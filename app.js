@@ -33,6 +33,7 @@ async function restoreSession(){
   if(!res.ok||!data.ok)throw new Error(data.error||"セッションの期限が切れています");
   signedInUser=data.user;
   await syncCloudData();
+  await processPendingImport();
  }catch{
   sessionToken="";
   sessionStorage.removeItem(SESSION_KEY);
@@ -51,6 +52,7 @@ async function handleGoogleCredential(response){
   signedInUser=data.user;
   renderAuth();
   await syncCloudData();
+  await processPendingImport();
   toast("Googleログインしました");
  }catch(error){
   toast(error.message||"ログインに失敗しました");
@@ -109,7 +111,7 @@ async function syncCloudData(){
    description:t.description||"",visibility:t.visibility||"private",budgetAmount:Number(t.budget_amount||0),budgetCurrency:t.budget_currency||"JPY",
    stops:Array.isArray(t.stops)?t.stops:[],actual:Array.isArray(t.actual)?t.actual:[],
    dayPlans:Array.isArray(t.dayPlans)?t.dayPlans.map(day=>({date:day.date,items:(day.items||[]).map((item,index)=>({id:item.id||uid(),name:item.name,startTime:item.startTime||"",endTime:item.endTime||"",note:item.note||"",sortOrder:Number.isInteger(item.sortOrder)?item.sortOrder:index,visited:Boolean(item.visited)}))})):[],
-   isMine:true,owner:"me",source:"native"
+   isMine:true,owner:"me",source:t.source||"native",stopLocations:Array.isArray(t.stopLocations)?t.stopLocations:[]
   }));
   const remoteExpenses=(remote.expenses||[]).map(item=>({id:item.id,tripId:item.trip_id,date:item.expense_date,category:item.category,amount:Number(item.amount),currency:item.currency||"JPY",note:item.note||""}));
   const remotePosts=(remote.posts||[]).map(p=>({
@@ -128,7 +130,7 @@ async function syncCloudData(){
   for(const [k,v] of Object.entries({posts,trips,expenses}))localStorage.setItem("tabilog_"+k,JSON.stringify(v));
   cloudSyncHydrating=false;
   const payload={
-   trips:trips.filter(t=>t.isMine||t.source==="native").slice(0,100).map(t=>({
+   trips:trips.filter(t=>t.source==="native").slice(0,100).map(t=>({
     id:t.id,title:t.title,area:t.area,description:t.description||"",
     visibility:t.visibility||"private",start_date:t.date||"",end_date:t.endDate||"",
     budget_amount:Number(t.budgetAmount||0),budget_currency:t.budgetCurrency||"JPY",
@@ -142,7 +144,7 @@ async function syncCloudData(){
      }))
     })): []
    })),
-   expenses:expenses.filter(item=>trips.some(t=>t.id===item.tripId)).slice(0,1000).map(item=>({id:item.id,trip_id:item.tripId,expense_date:item.date,category:item.category,amount:item.amount,currency:item.currency||"JPY",note:item.note||""})),
+   expenses:expenses.filter(item=>trips.some(t=>t.id===item.tripId&&t.source==="native")).slice(0,1000).map(item=>({id:item.id,trip_id:item.tripId,expense_date:item.date,category:item.category,amount:item.amount,currency:item.currency||"JPY",note:item.note||""})),
    posts:posts.filter(p=>p.author===profile.name).slice(0,100).map(p=>({
     id:p.id,trip_id:p.tripId||null,title:p.title,story:p.story,place_name:p.place,
     visibility:p.visibility||"private",captured_at:p.date||""
@@ -190,7 +192,64 @@ function openItinerary(tripId){
  form.elements.dayDate.value=trip.date||new Date().toISOString().slice(0,10);
  $("#itinerarySaveButton").textContent="予定を追加";renderItineraryItems();openDialog("#itineraryDialog");
 }
-function renderMap(){let t=trips.find(x=>x.id===selectedTrip);$("#mapTitle").textContent=t?t.title:"旅のルート";$("#mapPins").innerHTML="";$("#mapStopList").innerHTML="";if(!t)return;let coords=[[15,70],[48,27],[80,64],[64,82],[28,20],[88,22]];(t.stops||[]).forEach((s,i)=>{let c=coords[i%coords.length],pin=document.createElement("div");pin.className="pin";pin.style.left=c[0]+"%";pin.style.top=c[1]+"%";pin.innerHTML=`<span>${i+1}</span>`;$("#mapPins").append(pin);let pill=document.createElement("span");pill.className="stop-pill";pill.textContent=(t.actual||[]).includes(s)?"✓ "+s:s;$("#mapStopList").append(pill);});}
+let routeLeafletMap=null, routeMapLayer=null;
+function renderMap(){
+ const t=trips.find(x=>x.id===selectedTrip),host=$("#routeMap"),list=$("#mapStopList");
+ $("#mapTitle").textContent=t?t.title:"旅の地図";list.innerHTML="";
+ if(!host)return;
+ if(!window.L){host.innerHTML='<div class="map-unavailable">地図を読み込めませんでした。通信環境を確認してください。</div>';return;}
+ if(!routeLeafletMap){
+  host.innerHTML="";
+  routeLeafletMap=L.map(host,{scrollWheelZoom:false}).setView([36.2,138.25],5);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'}).addTo(routeLeafletMap);
+  routeMapLayer=L.layerGroup().addTo(routeLeafletMap);
+ }
+ routeMapLayer.clearLayers();
+ if(!t){host.insertAdjacentHTML("beforeend",'<div class="map-overlay-empty">Aileronから旅行プランを取り込むと、ここに地図が表示されます。</div>');return;}
+ const locations=Array.isArray(t.stopLocations)?t.stopLocations:[];
+ const valid=locations.filter(p=>Number.isFinite(Number(p.latitude))&&Number.isFinite(Number(p.longitude)));
+ if(!valid.length){host.insertAdjacentHTML("beforeend",'<div class="map-overlay-empty">この旅行には地図座標がありません。Aileronからプランを取り込み直すと地図を表示できます。</div>');return;}
+ const bounds=[];
+ valid.forEach((p,index)=>{
+  const visited=(t.actual||[]).includes(p.name),point=[Number(p.latitude),Number(p.longitude)];bounds.push(point);
+  const icon=L.divIcon({className:"tabi-map-marker-wrap",html:'<span class="tabi-map-marker '+(visited?"visited":"planned")+'">'+(index+1)+'</span>',iconSize:[32,38],iconAnchor:[16,34]});
+  const marker=L.marker(point,{icon}).addTo(routeMapLayer);
+  const popup=document.createElement("div");popup.className="tabi-map-popup";
+  const heading=document.createElement("strong");heading.textContent=p.name;popup.append(heading);
+  const state=document.createElement("div");state.className="map-pin-state";state.textContent=visited?"訪問済み":"旅行予定";popup.append(state);
+  const diary=posts.filter(post=>post.tripId===t.id&&String(post.place||"").trim()===p.name);
+  const count=document.createElement("div");count.className="map-pin-count";count.textContent=diary.length?diary.length+"件の記録":"まだ写真・日記はありません";popup.append(count);
+  const photoBox=document.createElement("div");photoBox.className="map-pin-photos";popup.append(photoBox);
+  marker.bindPopup(popup);
+  marker.on("popupopen",async()=>{
+   photoBox.replaceChildren();
+   for(const entry of diary){
+    if(!entry.mediaKey)continue;
+    try{const blob=await mediaGet(entry.mediaKey);if(!blob)continue;const img=document.createElement("img");img.alt=entry.title||p.name;img.src=URL.createObjectURL(blob);photoBox.append(img);}catch{}
+   }
+  });
+  const pill=document.createElement("button");pill.type="button";pill.className="stop-pill";pill.textContent=(visited?"✓ ":"")+p.name;pill.addEventListener("click",()=>{routeLeafletMap.setView(point,13);marker.openPopup();});list.append(pill);
+ });
+ if(valid.length>1)L.polyline(bounds,{color:"#c49a5e",weight:4,opacity:.85,dashArray:"7 7"}).addTo(routeMapLayer);
+ routeLeafletMap.fitBounds(bounds,{padding:[28,28],maxZoom:12});
+ setTimeout(()=>routeLeafletMap.invalidateSize(),100);
+}
+async function processPendingImport(){
+ const token=new URLSearchParams(location.search).get("import");
+ if(!token||!signedInUser||!sessionToken)return;
+ try{
+  const response=await fetch(API_BASE+"/api/imports/"+encodeURIComponent(token),{method:"POST",headers:{authorization:"Bearer "+sessionToken}});
+  const data=await response.json();
+  if(!response.ok||!data.ok)throw new Error(data.error||"Aileronの旅行プランを取り込めませんでした");
+  history.replaceState(null,"",location.pathname+location.hash);
+  await syncCloudData();
+  selectedTrip=data.tripId;
+  renderAll();
+  $("#mytrips").scrollIntoView({behavior:"smooth",block:"start"});
+  toast("Aileronの旅行プランと地図を取り込みました");
+ }catch(error){toast(error.message||"旅行プランの取り込みに失敗しました");}
+}
+
 function renderDiary(){let mine=posts.filter(p=>p.author===profile.name).sort((a,b)=>String(b.date).localeCompare(String(a.date)));$("#diaryTimeline").innerHTML=mine.length?mine.map(p=>`<div class="timeline-item"><div class="timeline-date">${esc(p.date||"今日")}</div><div class="timeline-line"></div><article class="timeline-card"><div class="timeline-thumb" id="diary-thumb-${p.id}">${p.mediaKey?"📷":p.symbol||"📍"}</div><div class="timeline-content"><small>📍 ${esc(p.place)}</small><h3>${esc(p.title)}</h3><p>${esc(p.story)}</p><div class="timeline-actions"><button class="action" type="button" data-edit-diary="${p.id}">編集</button><button class="action" type="button" data-delete-diary="${p.id}">削除</button></div></div></article></div>`).join(""):`<div class="empty-state">ここに日記・思い出が時系列で並びます。「日記を追加」から記録できます。</div>`;mine.forEach(async p=>{if(!p.mediaKey)return;try{const blob=await mediaGet(p.mediaKey);const thumb=$("#diary-thumb-"+p.id);if(blob&&thumb){const img=document.createElement("img");img.src=URL.createObjectURL(blob);img.alt=p.title||"旅行の写真";thumb.replaceChildren(img);}}catch(error){console.warn("写真の読み込みに失敗:",error);}});}
 function renderProfile(){let mine=posts.filter(p=>p.author===profile.name);$("#profileName").textContent=profile.name;$("#profileBio").textContent=profile.bio;$("#profileAvatar").textContent=(profile.name||"旅").slice(0,1);$("#profilePostCount").textContent=mine.length;$("#profileTripCount").textContent=trips.filter(t=>t.isMine).length;if($("#followingCount"))$("#followingCount").textContent=0;$("#statTrips").textContent=trips.filter(t=>t.isMine).length;$("#statPosts").textContent=mine.length;$("#statSaved").textContent=saved.length;}
 function renderExpenses(){
@@ -209,7 +268,7 @@ function renderExpenses(){
 function renderAll(){renderFeed();renderTrips();renderDiary();renderProfile();renderExpenses();}
 function openDialog(id){$(id).showModal()}function closeDialog(id){$(id).close()}
 $$("[data-close]").forEach(b=>b.addEventListener("click",()=>closeDialog("#"+b.dataset.close)));
-$("#openTrip").onclick=()=>openDialog("#tripDialog");$("#newTrip2").onclick=()=>openDialog("#tripDialog");$("#heroTrip").onclick=()=>openDialog("#tripDialog");$("#openPost").onclick=()=>{refreshTripSelect();openDialog("#postDialog")};
+$("#openTrip").onclick=()=>location.href="https://tabi-hikaku.pages.dev/";$("#newTrip2").onclick=()=>location.href="https://tabi-hikaku.pages.dev/";$("#heroTrip").onclick=()=>location.href="https://tabi-hikaku.pages.dev/";$("#openPost").onclick=()=>{refreshTripSelect();openDialog("#postDialog")};
 function refreshTripSelect(){$("#postTripSelect").innerHTML='<option value="">旅程に紐づけない</option>'+trips.filter(t=>t.isMine).map(t=>`<option value="${t.id}">${esc(t.title)}</option>`).join("");}
 $("#tripForm").addEventListener("submit",e=>{e.preventDefault();let f=new FormData(e.currentTarget),startDate=String(f.get("date")||""),endDate=String(f.get("endDate")||"");if(startDate&&endDate&&endDate<startDate){toast("終了日は開始日以降にしてください");return;}let stops=String(f.get("stops")||"").split(/[,、]/).map(s=>s.trim()).filter(Boolean),t={id:uid(),title:f.get("title"),area:f.get("area"),date:startDate,endDate,description:f.get("description"),visibility:f.get("visibility")||"private",budgetAmount:Number(f.get("budgetAmount")||0),budgetCurrency:String(f.get("budgetCurrency")||"JPY"),stops,actual:[],dayPlans:[],isMine:true,owner:"me",source:"native"};trips.unshift(t);selectedTrip=t.id;save();e.currentTarget.reset();closeDialog("#tripDialog");renderAll();toast("旅程を作成しました");});
 $("#itineraryForm").addEventListener("submit",e=>{
