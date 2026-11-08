@@ -198,7 +198,13 @@ function cleanAileronPlan(input) {
   const title = cleanText(input.title, 70), area = cleanText(input.area, 80);
   const description = cleanText(input.description, 500);
   const startDate = cleanText(input.startDate, 10), endDate = cleanText(input.endDate, 10);
-  const validDate = value => !value || (/^\\d{4}-\\d{2}-\\d{2}$/.test(value) && !Number.isNaN(Date.parse(value)) && new Date(value + "T00:00:00.000Z").toISOString().slice(0, 10) === value);
+  const validDate = value => {
+    if (!value) return true;
+    if (value.length !== 10 || value[4] !== "-" || value[7] !== "-") return false;
+    const [year, month, day] = value.split("-").map(Number);
+    const parsed = new Date(Date.UTC(year, month - 1, day));
+    return parsed.getUTCFullYear() === year && parsed.getUTCMonth() === month - 1 && parsed.getUTCDate() === day;
+  };
   if (!validDate(startDate) || !validDate(endDate) || (startDate && endDate && endDate < startDate)) return null;
   const budgetAmount = Number(input.budgetAmount || 0);
   const budgetCurrency = cleanText(input.budgetCurrency || "JPY", 3).toUpperCase();
