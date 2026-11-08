@@ -73,3 +73,21 @@ input:focus,textarea:focus,select:focus{outline:2px solid #d7b77f55;border-color
  .trip-column,.map-card{padding:14px}
  .timeline-card{padding:10px}
 }
+
+
+/* Day-by-day itinerary planner */
+.itinerary-list-heading{display:flex;justify-content:space-between;align-items:center;margin:22px 0 10px;padding-top:16px;border-top:1px solid var(--line);font-size:11px;color:var(--navy)}
+.itinerary-list-heading span{font-size:10px;color:var(--muted)}
+.itinerary-items{display:grid;gap:12px}
+.itinerary-day{border:1px solid var(--line);border-radius:7px;padding:12px;background:#fafbfb}
+.itinerary-day h4{margin:0 0 9px;color:#a17e4b;font-size:11px}
+.itinerary-item{display:grid;grid-template-columns:90px 1fr;gap:10px;padding:12px;background:#fff;border:1px solid #e8ecec;border-radius:6px;margin-top:7px}
+.itinerary-time{font-size:10px;color:var(--navy);font-weight:700;padding-top:2px}
+.itinerary-item-main b{font-size:11px;color:var(--navy)}
+.itinerary-item-main p{font-size:10px;color:var(--muted);line-height:1.6;margin:5px 0}
+.itinerary-item-main span{font-size:9px;color:#a17e4b}
+.itinerary-item.is-visited{background:#f3f7f4;border-color:#dce8df}
+.itinerary-item.is-visited .itinerary-item-main b{text-decoration:line-through;color:#71847a}
+.itinerary-item-actions{grid-column:2;display:flex;gap:12px;flex-wrap:wrap}
+.itinerary-item-actions .action{font-size:9px}
+@media(max-width:540px){.itinerary-item{grid-template-columns:1fr;gap:6px}.itinerary-item-actions{grid-column:1}.itinerary-time{font-size:9px}}
