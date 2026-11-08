@@ -226,7 +226,7 @@ export default {
           database.querySucceeded = false;
         }
       }
-      return json(request, { ok: true, service: "tabi-log-api", version: "1.4-session-auth", database });
+      return json(request, { ok: true, service: "tabi-log-api", version: "1.5-cloud-sync", database });
     }
     if (path === "/api/auth/session" && request.method === "POST") return createAuthSession(request, env);
     if (path === "/api/auth/logout" && request.method === "POST") return logoutSession(request, env);
@@ -244,6 +244,98 @@ export default {
     await env.DB.prepare("INSERT OR IGNORE INTO users(id,display_name) VALUES(?,?)").bind(user.id, user.name).run();
     if (path === "/api/me" && request.method === "GET") {
       return json(request, { ok: true, user: { id: user.id, name: user.name } });
+    }
+    if (path === "/api/sync" && request.method === "GET") {
+      const tripRows = await env.DB.prepare(
+        "SELECT t.id,t.title,t.area,t.description,t.visibility,t.start_date,t.end_date,t.source,s.name AS stop_name,s.note AS stop_note,s.sort_order FROM trips t LEFT JOIN trip_stops s ON s.trip_id=t.id WHERE t.user_id=? AND t.source='native' ORDER BY t.created_at DESC,s.sort_order ASC"
+      ).bind(user.id).all();
+      const tripMap = new Map();
+      for (const row of tripRows.results || []) {
+        if (!tripMap.has(row.id)) tripMap.set(row.id, {
+          id: row.id, title: row.title, area: row.area, description: row.description,
+          visibility: row.visibility, start_date: row.start_date, end_date: row.end_date,
+          source: row.source, stops: [], actual: []
+        });
+        if (row.stop_name) {
+          tripMap.get(row.id).stops.push(row.stop_name);
+          if (row.stop_note === "visited") tripMap.get(row.id).actual.push(row.stop_name);
+        }
+      }
+      const postRows = await env.DB.prepare(
+        "SELECT id,trip_id,title,story,place_name,visibility,captured_at,created_at FROM posts WHERE user_id=? ORDER BY created_at DESC LIMIT 200"
+      ).bind(user.id).all();
+      return json(request, { ok: true, trips: [...tripMap.values()], posts: postRows.results || [] });
+    }
+    if (path === "/api/sync" && request.method === "POST") {
+      const parsed = await readJson(request, 200000);
+      if (parsed.error) return parsed.error;
+      const tripInput = Array.isArray(parsed.data.trips) ? parsed.data.trips.slice(0, 100) : [];
+      const postInput = Array.isArray(parsed.data.posts) ? parsed.data.posts.slice(0, 100) : [];
+      const normalizedTrips = [];
+      const normalizedPosts = [];
+      for (const item of tripInput) {
+        const id = cleanText(item?.id, 64);
+        const title = cleanText(item?.title, 70);
+        const area = cleanText(item?.area, 80);
+        const description = cleanText(item?.description, 500);
+        const visibility = validVisibility(item?.visibility || "private");
+        const startDate = validDate(item?.start_date);
+        const endDate = validDate(item?.end_date);
+        if (!id || !title || !area || !visibility || startDate === undefined || endDate === undefined) {
+          return bad(request, "旅行データの形式を確認してください");
+        }
+        const stops = Array.isArray(item.stops) ? item.stops.slice(0, 40).map((stop, index) => ({
+          name: cleanText(stop, 100), sort: index,
+          visited: Array.isArray(item.actual) && item.actual.includes(stop)
+        })).filter(stop => stop.name) : [];
+        normalizedTrips.push({ id, title, area, description, visibility, startDate, endDate, stops });
+      }
+      const ownedTripIds = new Set(normalizedTrips.map(item => item.id));
+      for (const item of normalizedTrips) {
+        const existing = await env.DB.prepare("SELECT user_id FROM trips WHERE id=?").bind(item.id).first();
+        if (existing && existing.user_id !== user.id) return bad(request, "他のアカウントの旅行データは更新できません", 409);
+      }
+      for (const item of postInput) {
+        const id = cleanText(item?.id, 64);
+        const title = cleanText(item?.title, 70);
+        const story = cleanText(item?.story, 1000);
+        const place = cleanText(item?.place_name, 100);
+        const visibility = validVisibility(item?.visibility || "private");
+        const tripId = typeof item?.trip_id === "string" && item.trip_id ? cleanText(item.trip_id, 64) : null;
+        const capturedAt = cleanText(item?.captured_at, 40);
+        if (!id || !title || !story || !place || !visibility) return bad(request, "日記データの形式を確認してください");
+        if (tripId) {
+          const owned = ownedTripIds.has(tripId) || Boolean(await env.DB.prepare("SELECT id FROM trips WHERE id=? AND user_id=?").bind(tripId, user.id).first());
+          if (!owned) return bad(request, "日記に指定された旅行が見つかりません", 404);
+        }
+        const existing = await env.DB.prepare("SELECT user_id FROM posts WHERE id=?").bind(id).first();
+        if (existing && existing.user_id !== user.id) return bad(request, "他のアカウントの日記は更新できません", 409);
+        normalizedPosts.push({ id, title, story, place, visibility, tripId, capturedAt });
+      }
+      const statements = [];
+      for (const item of normalizedTrips) {
+        statements.push(env.DB.prepare(
+          "INSERT INTO trips(id,user_id,title,area,description,visibility,source,external_plan_id,start_date,end_date) VALUES(?,?,?,?,?,?,'native',NULL,?,?) ON CONFLICT(id) DO UPDATE SET title=excluded.title,area=excluded.area,description=excluded.description,visibility=excluded.visibility,start_date=excluded.start_date,end_date=excluded.end_date,updated_at=CURRENT_TIMESTAMP WHERE trips.user_id=excluded.user_id"
+        ).bind(item.id, user.id, item.title, item.area, item.description, item.visibility, item.startDate, item.endDate));
+        statements.push(env.DB.prepare("DELETE FROM trip_stops WHERE trip_id=?").bind(item.id));
+        for (const stop of item.stops) {
+          statements.push(env.DB.prepare(
+            "INSERT INTO trip_stops(id,trip_id,name,note,sort_order,location_precision) VALUES(?,?,?,?,?,'hidden')"
+          ).bind(uuid(), item.id, stop.name, stop.visited ? "visited" : "", stop.sort));
+        }
+      }
+      for (const item of normalizedPosts) {
+        statements.push(env.DB.prepare(
+          "INSERT INTO posts(id,user_id,trip_id,title,story,place_name,media_key,media_type,visibility,latitude,longitude,location_precision,captured_at) VALUES(?,?,?,?,?,?,NULL,NULL,?,NULL,NULL,'hidden',?) ON CONFLICT(id) DO UPDATE SET trip_id=excluded.trip_id,title=excluded.title,story=excluded.story,place_name=excluded.place_name,visibility=excluded.visibility,captured_at=excluded.captured_at WHERE posts.user_id=excluded.user_id"
+        ).bind(item.id, user.id, item.tripId, item.title, item.story, item.place, item.visibility, item.capturedAt || null));
+      }
+      if (statements.length) await env.DB.batch(statements);
+      return json(request, { ok: true, tripsSaved: normalizedTrips.length, postsSaved: normalizedPosts.length });
+    }
+    const tripDeleteMatch = path.match(/^\/api\/trips\/([A-Za-z0-9_-]+)$/);
+    if (tripDeleteMatch && request.method === "DELETE") {
+      const result = await env.DB.prepare("DELETE FROM trips WHERE id=? AND user_id=? AND source='native'").bind(tripDeleteMatch[1], user.id).run();
+      return json(request, { ok: true, deleted: Boolean(result.meta?.changes) });
     }
     if (path === "/api/trips" && request.method === "GET") {
       const result = await env.DB.prepare("SELECT id,title,area,description,visibility,start_date,end_date,source,created_at,updated_at FROM trips WHERE user_id=? ORDER BY created_at DESC LIMIT 100").bind(user.id).all();
