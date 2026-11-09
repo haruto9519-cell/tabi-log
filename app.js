@@ -639,13 +639,7 @@ async function restoreTabiLogBackup(file){
   selectedTrip=trips[0]?.id||null;
   writeLocalState(currentLocalState());
   renderAll();
-  if(signedInUser&&sessionToken){
-   clearTimeout(cloudSyncTimer);
-   const synced=await syncCloudData();
-   toast(synced?"バックアップを復元し、文章データを同期しました":"端末に復元しました。クラウド同期は未完了です");
-  }else{
-   toast("バックアップをこの端末に復元しました");
-  }
+  toast("バックアップをこの端末に復元しました。クラウド側のデータは変更していません");
  }catch(error){
   for(const key of restoredKeys)try{await mediaDelete(key)}catch{}
   throw error;
