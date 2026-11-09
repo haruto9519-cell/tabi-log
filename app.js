@@ -550,6 +550,55 @@ if(b.dataset.shareTrip){
   return;
  }
 });
+
+async function exportTabiLogBackup(){
+ const button=$("#exportBackupButton");
+ if(button)button.disabled=true;
+ try{
+  const state=currentLocalState();
+  const photos={};
+  const missingPhotos=[];
+  const keys=[...new Set((state.posts||[]).map(post=>post.mediaKey).filter(Boolean))];
+  for(const key of keys){
+   const blob=await mediaGet(key);
+   if(!blob){missingPhotos.push(key);continue;}
+   const dataUrl=await new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=()=>resolve(reader.result);
+    reader.onerror=()=>reject(reader.error||new Error("写真を読み込めませんでした"));
+    reader.readAsDataURL(blob);
+   });
+   photos[key]={type:blob.type||"application/octet-stream",dataUrl};
+  }
+  const backup={
+   format:"tabi-log-backup",
+   version:1,
+   exportedAt:new Date().toISOString(),
+   account:signedInUser?{name:signedInUser.name||"",id:signedInUser.id||""}:null,
+   data:state,
+   photos
+  };
+  const blob=new Blob([JSON.stringify(backup)],{type:"application/json"});
+  const url=URL.createObjectURL(blob);
+  const link=document.createElement("a");
+  link.href=url;
+  link.download="tabi-log-backup-"+new Date().toISOString().slice(0,10)+".json";
+  document.body.append(link);
+  link.click();
+  link.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),30000);
+  toast(missingPhotos.length?"バックアップを保存しました。一部の写真は端末内に見つかりませんでした":"バックアップを保存しました（写真を含む）");
+ }catch(error){
+  console.error("バックアップの作成に失敗:",error);
+  toast("バックアップを作成できませんでした。端末の空き容量を確認してください");
+ }finally{
+  if(button)button.disabled=false;
+ }
+}
+$("#exportBackupButton")?.addEventListener("click",()=>{
+ if(confirm("旅行・日記・支出・プロフィールと、端末内にある写真をバックアップファイルに保存します。ファイルには個人情報が含まれるため、安全な場所で保管してください。続けますか？"))exportTabiLogBackup();
+});
+
 $("#feedSearch").addEventListener("input",renderFeed);$("#feedSort").addEventListener("change",e=>{feedSort=e.target.value;renderFeed()});$$(".chip").forEach(b=>b.addEventListener("click",()=>{$$(".chip").forEach(x=>x.classList.remove("active"));b.classList.add("active");category=b.dataset.category;renderFeed()}));
 renderAll();
 if(new URLSearchParams(location.search).has("import")&&!sessionToken)toast("Aileronの旅行プランを取り込むには、Googleログインしてください。");
