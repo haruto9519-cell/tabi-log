@@ -50,7 +50,7 @@
 <section id="mytrips" class="section muted-section">
  <div class="section-heading"><div><span class="kicker">MY JOURNEYS</span><h2>旅の計画を地図ごと引き継ぐ。</h2><p>Aileronで作成した旅行プランを取り込み、訪問先のピンに写真や思い出を重ねていきます。</p></div><button class="btn navy" id="newTrip2">Aileronで旅行プランを作る</button></div>
  <div class="planner-layout">
-  <div class="trip-column"><div class="subhead"><b>あなたの旅行</b><span id="tripTotal"></span></div><div id="tripCards"></div></div>
+  <div class="trip-column"><div class="subhead"><b>あなたの旅行</b><span id="tripTotal"></span></div><div class="trip-list-controls"><input id="tripSearch" type="search" placeholder="旅行名・目的地を検索" aria-label="旅行を検索"><select id="tripStatusFilter" aria-label="旅行の表示"><option value="active">通常の旅行</option><option value="archived">アーカイブ</option><option value="all">すべて</option></select><select id="tripSort" aria-label="旅行の並び順"><option value="date-desc">日付が新しい順</option><option value="date-asc">日付が古い順</option><option value="name">名前順</option></select></div><div id="tripCards"></div></div>
   <div class="map-card">
    <div class="map-header"><div><b id="mapTitle">訪問先リスト</b><small>選択した旅行の立ち寄り先</small></div><span class="map-pill">PLACE LIST</span></div>
    <div id="routeMap" class="route-map" aria-label="旅行の訪問先地図"></div>
@@ -149,6 +149,6 @@
 <!-- 旧データ互換用。SNS画面としては表示しません。 -->
 <section hidden aria-hidden="true"><input id="feedSearch"><select id="feedSort"><option value="recommend">おすすめ</option></select><button class="chip" data-category="すべて"></button><div id="feed"></div></section>
 <div id="toast" role="status" aria-live="polite"></div>
-<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script><script id="googleIdentityScript" src="https://accounts.google.com/gsi/client" async defer></script><script src="config.js"></script><script src="app.js?v=20261110-trip-controls-v1"></script>
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script><script id="googleIdentityScript" src="https://accounts.google.com/gsi/client" async defer></script><script src="config.js"></script><script src="app.js?v=20261110-trip-archive-ui-v1"></script>
 <script>document.addEventListener("DOMContentLoaded",()=>{const b=document.getElementById("openDiaryEntry");if(b)b.addEventListener("click",()=>document.getElementById("openPost")?.click());});</script>
 </body></html>
