@@ -528,7 +528,9 @@ if(b.dataset.shareTrip){
  const existing=shareRecords[t.id];
  if(existing){try{await navigator.clipboard.writeText(existing.url);toast("共有URLをコピーしました")}catch{prompt("共有URLをコピーしてください",existing.url)}return}
  const entries=posts.filter(p=>p.tripId===t.id&&p.author===profile.name&&p.visibility==="public").map(p=>({title:p.title,place:p.place,story:p.story,date:p.date}));
- const payload={trip:{title:t.title,area:t.area,date:t.date,description:t.description,stops:t.stops||[],visited:t.actual||[],locations:t.stopLocations||[],entries,author:profile.name}};
+ if(!confirm("共有する内容を確認してください。旅行名・エリア・訪問先・訪問済み状態・公開設定の日記本文を共有します。写真、非公開の日記、正確な位置情報は含めません。共有URLを知っている人は閲覧できます。自宅・学校・現在地など個人の居場所が分かる内容は共有しないでください。発行しますか？"))return;
+ const safeLocations=(t.stopLocations||[]).filter(point=>Number.isFinite(Number(point.latitude))&&Number.isFinite(Number(point.longitude))).map(point=>({...point,latitude:Math.round(Number(point.latitude)*10)/10,longitude:Math.round(Number(point.longitude)*10)/10}));
+ const payload={trip:{title:t.title,area:t.area,date:t.date,description:t.description,stops:t.stops||[],visited:t.actual||[],locations:safeLocations,entries,author:profile.name}};
  try{const res=await fetch(API_BASE+"/api/shares",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(payload)});const data=await res.json();if(!res.ok||!data.ok)throw new Error(data.error||"共有リンクを作成できませんでした");shareRecords[t.id]={url:data.url,revokeKey:data.revokeKey,expiresAt:data.expiresAt};save();renderTrips();try{await navigator.clipboard.writeText(data.url);toast("共有URLを発行してコピーしました")}catch{prompt("共有URLを発行しました。コピーしてください",data.url)}}catch(err){toast(err.message||"共有URLの発行に失敗しました")}
 }
  if(b.dataset.deleteTrip){
