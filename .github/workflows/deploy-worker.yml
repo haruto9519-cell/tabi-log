@@ -35,7 +35,7 @@ jobs:
           for attempt in $(seq 1 12); do
             response="$(curl -fsS https://tabi-log.haruto-9519.workers.dev/api/health || true)"
             echo "$response"
-            if echo "$response" | grep -q '"version":"2.0-google-drive-photos"' &&
+            if echo "$response" | grep -q '"version":"2.1-device-local-media"' &&
                echo "$response" | grep -q '"configured":true' &&
                echo "$response" | grep -q '"coreSchemaReady":true' &&
                echo "$response" | grep -q '"shareSchemaReady":true' &&
@@ -44,8 +44,8 @@ jobs:
                echo "$response" | grep -q '"expensesSchemaReady":true' &&
                echo "$response" | grep -q '"planImportsSchemaReady":true' &&
                echo "$response" | grep -q '"stopCoordinatesSchemaReady":true' &&
-               echo "$response" | grep -q '"mediaStorageReady":true' &&
-               echo "$response" | grep -q '"mediaStorageProvider":"google-drive"'; then
+               echo "$response" | grep -q '"mediaStorageReady":false' &&
+               echo "$response" | grep -q '"mediaStorageProvider":"device-local-only"'; then
               echo "Worker and D1 schema verified"
               exit 0
             fi
