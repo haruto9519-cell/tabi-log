@@ -30,6 +30,8 @@ jobs:
         run: npx --yes wrangler@4 d1 migrations apply tabi-log-db --remote --config wrangler.toml
       - name: Deploy Worker
         run: npx --yes wrangler@4 deploy --config wrangler.toml
+      - name: Inspect active Worker deployment
+        run: npx --yes wrangler@4 deployments list --json --config wrangler.toml
       - name: Verify deployed Worker and D1 schema
         run: |
           for attempt in $(seq 1 12); do
