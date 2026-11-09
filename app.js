@@ -600,14 +600,19 @@ async function exportTabiLogBackup(){
   for(const key of keys){
    const blob=await mediaGet(key);
    if(!blob){missingPhotos.push(key);continue;}
+   if(blob.size>5*1024*1024)throw new Error("5MBを超える写真があるためバックアップを中止しました");
+   const relatedPost=state.posts.find(post=>post.mediaKey===key);
+   const type=String(blob.type||relatedPost?.mediaType||"").toLowerCase();
+   if(!["image/jpeg","image/png","image/webp"].includes(type))throw new Error("対応していない形式の写真があるためバックアップを中止しました");
    const dataUrl=await new Promise((resolve,reject)=>{
     const reader=new FileReader();
     reader.onload=()=>resolve(reader.result);
     reader.onerror=()=>reject(reader.error||new Error("写真を読み込めませんでした"));
     reader.readAsDataURL(blob);
    });
-   photos[key]={type:blob.type||"application/octet-stream",dataUrl};
+   photos[key]={type,dataUrl};
   }
+  if(missingPhotos.length)throw new Error("写真データが見つからない記録が"+missingPhotos.length+"件あります。不完全なバックアップを防ぐため保存を中止しました。元の端末で写真を確認してください");
   const backup={
    format:"tabi-log-backup",
    version:1,
@@ -616,7 +621,9 @@ async function exportTabiLogBackup(){
    data:state,
    photos
   };
-  const blob=new Blob([JSON.stringify(backup)],{type:"application/json"});
+  const json=JSON.stringify(backup);
+  const blob=new Blob([json],{type:"application/json"});
+  if(blob.size>90*1024*1024)throw new Error("バックアップが90MBを超えています。写真を分けて保存する機能は未対応のため、写真の枚数を減らしてから再度お試しください");
   const url=URL.createObjectURL(blob);
   const link=document.createElement("a");
   link.href=url;
@@ -625,10 +632,10 @@ async function exportTabiLogBackup(){
   link.click();
   link.remove();
   setTimeout(()=>URL.revokeObjectURL(url),30000);
-  toast(missingPhotos.length?"バックアップを保存しました。一部の写真は端末内に見つかりませんでした":"バックアップを保存しました（写真を含む）");
+  toast("バックアップを保存しました（写真"+keys.length+"枚を含む）");
  }catch(error){
   console.error("バックアップの作成に失敗:",error);
-  toast("バックアップを作成できませんでした。端末の空き容量を確認してください");
+  toast(error.message||"バックアップを作成できませんでした。端末の空き容量を確認してください");
  }finally{
   if(button)button.disabled=false;
  }
