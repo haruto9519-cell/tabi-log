@@ -165,3 +165,6 @@ input:focus,textarea:focus,select:focus{outline:2px solid #d7b77f55;border-color
 
 /* Local backup controls */
 .backup-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}.backup-actions .btn:disabled{opacity:.55;cursor:wait}@media(max-width:540px){.backup-actions{width:100%;justify-content:stretch}.backup-actions .btn{flex:1}}
+
+/* Trip list search, sort and archive controls */
+.trip-list-controls{display:grid;grid-template-columns:1fr 150px 170px;gap:8px;margin:0 0 14px}.trip-list-controls input,.trip-list-controls select{min-width:0;font-size:11px;background:#fff}@media(max-width:540px){.trip-list-controls{grid-template-columns:1fr 1fr}.trip-list-controls input{grid-column:1/-1}}
