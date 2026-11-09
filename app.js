@@ -155,7 +155,7 @@ async function syncCloudData(){
   if(!response.ok||!remote.ok)throw new Error(remote.error||"クラウドの旅行記録を取得できませんでした");
   cloudSyncHydrating=true;
   const remoteTrips=(remote.trips||[]).map(t=>({
-   id:t.id,title:t.title,area:t.area,date:t.start_date||"",endDate:t.end_date||"",
+   id:t.id,title:t.title,area:t.area,date:t.start_date||"",endDate:t.end_date||"",archived:Boolean(t.archived),
    description:t.description||"",visibility:t.visibility||"private",budgetAmount:Number(t.budget_amount||0),budgetCurrency:t.budget_currency||"JPY",
    stops:Array.isArray(t.stops)?t.stops:[],actual:Array.isArray(t.actual)?t.actual:[],
    dayPlans:Array.isArray(t.dayPlans)?t.dayPlans.map(day=>({date:day.date,items:(day.items||[]).map((item,index)=>({id:item.id||uid(),name:item.name,startTime:item.startTime||"",endTime:item.endTime||"",note:item.note||"",sortOrder:Number.isInteger(item.sortOrder)?item.sortOrder:index,visited:Boolean(item.visited)}))})):[],
@@ -195,7 +195,7 @@ async function syncCloudData(){
    trips:trips.filter(t=>t.source==="native").slice(0,100).map(t=>({
     id:t.id,title:t.title,area:t.area,description:t.description||"",
     visibility:t.visibility||"private",start_date:t.date||"",end_date:t.endDate||"",
-    budget_amount:Number(t.budgetAmount||0),budget_currency:t.budgetCurrency||"JPY",
+    budget_amount:Number(t.budgetAmount||0),budget_currency:t.budgetCurrency||"JPY",archived:Boolean(t.archived),
     stops:Array.isArray(t.stops)?t.stops:[],actual:Array.isArray(t.actual)?t.actual:[],
     stopLocations:Array.isArray(t.stopLocations)?t.stopLocations:[],
     dayPlans:Array.isArray(t.dayPlans)?t.dayPlans.map(day=>({
