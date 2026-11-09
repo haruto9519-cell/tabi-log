@@ -277,7 +277,7 @@ export default {
     const path = url.pathname;
     if (request.method === "OPTIONS") return new Response(null, { headers: cors(request) });
     if (path === "/api/health" && request.method === "GET") {
-      const database = { configured: Boolean(env.DB), mediaStorageReady: false, mediaStorageProvider: "device-local-only", archiveSchemaReady: false, coreSchemaReady: false, shareSchemaReady: false, itinerarySchemaReady: false, expensesSchemaReady: false, planImportsSchemaReady: false, stopCoordinatesSchemaReady: false };
+      const database = { configured: Boolean(env.DB), mediaStorageReady: Boolean(env.MEDIA_BUCKET), mediaStorageProvider: env.MEDIA_BUCKET ? "cloudflare-r2" : "device-local-only", archiveSchemaReady: false, coreSchemaReady: false, shareSchemaReady: false, itinerarySchemaReady: false, expensesSchemaReady: false, planImportsSchemaReady: false, stopCoordinatesSchemaReady: false };
       if (env.DB) {
         try {
           const result = await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table'").all();
@@ -297,7 +297,7 @@ export default {
           database.querySucceeded = false;
         }
       }
-      return json(request, { ok: true, service: "tabi-log-api", version: "2.2-trip-archive", database });
+      return json(request, { ok: true, service: "tabi-log-api", version: "2.3-r2-media", database });
     }
     if (path === "/api/auth/session" && request.method === "POST") return createAuthSession(request, env);
     if (path === "/api/auth/logout" && request.method === "POST") return logoutSession(request, env);
@@ -349,19 +349,26 @@ export default {
       const postId = mediaMatch[1];
       const post = await env.DB.prepare("SELECT id,media_key,media_type FROM posts WHERE id=? AND user_id=?").bind(postId, user.id).first();
       if (!post) return bad(request, "対象の日記が見つかりません", 404);
-      if (request.method === "GET") return json(request, { ok: true, fileId: post.media_key || null, mediaType: post.media_type || null });
-      if (request.method === "PUT") {
-        const parsed = await readJson(request, 4096);
-        if (parsed.error) return parsed.error;
-        const fileId = typeof parsed.data?.fileId === "string" ? parsed.data.fileId : "";
-        const mediaType = typeof parsed.data?.mediaType === "string" ? parsed.data.mediaType.toLowerCase() : "";
-        const size = Number(parsed.data?.size || 0);
-        if (!/^[A-Za-z0-9_-]{10,200}$/.test(fileId)) return bad(request, "Google DriveのファイルIDが正しくありません");
-        if (!["image/jpeg", "image/png", "image/webp"].includes(mediaType)) return bad(request, "対応形式はJPEG・PNG・WebPです", 415);
-        if (!Number.isSafeInteger(size) || size < 1 || size > 5 * 1024 * 1024) return bad(request, "写真は5MB以下にしてください", 413);
-        await env.DB.prepare("UPDATE posts SET media_key=?,media_type=? WHERE id=? AND user_id=?").bind(fileId, mediaType, postId, user.id).run();
-        return json(request, { ok: true, fileId, mediaType });
+      if (!env.MEDIA_BUCKET) return bad(request, "写真クラウド保存がまだ有効になっていません", 503);
+      const objectKey = "users/" + user.id + "/posts/" + postId;
+      if (request.method === "GET") {
+        if (post.media_key !== objectKey) return bad(request, "クラウド写真が見つかりません", 404);
+        const object = await env.MEDIA_BUCKET.get(objectKey);
+        if (!object) return bad(request, "クラウド写真が見つかりません", 404);
+        return new Response(object.body, { headers: { "content-type": post.media_type || object.httpMetadata?.contentType || "application/octet-stream", "cache-control": "private, no-store", "x-content-type-options": "nosniff", ...cors(request) } });
       }
+      if (request.method === "PUT") {
+        const mediaType = (request.headers.get("content-type") || "").split(";")[0].trim().toLowerCase();
+        if (!["image/jpeg", "image/png", "image/webp"].includes(mediaType)) return bad(request, "対応形式はJPEG・PNG・WebPです", 415);
+        const declaredSize = Number(request.headers.get("content-length") || 0);
+        if (declaredSize > 5 * 1024 * 1024) return bad(request, "写真は5MB以下にしてください", 413);
+        const body = await request.arrayBuffer();
+        if (!body.byteLength || body.byteLength > 5 * 1024 * 1024) return bad(request, "写真は1バイト以上5MB以下にしてください", 413);
+        await env.MEDIA_BUCKET.put(objectKey, body, { httpMetadata: { contentType: mediaType, cacheControl: "private, no-store" }, customMetadata: { ownerId: user.id, postId } });
+        await env.DB.prepare("UPDATE posts SET media_key=?,media_type=? WHERE id=? AND user_id=?").bind(objectKey, mediaType, postId, user.id).run();
+        return json(request, { ok: true, key: objectKey, mediaType, size: body.byteLength });
+      }
+      if (post.media_key === objectKey) await env.MEDIA_BUCKET.delete(objectKey);
       await env.DB.prepare("UPDATE posts SET media_key=NULL,media_type=NULL WHERE id=? AND user_id=?").bind(postId, user.id).run();
       return json(request, { ok: true });
     }
@@ -572,6 +579,7 @@ export default {
     const postDeleteMatch = path.match(/^\/api\/posts\/([A-Za-z0-9_-]+)$/);
     if (postDeleteMatch && request.method === "DELETE") {
       const existingPost = await env.DB.prepare("SELECT media_key FROM posts WHERE id=? AND user_id=?").bind(postDeleteMatch[1], user.id).first();
+      if (existingPost?.media_key && existingPost.media_key === "users/" + user.id + "/posts/" + postDeleteMatch[1] && env.MEDIA_BUCKET) await env.MEDIA_BUCKET.delete(existingPost.media_key);
       const result = await env.DB.prepare("DELETE FROM posts WHERE id=? AND user_id=?").bind(postDeleteMatch[1], user.id).run();
       return json(request, { ok: true, deleted: Boolean(result.meta?.changes) });
     }
