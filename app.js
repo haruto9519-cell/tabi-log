@@ -251,7 +251,6 @@ async function syncCloudData(){
   });
   const savedData=await savedResponse.json();
   if(!savedResponse.ok||!savedData.ok)throw new Error(savedData.error||"クラウドへの保存に失敗しました");
-  await uploadPendingPostMedia();
   localStorage.setItem(firstCloudSyncKey,"1");
   writeLocalState(currentLocalState());
   renderAll();
