@@ -20,8 +20,7 @@ function renderAuth(){
  host.innerHTML="";
  if(importHost)importHost.innerHTML="";
  if(signedInUser){
-  status.innerHTML='<span class="auth-name">'+esc(signedInUser.name||"Googleユーザー")+'</span> <button type="button" class="auth-signout" id="driveConnect">Google Driveを連携</button> <button type="button" class="auth-signout" id="googleSignOut">ログアウト</button>';
-  $("#driveConnect").onclick=connectGoogleDrive;
+   status.innerHTML='<span class="auth-name">'+esc(signedInUser.name||"Googleユーザー")+'</span> <button type="button" class="auth-signout" id="googleSignOut">ログアウト</button>';
   $("#googleSignOut").onclick=logoutFromApp;
   return;
  }
@@ -70,8 +69,6 @@ async function handleGoogleCredential(response){
  }
 }
 async function logoutFromApp(){
- if(driveAccessToken&&window.google?.accounts?.oauth2){try{window.google.accounts.oauth2.revoke(driveAccessToken,()=>{});}catch{}}
- driveAccessToken="";driveTokenExpiresAt=0;driveRootFolderId="";driveTripFolders={};
  const token=sessionToken;
  try{
   if(token)await fetch(API_BASE+"/api/auth/logout",{method:"POST",headers:{authorization:"Bearer "+token}});
