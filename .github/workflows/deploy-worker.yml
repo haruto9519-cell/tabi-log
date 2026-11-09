@@ -28,14 +28,27 @@ jobs:
           test -n "$CLOUDFLARE_ACCOUNT_ID" || { echo "::error::GitHub Actions secret CLOUDFLARE_ACCOUNT_ID is not set"; exit 1; }
       - name: Apply pending D1 migrations
         run: npx --yes wrangler@4 d1 migrations apply tabi-log-db --remote --config wrangler.toml
-      - name: Deploy Worker
-        run: npx --yes wrangler@4 deploy --config wrangler.toml
+      - name: Deploy and explicitly promote Worker version
+        shell: bash
+        run: |
+          set -o pipefail
+          deploy_output="$(npx --yes wrangler@4 deploy --config wrangler.toml 2>&1)"
+          printf '%s\n' "$deploy_output"
+          version_id="$(printf '%s\n' "$deploy_output" | sed -n 's/^Current Version ID: //p' | tail -n 1)"
+          if [ -z "$version_id" ]; then
+            echo "::error::Could not determine the uploaded Worker version ID"
+            exit 1
+          fi
+          echo "Promoting exact uploaded version: $version_id"
+          npx --yes wrangler@4 versions deploy "$version_id@100%" --yes --config wrangler.toml
       - name: Inspect active Worker deployment
-        run: npx --yes wrangler@4 deployments list --json --config wrangler.toml
+        run: |
+          npx --yes wrangler@4 deployments status --json --config wrangler.toml
+          npx --yes wrangler@4 deployments list --json --config wrangler.toml
       - name: Verify deployed Worker and D1 schema
         run: |
           for attempt in $(seq 1 12); do
-            response="$(curl -fsS https://tabi-log.haruto-9519.workers.dev/api/health || true)"
+            response="$(curl -fsS -H 'Cache-Control: no-cache' "https://tabi-log.haruto-9519.workers.dev/api/health?release=${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-${attempt}" || true)"
             echo "$response"
             if echo "$response" | grep -q '"version":"2.2-trip-archive"' &&
                echo "$response" | grep -q '"configured":true' &&
