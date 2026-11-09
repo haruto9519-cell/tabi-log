@@ -432,22 +432,68 @@ $("#itineraryItems").addEventListener("click",e=>{
  if(button.dataset.itinDelete&&confirm("この予定を削除しますか？")){day.items.splice(index,1);trip.dayPlans=trip.dayPlans.filter(entry=>entry.items.length);save();renderItineraryItems();renderTrips();toast("予定を削除しました");}
 });
 $("#tripEditForm").addEventListener("submit",e=>{e.preventDefault();const f=e.currentTarget,id=f.elements.id.value,t=trips.find(x=>x.id===id);if(!t){toast("編集する旅行が見つかりません");return;}const data=new FormData(f);t.title=String(data.get("title")||"").trim();t.area=String(data.get("area")||"").trim();t.date=String(data.get("date")||"");t.endDate=String(data.get("endDate")||"");if(t.date&&t.endDate&&t.endDate<t.date){toast("終了日は開始日以降にしてください");return;}t.description=String(data.get("description")||"");t.budgetAmount=Number(data.get("budgetAmount")||0);t.budgetCurrency=String(data.get("budgetCurrency")||"JPY");t.stops=String(data.get("stops")||"").split(/[,、]/).map(s=>s.trim()).filter(Boolean);t.visibility=String(data.get("visibility")||"private");save();closeDialog("#tripEditDialog");renderAll();toast("旅行を更新しました");});
-$("#postForm").addEventListener("submit",async e=>{e.preventDefault();let f=new FormData(e.currentTarget);if(f.get("visibility")==="public"&&(!signedInUser||!sessionToken)){toast("公開するにはGoogleログインしてください");return;}let file=f.get("mediaLibrary");if(!file||!file.size)file=f.get("mediaCamera");if(file&&file.size){const allowedTypes=["image/jpeg","image/png","image/webp"];if(!allowedTypes.includes(file.type)){toast("保存できる形式はJPEG・PNG・WebPです");return}if(file.size>5*1024*1024){toast("写真1枚の上限は5MBです");return}}
-const linkedTripId=String(f.get("tripId")||"");const postId=uid();let p={id:postId,title:f.get("title"),place:f.get("place"),story:f.get("story"),author:profile.name,date:f.get("capturedAt")||new Date().toISOString(),category:f.get("category"),visual:"v4",symbol:"📷",likes:0,liked:false,saved:false,visibility:f.get("visibility"),tripId:linkedTripId,mediaKey:file&&file.size?postId:null,driveFileId:null,mediaType:file&&file.size?file.type:"",cloudMediaSynced:false,approxLocation:false,comments:[]};if(file&&file.size){try{await mediaPut(postId,file)}catch{toast("端末内への写真・動画保存に失敗しました");return}}
-posts.unshift(p);if(linkedTripId){const linkedTrip=trips.find(x=>x.id===linkedTripId);if(linkedTrip){if(!Array.isArray(linkedTrip.actual))linkedTrip.actual=[];if(p.place&&!linkedTrip.actual.includes(p.place))linkedTrip.actual.push(p.place);selectedTrip=linkedTripId;}}save();e.currentTarget.reset();closeDialog("#postDialog");renderAll();
-const successDialog=$("#saveSuccessDialog"),successTitle=$("#saveSuccessTitle"),successMessage=$("#saveSuccessMessage");
-if(file&&file.size){successTitle.textContent="写真を保存しました";successMessage.textContent="写真と日記をこの端末に保存しました。クラウド同期を確認しています。";}
-else{successTitle.textContent="日記を保存しました";successMessage.textContent="日記をこの端末に保存しました。クラウド同期を確認しています。";}
-try{if(!successDialog.open)successDialog.showModal();}catch(error){console.warn("保存完了ダイアログを表示できません:",error);toast("✓ "+(file&&file.size?"写真と日記":"日記")+"を保存しました");}
-toast("✓ "+(file&&file.size?"写真と日記":"日記")+"を保存しました");
-if(signedInUser&&sessionToken){
- clearTimeout(cloudSyncTimer);
- const cloudSaved=await syncCloudData();
- if(cloudSaved){successMessage.textContent=file&&file.size?"日記の文章はクラウドにも同期しました。写真はこの端末でのみ表示されます。":"日記をクラウドにも同期しました。";toast("✓ 日記を保存し、クラウドにも同期しました");}
- else{successMessage.textContent="端末には保存しましたが、クラウド同期は未完了です。別の端末にはまだ反映されていません。";toast("端末には保存済みですが、クラウド同期は未完了です");}
-}else{
- successMessage.textContent=file&&file.size?"写真と日記はこの端末に保存しました。別の端末には自動で同期されません。":"日記をこの端末に保存しました。ログインしていない場合、別の端末には自動で同期されません。";
-}
+$("#postForm").addEventListener("submit",async e=>{
+ e.preventDefault();
+ const formElement=e.currentTarget;
+ const f=new FormData(formElement);
+ if(f.get("visibility")==="public"&&(!signedInUser||!sessionToken)){toast("公開するにはGoogleログインしてください");return;}
+ let file=f.get("mediaLibrary");
+ if(!file||!file.size)file=f.get("mediaCamera");
+ if(file&&file.size){
+  const allowedTypes=["image/jpeg","image/png","image/webp"];
+  if(!allowedTypes.includes(file.type)){toast("保存できる形式はJPEG・PNG・WebPです");return;}
+  if(file.size>5*1024*1024){toast("写真1枚の上限は5MBです");return;}
+ }
+ const linkedTripId=String(f.get("tripId")||"");
+ const postId=uid();
+ const p={id:postId,title:f.get("title"),place:f.get("place"),story:f.get("story"),author:profile.name,date:f.get("capturedAt")||new Date().toISOString(),category:f.get("category"),visual:"v4",symbol:"📷",likes:0,liked:false,saved:false,visibility:f.get("visibility"),tripId:linkedTripId,mediaKey:file&&file.size?postId:null,driveFileId:null,mediaType:file&&file.size?file.type:"",cloudMediaSynced:false,approxLocation:false,comments:[]};
+ if(file&&file.size){
+  try{await mediaPut(postId,file);}
+  catch{toast("端末内への写真保存に失敗しました");return;}
+ }
+ posts.unshift(p);
+ if(linkedTripId){
+  const linkedTrip=trips.find(x=>x.id===linkedTripId);
+  if(linkedTrip){
+   if(!Array.isArray(linkedTrip.actual))linkedTrip.actual=[];
+   if(p.place&&!linkedTrip.actual.includes(p.place))linkedTrip.actual.push(p.place);
+   selectedTrip=linkedTripId;
+  }
+ }
+ save();
+ formElement.reset();
+ closeDialog("#postDialog");
+ const successDialog=$("#saveSuccessDialog");
+ const successTitle=$("#saveSuccessTitle");
+ const successMessage=$("#saveSuccessMessage");
+ successTitle.textContent=file&&file.size?"写真を保存しました":"日記を保存しました";
+ successMessage.textContent="この端末に保存しました。クラウド同期を確認しています。";
+ try{
+  if(!successDialog.open)successDialog.showModal();
+ }catch(error){
+  console.warn("保存完了ダイアログを表示できません:",error);
+ }
+ toast("✓ "+(file&&file.size?"写真と日記":"日記")+"を保存しました");
+ renderAll();
+ if(signedInUser&&sessionToken){
+  clearTimeout(cloudSyncTimer);
+  try{
+   const cloudSaved=await syncCloudData();
+   if(cloudSaved){
+    successMessage.textContent=file&&file.size?"日記の文章はクラウドにも同期しました。写真はこの端末でのみ表示されます。":"日記をクラウドにも同期しました。";
+    toast("✓ 日記を保存し、クラウドにも同期しました");
+   }else{
+    successMessage.textContent="端末には保存しましたが、クラウド同期は未完了です。別の端末にはまだ反映されていません。";
+    toast("端末には保存済みですが、クラウド同期は未完了です");
+   }
+  }catch(error){
+   console.warn("日記のクラウド同期に失敗:",error);
+   successMessage.textContent="端末には保存しましたが、クラウド同期を確認できませんでした。";
+   toast("端末には保存済みですが、クラウド同期を確認できません");
+  }
+ }else{
+  successMessage.textContent=file&&file.size?"写真と日記はこの端末に保存しました。別の端末には自動で同期されません。":"日記をこの端末に保存しました。ログインしていない場合、別の端末には自動で同期されません。";
+ }
 });
 $("#diaryEditForm").addEventListener("submit",async e=>{e.preventDefault();const f=e.currentTarget,id=f.elements.id.value,p=posts.find(x=>x.id===id&&x.author===profile.name);if(!p){toast("編集する日記が見つかりません");return;}const data=new FormData(f),file=data.get("mediaReplace");if(file&&file.size){const allowed=["image/jpeg","image/png","image/webp"];if(!allowed.includes(file.type)){toast("保存できる形式はJPEG・PNG・WebPです");return;}if(file.size>5*1024*1024){toast("写真1枚の上限は5MBです");return;}try{await mediaPut(p.id,file);p.mediaKey=p.id;p.mediaType=file.type;p.cloudMediaSynced=false;}catch{toast("端末内への保存に失敗しました");return;}}p.title=String(data.get("title")||"").trim();p.place=String(data.get("place")||"").trim();p.story=String(data.get("story")||"").trim();p.date=String(data.get("capturedAt")||"");p.visibility=String(data.get("visibility")||"private");save();closeDialog("#diaryEditDialog");renderAll();let synced=true;if(signedInUser&&sessionToken){clearTimeout(cloudSyncTimer);synced=await syncCloudData();}toast(file&&file.size?(synced?"写真・動画を更新しました":"端末には保存しました。クラウド同期は未完了です"):"日記を更新しました");});
 $("#diaryTimeline").addEventListener("click",async e=>{const b=e.target.closest("button");if(!b)return;const id=b.dataset.editDiary||b.dataset.deleteDiary;if(!id)return;const p=posts.find(x=>x.id===id&&x.author===profile.name);if(!p)return;if(b.dataset.editDiary){const f=$("#diaryEditForm");f.elements.id.value=p.id;f.elements.title.value=p.title||"";f.elements.place.value=p.place||"";f.elements.capturedAt.value=String(p.date||"").slice(0,16);f.elements.story.value=p.story||"";f.elements.visibility.value=p.visibility||"private";openDialog("#diaryEditDialog");return;}if(b.dataset.deleteDiary&&confirm(p.mediaKey?"この日記と写真を削除しますか？":"この日記を削除しますか？")){try{await deleteDiaryEntry(p);renderAll();toast(p.mediaKey?"✓ 写真と日記を削除しました":"✓ 日記を削除しました");}catch(err){toast(err.message||"削除に失敗しました");}}});
