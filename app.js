@@ -603,50 +603,58 @@ $("#exportBackupButton")?.addEventListener("click",()=>{
 });
 
 async function restoreTabiLogBackup(file){
- if(!file||file.size>100*1024*1024)throw new Error("バックアップファイルは100MB以下にしてください");
- const backup=JSON.parse(await file.text());
- if(backup?.format!=="tabi-log-backup"||backup.version!==1||!backup.data||typeof backup.data!=="object")throw new Error("旅ログのバックアップファイルではありません");
- if(signedInUser&&backup.account?.id!==String(signedInUser.id))throw new Error("別のGoogleアカウントのバックアップは復元できません。同じアカウントでログインしてください");
- if(!signedInUser&&backup.account)throw new Error("このバックアップはGoogleログイン中に作成されています。該当アカウントでログインしてください");
- const data=backup.data;
- for(const key of ["posts","trips","expenses","saved","following","blocked"])if(!Array.isArray(data[key]))throw new Error("バックアップのデータ形式が正しくありません");
- if(!data.profile||typeof data.profile!=="object"||Array.isArray(data.profile))throw new Error("プロフィール情報を読み込めません");
- const photos=backup.photos&&typeof backup.photos==="object"&&!Array.isArray(backup.photos)?backup.photos:{};
- const remappedPosts=data.posts.map(post=>({...post}));
- const restoredKeys=[];
- try{
-  for(const post of remappedPosts){
-   const oldKey=post.mediaKey;
-   if(!oldKey||!photos[oldKey]?.dataUrl)continue;
-   const record=photos[oldKey];
-   if(typeof record.dataUrl!=="string"||!/^data:image\/(jpeg|png|webp);base64,/i.test(record.dataUrl))throw new Error("写真データの形式が正しくありません");
-   const base64=record.dataUrl.split(",")[1]||"";
-   const binary=atob(base64);
-   if(binary.length>5*1024*1024)throw new Error("5MBを超える写真が含まれています");
-   const bytes=new Uint8Array(binary.length);
-   for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
-   const blob=new Blob([bytes],{type:record.type||"image/jpeg"});
-   const newKey="restore-"+uid();
-   await mediaPut(newKey,blob);
-   restoredKeys.push(newKey);
-   post.mediaKey=newKey;
+  if(!file||file.size>100*1024*1024)throw new Error("バックアップファイルは100MB以下にしてください");
+  const backup=JSON.parse(await file.text());
+  if(backup?.format!=="tabi-log-backup"||backup.version!==1||!backup.data||typeof backup.data!=="object")throw new Error("旅ログのバックアップファイルではありません");
+  if(signedInUser&&backup.account?.id!==String(signedInUser.id))throw new Error("別のGoogleアカウントのバックアップは復元できません。同じアカウントでログインしてください");
+  if(!signedInUser&&backup.account)throw new Error("このバックアップはGoogleログイン中に作成されています。該当アカウントでログインしてください");
+  const data=backup.data;
+  for(const key of ["posts","trips","expenses","saved","following","blocked"])if(!Array.isArray(data[key]))throw new Error("バックアップのデータ形式が正しくありません");
+  if(data.posts.some(item=>!item||typeof item!=="object"||Array.isArray(item)||typeof item.id!=="string")||data.trips.some(item=>!item||typeof item!=="object"||Array.isArray(item)||typeof item.id!=="string"))throw new Error("旅行または日記のデータが壊れています");
+  if(!data.profile||typeof data.profile!=="object"||Array.isArray(data.profile))throw new Error("プロフィール情報を読み込めません");
+  const photos=backup.photos&&typeof backup.photos==="object"&&!Array.isArray(backup.photos)?backup.photos:{};
+  const remappedPosts=data.posts.map(post=>({...post}));
+  const restoredKeys=[];
+  const stateKeys=Object.keys(currentLocalState());
+  const previousStorage=new Map(stateKeys.map(key=>{const storageKey=activeAccountStorageId?accountStorageKey(activeAccountStorageId,key):"tabilog_"+key;return [storageKey,localStorage.getItem(storageKey)];}));
+  const previousState=currentLocalState();
+  try{
+    for(const post of remappedPosts){
+      const oldKey=post.mediaKey;
+      if(!oldKey||!photos[oldKey]?.dataUrl)continue;
+      const record=photos[oldKey];
+      if(typeof record.dataUrl!=="string"||!/^data:image\/(jpeg|png|webp);base64,/i.test(record.dataUrl))throw new Error("写真データの形式が正しくありません");
+      if(!["image/jpeg","image/png","image/webp"].includes(String(record.type||"image/jpeg").toLowerCase()))throw new Error("写真のファイル形式が正しくありません");
+      const base64=record.dataUrl.split(",")[1]||"";
+      const binary=atob(base64);
+      if(binary.length>5*1024*1024)throw new Error("5MBを超える写真が含まれています");
+      const bytes=new Uint8Array(binary.length);
+      for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
+      const blob=new Blob([bytes],{type:record.type||"image/jpeg"});
+      const newKey="restore-"+uid();
+      await mediaPut(newKey,blob);
+      restoredKeys.push(newKey);
+      post.mediaKey=newKey;
+    }
+    const restoredState={
+      posts:remappedPosts,trips:data.trips,expenses:data.expenses,saved:data.saved,
+      following:data.following,blocked:data.blocked,profile:data.profile,
+      shares:data.shares&&typeof data.shares==="object"&&!Array.isArray(data.shares)?data.shares:{}
+    };
+    writeLocalState(restoredState);
+    posts=restoredState.posts;trips=restoredState.trips;expenses=restoredState.expenses;
+    saved=restoredState.saved;following=restoredState.following;blocked=restoredState.blocked;
+    profile=restoredState.profile;shareRecords=restoredState.shares;
+    selectedTrip=trips[0]?.id||null;
+    renderAll();
+    toast("バックアップをこの端末に復元しました。クラウド側のデータは変更していません");
+  }catch(error){
+    for(const [key,value] of previousStorage){try{if(value===null)localStorage.removeItem(key);else localStorage.setItem(key,value);}catch{}}
+    posts=previousState.posts;trips=previousState.trips;expenses=previousState.expenses;saved=previousState.saved;
+    following=previousState.following;blocked=previousState.blocked;profile=previousState.profile;shareRecords=previousState.shares;
+    for(const key of restoredKeys)try{await mediaDelete(key)}catch{}
+    throw error;
   }
-  posts=remappedPosts;
-  trips=data.trips;
-  expenses=data.expenses;
-  saved=data.saved;
-  following=data.following;
-  blocked=data.blocked;
-  profile=data.profile;
-  shareRecords=data.shares&&typeof data.shares==="object"&&!Array.isArray(data.shares)?data.shares:{};
-  selectedTrip=trips[0]?.id||null;
-  writeLocalState(currentLocalState());
-  renderAll();
-  toast("バックアップをこの端末に復元しました。クラウド側のデータは変更していません");
- }catch(error){
-  for(const key of restoredKeys)try{await mediaDelete(key)}catch{}
-  throw error;
- }
 }
 $("#importBackupButton")?.addEventListener("click",()=>$("#importBackupFile")?.click());
 $("#importBackupFile")?.addEventListener("change",async event=>{
