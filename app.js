@@ -654,6 +654,10 @@ async function restoreTabiLogBackup(file){
   if(data.posts.some(item=>!item||typeof item!=="object"||Array.isArray(item)||typeof item.id!=="string")||data.trips.some(item=>!item||typeof item!=="object"||Array.isArray(item)||typeof item.id!=="string"))throw new Error("旅行または日記のデータが壊れています");
   if(!data.profile||typeof data.profile!=="object"||Array.isArray(data.profile))throw new Error("プロフィール情報を読み込めません");
   const photos=backup.photos&&typeof backup.photos==="object"&&!Array.isArray(backup.photos)?backup.photos:{};
+  const invalidMediaPost=data.posts.find(post=>post.mediaKey&&typeof post.mediaKey!=="string");
+  if(invalidMediaPost)throw new Error("日記の写真参照情報が正しくありません");
+  const missingPhotoPosts=data.posts.filter(post=>post.mediaKey&&typeof photos[post.mediaKey]?.dataUrl!=="string");
+  if(missingPhotoPosts.length)throw new Error("バックアップに写真データが含まれていない日記が"+missingPhotoPosts.length+"件あります。写真を含む完全なバックアップを選んでください");
   const remappedPosts=data.posts.map(post=>({...post}));
   const restoredKeys=[];
   const stateKeys=Object.keys(currentLocalState());
