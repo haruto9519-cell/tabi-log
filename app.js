@@ -2,6 +2,29 @@ const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const DB_NAME="tabiLogMedia", STORE="media";
 function openMediaDB(){return new Promise((resolve,reject)=>{const r=indexedDB.open(DB_NAME,1);r.onupgradeneeded=()=>r.result.createObjectStore(STORE);r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);});}
 async function mediaPut(key,blob){const db=await openMediaDB();return new Promise((res,rej)=>{const tx=db.transaction(STORE,"readwrite");tx.objectStore(STORE).put(blob,key);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error);});}
+async function compressPhotoForCloud(file){
+ if(!file||!file.type.startsWith("image/"))throw new Error("画像ファイルを選択してください");
+ if(file.size<=1350000)return file;
+ if(typeof createImageBitmap!=="function")throw new Error("このブラウザでは写真の圧縮に対応していません。1.35MB以下の写真を選んでください");
+ const bitmap=await createImageBitmap(file,{imageOrientation:"from-image"});
+ try{
+  let scale=Math.min(1,1600/Math.max(bitmap.width,bitmap.height));
+  for(let pass=0;pass<5;pass++){
+   const canvas=document.createElement("canvas");
+   canvas.width=Math.max(1,Math.round(bitmap.width*scale));
+   canvas.height=Math.max(1,Math.round(bitmap.height*scale));
+   const context=canvas.getContext("2d",{alpha:false});
+   if(!context)throw new Error("写真の圧縮に失敗しました");
+   context.drawImage(bitmap,0,0,canvas.width,canvas.height);
+   for(const quality of [0.84,0.76,0.68,0.60]){
+    const output=await new Promise(resolve=>canvas.toBlob(resolve,"image/webp",quality));
+    if(output&&output.size<=1350000)return new File([output],"tabi-photo.webp",{type:"image/webp",lastModified:Date.now()});
+   }
+   scale*=0.78;
+  }
+  throw new Error("写真を1.35MB以下に圧縮できませんでした。別の写真を選んでください");
+ }finally{bitmap.close?.();}
+}
 async function mediaGet(key){const db=await openMediaDB();return new Promise((res,rej)=>{const r=db.transaction(STORE).objectStore(STORE).get(key);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});}
 async function mediaDelete(key){if(!key)return;const db=await openMediaDB();return new Promise((res,rej)=>{const tx=db.transaction(STORE,"readwrite");tx.objectStore(STORE).delete(key);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error);});}
 async function loadPostMedia(post){
@@ -251,6 +274,7 @@ async function syncCloudData(){
   });
   const savedData=await savedResponse.json();
   if(!savedResponse.ok||!savedData.ok)throw new Error(savedData.error||"クラウドへの保存に失敗しました");
+  await uploadPendingPostMedia();
   localStorage.setItem(firstCloudSyncKey,"1");
   writeLocalState(currentLocalState());
   renderAll();
@@ -477,6 +501,7 @@ $("#postForm").addEventListener("submit",async e=>{
   const allowedTypes=["image/jpeg","image/png","image/webp"];
   if(!allowedTypes.includes(file.type)){toast("保存できる形式はJPEG・PNG・WebPです");return;}
   if(file.size>5*1024*1024){toast("写真1枚の上限は5MBです");return;}
+  try{file=await compressPhotoForCloud(file);}catch(error){toast(error.message||"写真を圧縮できませんでした");return;}
  }
  const linkedTripId=String(f.get("tripId")||"");
  const postId=uid();
@@ -529,7 +554,7 @@ $("#postForm").addEventListener("submit",async e=>{
   successMessage.textContent=file&&file.size?"写真と日記はこの端末に保存しました。別の端末には自動で同期されません。":"日記をこの端末に保存しました。ログインしていない場合、別の端末には自動で同期されません。";
  }
 });
-$("#diaryEditForm").addEventListener("submit",async e=>{e.preventDefault();const f=e.currentTarget,id=f.elements.id.value,p=posts.find(x=>x.id===id&&x.author===profile.name);if(!p){toast("編集する日記が見つかりません");return;}const data=new FormData(f),file=data.get("mediaReplace");if(file&&file.size){const allowed=["image/jpeg","image/png","image/webp"];if(!allowed.includes(file.type)){toast("保存できる形式はJPEG・PNG・WebPです");return;}if(file.size>5*1024*1024){toast("写真1枚の上限は5MBです");return;}try{await mediaPut(p.id,file);p.mediaKey=p.id;p.mediaType=file.type;p.cloudMediaSynced=false;}catch{toast("端末内への保存に失敗しました");return;}}p.title=String(data.get("title")||"").trim();p.place=String(data.get("place")||"").trim();p.story=String(data.get("story")||"").trim();p.date=String(data.get("capturedAt")||"");p.visibility=String(data.get("visibility")||"private");save();closeDialog("#diaryEditDialog");renderAll();let synced=true;if(signedInUser&&sessionToken){clearTimeout(cloudSyncTimer);synced=await syncCloudData();}toast(file&&file.size?(synced&&p.cloudMediaSynced?"写真をクラウドに更新しました":"日記を更新しました（写真はこの端末内に保存）"):"日記を更新しました");});
+$("#diaryEditForm").addEventListener("submit",async e=>{e.preventDefault();const f=e.currentTarget,id=f.elements.id.value,p=posts.find(x=>x.id===id&&x.author===profile.name);if(!p){toast("編集する日記が見つかりません");return;}const data=new FormData(f);let file=data.get("mediaReplace");if(file&&file.size){const allowed=["image/jpeg","image/png","image/webp"];if(!allowed.includes(file.type)){toast("保存できる形式はJPEG・PNG・WebPです");return;}if(file.size>5*1024*1024){toast("写真1枚の上限は5MBです");return;}try{file=await compressPhotoForCloud(file);await mediaPut(p.id,file);p.mediaKey=p.id;p.mediaType=file.type;p.cloudMediaSynced=false;}catch{toast("端末内への保存に失敗しました");return;}}p.title=String(data.get("title")||"").trim();p.place=String(data.get("place")||"").trim();p.story=String(data.get("story")||"").trim();p.date=String(data.get("capturedAt")||"");p.visibility=String(data.get("visibility")||"private");save();closeDialog("#diaryEditDialog");renderAll();let synced=true;if(signedInUser&&sessionToken){clearTimeout(cloudSyncTimer);synced=await syncCloudData();}toast(file&&file.size?(synced&&p.cloudMediaSynced?"写真をクラウドに更新しました":"日記を更新しました（写真はこの端末内に保存）"):"日記を更新しました");});
 $("#diaryTimeline").addEventListener("click",async e=>{const b=e.target.closest("button");if(!b)return;const id=b.dataset.editDiary||b.dataset.deleteDiary;if(!id)return;const p=posts.find(x=>x.id===id&&x.author===profile.name);if(!p)return;if(b.dataset.editDiary){const f=$("#diaryEditForm");f.elements.id.value=p.id;f.elements.title.value=p.title||"";f.elements.place.value=p.place||"";f.elements.capturedAt.value=String(p.date||"").slice(0,16);f.elements.story.value=p.story||"";f.elements.visibility.value=p.visibility||"private";openDialog("#diaryEditDialog");return;}if(b.dataset.deleteDiary&&confirm(p.mediaKey?"この日記と写真を削除しますか？":"この日記を削除しますか？")){try{await deleteDiaryEntry(p);renderAll();toast(p.mediaKey?"✓ 写真と日記を削除しました":"✓ 日記を削除しました");}catch(err){toast(err.message||"削除に失敗しました");}}});
 
 $("#editProfile").onclick=()=>{let f=$("#profileForm");f.elements.name.value=profile.name;f.elements.bio.value=profile.bio;openDialog("#profileDialog")};
