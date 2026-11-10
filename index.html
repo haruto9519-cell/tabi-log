@@ -5,16 +5,18 @@
 <meta name="theme-color" content="#10263d">
 <meta name="description" content="Aileronで作成した旅行プランに、訪問記録・写真・日記を重ねて残せる旅行ログ。写真は端末内に保存されます。">
 <title>旅ログ — 自分の旅を、ひとつに。</title>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""><link rel="stylesheet" href="styles.css?v=20261110-trip-list-v1">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""><link rel="stylesheet" href="styles.css?v=20261110-mobile-nav-a11y-v2">
 </head>
 <body>
+<a class="skip-link" href="#main-content">本文へスキップ</a>
 <header class="topbar">
  <a class="brand" href="#home"><span class="brand-icon">旅</span><span>旅ログ</span></a>
- <nav><a href="#mytrips">マイ旅行</a><a href="#diary">思い出</a><a href="#mypage">プロフィール</a></nav>
+ <nav aria-label="メインナビゲーション"><a href="#mytrips">マイ旅行</a><a href="#diary">思い出</a><a href="#expenses">支出</a><a href="#mypage">プロフィール</a></nav>
  <div class="auth-area"><div id="googleLogin"></div><div id="authStatus" aria-live="polite"></div></div>
  <div class="header-actions"><button class="btn ghost" id="openTrip">Aileronでプランを作る</button><button class="btn gold" id="openPost">＋ 思い出を記録</button></div>
 </header>
 <main id="home">
+<div id="main-content" tabindex="-1">
 <section id="importAuthNotice" class="import-auth-notice" hidden aria-live="polite">
  <div class="import-auth-card">
   <span class="kicker">SAVE YOUR TRIP TO TABI LOG</span>
@@ -73,6 +75,7 @@
  <div class="settings-row"><div><b>プライバシーと共有</b><p>旅行記録は自分のみを初期設定にし、共有は専用URLを発行したものだけにします。</p></div><button class="btn ghost" id="privacySettings">設定を確認</button></div>
 </section>
 </main>
+</div>
 <footer><a class="brand footer-brand" href="#home"><span class="brand-icon">旅</span><span>旅ログ</span></a><span>自分の旅を、ひとつに。</span><small>Personal travel journal</small><nav aria-label="法的情報"><a href="/privacy.html">プライバシーポリシー</a> ・ <a href="/terms.html">利用規約</a></nav></footer>
 
 <dialog id="expenseDialog"><form id="expenseForm">
