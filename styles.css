@@ -168,3 +168,35 @@ input:focus,textarea:focus,select:focus{outline:2px solid #d7b77f55;border-color
 
 /* Trip list search, sort and archive controls */
 .trip-list-controls{display:grid;grid-template-columns:1fr 150px 170px;gap:8px;margin:0 0 14px}.trip-list-controls input,.trip-list-controls select{min-width:0;font-size:11px;background:#fff}@media(max-width:540px){.trip-list-controls{grid-template-columns:1fr 1fr}.trip-list-controls input{grid-column:1/-1}}
+
+
+/* Mobile navigation, keyboard access and motion preferences */
+.skip-link{position:fixed;z-index:1000;top:8px;left:8px;padding:10px 14px;background:#fff;color:#142b40;border:2px solid #c7a36b;border-radius:6px;transform:translateY(-160%);transition:transform .15s}
+.skip-link:focus{transform:translateY(0)}
+:where(a,button,input,select,textarea,[tabindex]):focus-visible{outline:3px solid #bd9251;outline-offset:3px}
+button,a,.stop-pill,.action{touch-action:manipulation}
+@media(max-width:850px){
+ .topbar{height:auto;min-height:68px;display:flex;flex-wrap:wrap;gap:8px 12px;padding:10px 16px}
+ .topbar>.brand{margin-right:auto}
+ .topbar>nav{display:flex;order:5;width:100%;margin:0;padding:8px 0 2px;gap:0;justify-content:space-between;border-top:1px solid var(--line)}
+ .topbar>nav a{flex:1;text-align:center;padding:7px 3px;font-size:11px}
+ .topbar>.auth-area{margin-left:0}
+ .topbar>.header-actions{margin-left:0}
+}
+@media(max-width:540px){
+ .topbar{gap:8px;padding:9px 12px}
+ .topbar>.brand{font-size:15px}
+ .topbar>.auth-area{max-width:118px}
+ .topbar>.auth-area iframe{max-width:118px}
+ .topbar>.header-actions #openTrip{display:none}
+ .topbar>.header-actions #openPost{padding:10px 12px;min-height:40px;font-size:10px;white-space:nowrap}
+ .topbar>nav a{font-size:10px}
+ .section-heading>.btn,.section-heading>button{width:100%;min-height:42px}
+ .settings-row{align-items:flex-start;flex-wrap:wrap}
+ .settings-row>div:first-child{min-width:0;width:100%}
+ .settings-row .btn{min-height:40px}
+}
+@media(prefers-reduced-motion:reduce){
+ html{scroll-behavior:auto}
+ *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+}
