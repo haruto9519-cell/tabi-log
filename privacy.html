@@ -31,7 +31,7 @@ a{color:#245a91}h1,h2{color:var(--navy);line-height:1.4}h1{font-size:2rem;margin
 <h2>3. 保存先と外部サービス</h2>
 <ul>
 <li>認証情報、旅行・日記等の一部データは、Cloudflare WorkersおよびD1を利用して処理・保存します。</li>
-<li>Google Drive連携を利用した場合、利用者が選択した写真を、利用者自身のGoogle Drive内に保存します。アプリはGoogle Drive APIのdrive.file権限を使用し、本サービスが作成または利用者が本サービス経由で選択したファイルへのアクセスを行います。</li>
+<li>写真は現在、利用者が使うブラウザのIndexedDBに端末内保存します。写真ファイルは本サービスのサーバーやCloudflare D1にはアップロードされず、端末間で自動同期されません。利用者がバックアップ機能を実行した場合、写真を含むバックアップファイルが利用者の端末に作成されます。</li>
 <li>GoogleログインにはGoogle Identity Servicesを利用します。Googleの情報の取扱いは<a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer">Googleプライバシーポリシー</a>も確認してください。</li>
 <li>本サービスの配信・データ処理にはCloudflare等のサービスを利用します。各サービスのシステム上、情報が国外で処理される場合があります。</li>
 </ul>
