@@ -44,9 +44,10 @@ async function loadPostMedia(post){
 async function uploadPendingPostMedia(){
  let allUploaded=true;
  for(const post of posts.filter(item=>item.author===profile.name&&item.mediaKey&&!item.cloudMediaSynced)){
-  const blob=await mediaGet(post.mediaKey).catch(()=>null);
+  let blob=await mediaGet(post.mediaKey).catch(()=>null);
   if(!blob)continue;
   try{
+   if(blob.size>1350000){blob=await compressPhotoForCloud(blob);await mediaPut(post.mediaKey,blob);post.mediaType=blob.type;}
    const response=await fetch(API_BASE+"/api/media/"+encodeURIComponent(post.id),{method:"PUT",headers:{authorization:"Bearer "+sessionToken,"content-type":blob.type||post.mediaType||"image/jpeg"},body:blob});
    const data=await response.json();
    if(!response.ok||!data.ok)throw new Error(data.error||"写真をクラウドに保存できませんでした");
