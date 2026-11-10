@@ -235,7 +235,7 @@ async function syncCloudData(){
   for(const p of remotePosts){
     const local=posts.find(item=>item.id===p.id);
     if(!local)posts.push(p);
-    else if(p.cloudMediaSynced){local.mediaKey=local.mediaKey||p.id;local.cloudMediaKey=p.cloudMediaKey;local.mediaType=p.mediaType;local.cloudMediaSynced=true;}
+    else if(p.cloudMediaSynced&&local.cloudMediaSynced!==false){local.mediaKey=local.mediaKey||p.id;local.cloudMediaKey=p.cloudMediaKey;local.mediaType=p.mediaType;local.cloudMediaSynced=true;}
     else if(p.mediaType&&!local.mediaType)local.mediaType=p.mediaType;
    }
   // Signed-in cloud data is authoritative for expenses so deletions on another device do not reappear.
