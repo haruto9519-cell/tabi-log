@@ -631,7 +631,7 @@ async function exportTabiLogBackup(){
   link.click();
   link.remove();
   setTimeout(()=>URL.revokeObjectURL(url),30000);
-  toast("バックアップを保存しました（写真"+keys.length+"枚を含む）");
+  toast("バックアップファイルを作成しました（写真"+keys.length+"枚を含む）。端末のダウンロード一覧で保存を確認してください");
  }catch(error){
   console.error("バックアップの作成に失敗:",error);
   toast(error.message||"バックアップを作成できませんでした。端末の空き容量を確認してください");
@@ -644,7 +644,7 @@ $("#exportBackupButton")?.addEventListener("click",()=>{
 });
 
 async function restoreTabiLogBackup(file){
-  if(!file||file.size>100*1024*1024)throw new Error("バックアップファイルは100MB以下にしてください");
+  if(!file||file.size>90*1024*1024)throw new Error("バックアップファイルは90MB以下にしてください");
   const backup=JSON.parse(await file.text());
   if(backup?.format!=="tabi-log-backup"||backup.version!==1||!backup.data||typeof backup.data!=="object")throw new Error("旅ログのバックアップファイルではありません");
   if(signedInUser&&backup.account?.id!==String(signedInUser.id))throw new Error("別のGoogleアカウントのバックアップは復元できません。同じアカウントでログインしてください");
@@ -656,8 +656,17 @@ async function restoreTabiLogBackup(file){
   const photos=backup.photos&&typeof backup.photos==="object"&&!Array.isArray(backup.photos)?backup.photos:{};
   const invalidMediaPost=data.posts.find(post=>post.mediaKey&&typeof post.mediaKey!=="string");
   if(invalidMediaPost)throw new Error("日記の写真参照情報が正しくありません");
-  const missingPhotoPosts=data.posts.filter(post=>post.mediaKey&&typeof photos[post.mediaKey]?.dataUrl!=="string");
+  const mediaPosts=data.posts.filter(post=>post.mediaKey);
+  const missingPhotoPosts=mediaPosts.filter(post=>!photos[post.mediaKey]||typeof photos[post.mediaKey].dataUrl!=="string");
   if(missingPhotoPosts.length)throw new Error("バックアップに写真データが含まれていない日記が"+missingPhotoPosts.length+"件あります。写真を含む完全なバックアップを選んでください");
+  for(const post of mediaPosts){
+    const record=photos[post.mediaKey];
+    const match=record.dataUrl.match(/^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/]*={0,2})$/i);
+    if(!match)throw new Error("写真データの形式が正しくありません");
+    const mime=match[1].toLowerCase();
+    if(String(record.type||mime).toLowerCase()!==mime)throw new Error("写真の形式情報が一致しません");
+    if(match[2].length>Math.ceil(5*1024*1024/3)*4)throw new Error("5MBを超える写真が含まれています");
+  }
   const remappedPosts=data.posts.map(post=>({...post}));
   const restoredKeys=[];
   const stateKeys=Object.keys(currentLocalState());
@@ -668,9 +677,11 @@ async function restoreTabiLogBackup(file){
       const oldKey=post.mediaKey;
       if(!oldKey||!photos[oldKey]?.dataUrl)continue;
       const record=photos[oldKey];
-      if(typeof record.dataUrl!=="string"||!/^data:image\/(jpeg|png|webp);base64,/i.test(record.dataUrl))throw new Error("写真データの形式が正しくありません");
-      if(!["image/jpeg","image/png","image/webp"].includes(String(record.type||"image/jpeg").toLowerCase()))throw new Error("写真のファイル形式が正しくありません");
-      const base64=record.dataUrl.split(",")[1]||"";
+      const match=record.dataUrl.match(/^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/]*={0,2})$/i);
+      if(!match)throw new Error("写真データの形式が正しくありません");
+      const mime=match[1].toLowerCase();
+      if(String(record.type||mime).toLowerCase()!==mime)throw new Error("写真の形式情報が一致しません");
+      const base64=match[2];
       const binary=atob(base64);
       if(binary.length>5*1024*1024)throw new Error("5MBを超える写真が含まれています");
       const bytes=new Uint8Array(binary.length);
