@@ -1,3 +1,4 @@
+// Tabi Log Worker: private photo media is stored in D1; no R2 binding required.
 const ALLOWED_ORIGINS = new Set(["https://tabi-log.pages.dev", "http://localhost:8788", "http://127.0.0.1:8788"]);
 const CORS_ORIGINS = new Set([...ALLOWED_ORIGINS, "https://tabi-hikaku.pages.dev", "https://aileron-japan-travel.pages.dev"]);
 const cors = (request) => {
