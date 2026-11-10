@@ -21,3 +21,6 @@ jobs:
           test -f config.js
           test -f share.html
           test -f worker/migrations/0002_share_links.sql
+      - name: Validate Wrangler configuration without deploying
+        working-directory: worker
+        run: npx --yes wrangler@4 deploy --dry-run --outdir /tmp/tabi-log-worker-dry-run --config wrangler.toml
