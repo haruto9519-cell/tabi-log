@@ -14,5 +14,7 @@ database_id = "a0a64951-c309-49c6-bd2b-8990299080e2"
 [vars]
 GOOGLE_CLIENT_ID = "88585688478-1i3t68qc8ek9ffo3f0u4qj4rfvsm1n5h.apps.googleusercontent.com"
 
-[previews]
-# Preview bindings must be configured separately; do not reuse production D1.
+[[previews.d1_databases]]
+binding = "DB"
+database_name = "tabi-log-preview-db"
+database_id = "39d3d802-4d06-43d3-976e-21629d9b063f"
