@@ -370,7 +370,7 @@ export default {
         const previousBytes = Number(post.media_data?.byteLength || post.media_data?.length || 0);
         if (currentBytes - previousBytes + body.byteLength > 80 * 1024 * 1024) return bad(request, "アカウントの写真保存上限80MBに達します。不要な写真を削除してください", 413);
         const totalBytes = Number((await env.DB.prepare("SELECT COALESCE(SUM(length(media_data)),0) AS bytes FROM posts").first())?.bytes || 0);
-        if (totalBytes - previousBytes + body.byteLength > 450 * 1024 * 1024) return bad(request, "旅ログ全体の写真保存容量が上限に近づいています", 507);
+        if (totalBytes - previousBytes + body.byteLength > 400 * 1024 * 1024) return bad(request, "旅ログ全体の写真保存上限400MBに達します。不要な写真を削除してください", 507);
         await env.DB.prepare("UPDATE posts SET media_key=?,media_type=?,media_data=? WHERE id=? AND user_id=?").bind(objectKey, mediaType, body, postId, user.id).run();
         return json(request, { ok: true, key: objectKey, mediaType, size: body.byteLength, storage: "cloudflare-d1" });
       }
