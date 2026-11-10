@@ -277,12 +277,16 @@ export default {
     const path = url.pathname;
     if (request.method === "OPTIONS") return new Response(null, { headers: cors(request) });
     if (path === "/api/health" && request.method === "GET") {
-      const database = { configured: Boolean(env.DB), mediaStorageReady: Boolean(env.MEDIA_BUCKET), mediaStorageProvider: env.MEDIA_BUCKET ? "cloudflare-r2" : "device-local-only", archiveSchemaReady: false, coreSchemaReady: false, shareSchemaReady: false, itinerarySchemaReady: false, expensesSchemaReady: false, planImportsSchemaReady: false, stopCoordinatesSchemaReady: false };
+      const database = { configured: Boolean(env.DB), mediaStorageReady: false, mediaStorageProvider: "unavailable", mediaSchemaReady: false, archiveSchemaReady: false, coreSchemaReady: false, shareSchemaReady: false, itinerarySchemaReady: false, expensesSchemaReady: false, planImportsSchemaReady: false, stopCoordinatesSchemaReady: false };
       if (env.DB) {
         try {
           const result = await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table'").all();
           const tables = new Set((result.results || []).map(row => row.name));
           database.coreSchemaReady = ["users","trips","trip_stops","posts","likes","comments","follows","saved_trips","reports","blocks"].every(name => tables.has(name));
+          const postColumns = await env.DB.prepare("PRAGMA table_info(posts)").all();
+          database.mediaSchemaReady = (postColumns.results || []).some(column => column.name === "media_data");
+          database.mediaStorageReady = database.mediaSchemaReady;
+          database.mediaStorageProvider = database.mediaSchemaReady ? "cloudflare-d1" : "unavailable";
           const tripColumns = await env.DB.prepare("PRAGMA table_info(trips)").all();
           database.archiveSchemaReady = (tripColumns.results || []).some(column => column.name === "archived");
           database.shareSchemaReady = ["share_links","share_rate_limits"].every(name => tables.has(name));
@@ -297,7 +301,7 @@ export default {
           database.querySucceeded = false;
         }
       }
-      return json(request, { ok: true, service: "tabi-log-api", version: "2.3-device-media", database });
+      return json(request, { ok: true, service: "tabi-log-api", version: "2.4-d1-media", database });
     }
     if (path === "/api/auth/session" && request.method === "POST") return createAuthSession(request, env);
     if (path === "/api/auth/logout" && request.method === "POST") return logoutSession(request, env);
@@ -347,29 +351,29 @@ export default {
     const mediaMatch = path.match(/^\/api\/media\/([A-Za-z0-9_-]{1,80})$/);
     if (mediaMatch && ["GET", "PUT", "DELETE"].includes(request.method)) {
       const postId = mediaMatch[1];
-      const post = await env.DB.prepare("SELECT id,media_key,media_type FROM posts WHERE id=? AND user_id=?").bind(postId, user.id).first();
+      const post = await env.DB.prepare("SELECT id,media_key,media_type,media_data FROM posts WHERE id=? AND user_id=?").bind(postId, user.id).first();
       if (!post) return bad(request, "対象の日記が見つかりません", 404);
-      if (!env.MEDIA_BUCKET) return bad(request, "写真クラウド保存がまだ有効になっていません", 503);
+      if (!post.media_data && request.method === "GET") return bad(request, "クラウド写真が見つかりません", 404);
       const objectKey = "users/" + user.id + "/posts/" + postId;
       if (request.method === "GET") {
-        if (post.media_key !== objectKey) return bad(request, "クラウド写真が見つかりません", 404);
-        const object = await env.MEDIA_BUCKET.get(objectKey);
-        if (!object) return bad(request, "クラウド写真が見つかりません", 404);
-        return new Response(object.body, { headers: { "content-type": post.media_type || object.httpMetadata?.contentType || "application/octet-stream", "cache-control": "private, no-store", "x-content-type-options": "nosniff", ...cors(request) } });
+        return new Response(post.media_data, { headers: { "content-type": post.media_type || "application/octet-stream", "cache-control": "private, no-store", "x-content-type-options": "nosniff", ...cors(request) } });
       }
       if (request.method === "PUT") {
         const mediaType = (request.headers.get("content-type") || "").split(";")[0].trim().toLowerCase();
         if (!["image/jpeg", "image/png", "image/webp"].includes(mediaType)) return bad(request, "対応形式はJPEG・PNG・WebPです", 415);
         const declaredSize = Number(request.headers.get("content-length") || 0);
-        if (declaredSize > 5 * 1024 * 1024) return bad(request, "写真は5MB以下にしてください", 413);
+        if (declaredSize > 1400000) return bad(request, "写真は1.35MB以下に圧縮してください", 413);
         const body = await request.arrayBuffer();
-        if (!body.byteLength || body.byteLength > 5 * 1024 * 1024) return bad(request, "写真は1バイト以上5MB以下にしてください", 413);
-        await env.MEDIA_BUCKET.put(objectKey, body, { httpMetadata: { contentType: mediaType, cacheControl: "private, no-store" }, customMetadata: { ownerId: user.id, postId } });
-        await env.DB.prepare("UPDATE posts SET media_key=?,media_type=? WHERE id=? AND user_id=?").bind(objectKey, mediaType, postId, user.id).run();
-        return json(request, { ok: true, key: objectKey, mediaType, size: body.byteLength });
+        if (!body.byteLength || body.byteLength > 1400000) return bad(request, "写真は1バイト以上1.35MB以下にしてください", 413);
+        const currentBytes = Number((await env.DB.prepare("SELECT COALESCE(SUM(length(media_data)),0) AS bytes FROM posts WHERE user_id=?").bind(user.id).first())?.bytes || 0);
+        const previousBytes = Number(post.media_data?.byteLength || post.media_data?.length || 0);
+        if (currentBytes - previousBytes + body.byteLength > 80 * 1024 * 1024) return bad(request, "アカウントの写真保存上限80MBに達します。不要な写真を削除してください", 413);
+        const totalBytes = Number((await env.DB.prepare("SELECT COALESCE(SUM(length(media_data)),0) AS bytes FROM posts").first())?.bytes || 0);
+        if (totalBytes - previousBytes + body.byteLength > 450 * 1024 * 1024) return bad(request, "旅ログ全体の写真保存容量が上限に近づいています", 507);
+        await env.DB.prepare("UPDATE posts SET media_key=?,media_type=?,media_data=? WHERE id=? AND user_id=?").bind(objectKey, mediaType, body, postId, user.id).run();
+        return json(request, { ok: true, key: objectKey, mediaType, size: body.byteLength, storage: "cloudflare-d1" });
       }
-      if (post.media_key === objectKey) await env.MEDIA_BUCKET.delete(objectKey);
-      await env.DB.prepare("UPDATE posts SET media_key=NULL,media_type=NULL WHERE id=? AND user_id=?").bind(postId, user.id).run();
+      await env.DB.prepare("UPDATE posts SET media_key=NULL,media_type=NULL,media_data=NULL WHERE id=? AND user_id=?").bind(postId, user.id).run();
       return json(request, { ok: true });
     }
 
