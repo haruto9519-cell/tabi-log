@@ -51,7 +51,7 @@ jobs:
           for attempt in $(seq 1 12); do
             response="$(curl -fsS -H 'Cache-Control: no-cache' "https://tabi-log.haruto-9519.workers.dev/api/health?release=${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-${attempt}" || true)"
             echo "$response"
-            if echo "$response" | grep -q '"version":"2.3-device-media"' &&
+            if echo "$response" | grep -q '"version":"2.4-d1-media"' &&
                echo "$response" | grep -q '"configured":true' &&
                echo "$response" | grep -q '"coreSchemaReady":true' &&
                echo "$response" | grep -q '"shareSchemaReady":true' &&
@@ -61,8 +61,9 @@ jobs:
                echo "$response" | grep -q '"expensesSchemaReady":true' &&
                echo "$response" | grep -q '"planImportsSchemaReady":true' &&
                echo "$response" | grep -q '"stopCoordinatesSchemaReady":true' &&
-               echo "$response" | grep -q '"mediaStorageReady":false' &&
-               echo "$response" | grep -q '"mediaStorageProvider":"device-local-only"'; then
+               echo "$response" | grep -q '"mediaSchemaReady":true' &&
+               echo "$response" | grep -q '"mediaStorageReady":true' &&
+               echo "$response" | grep -q '"mediaStorageProvider":"cloudflare-d1"'; then
               echo "Worker and D1 schema verified"
               exit 0
             fi
