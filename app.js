@@ -45,7 +45,7 @@ async function uploadPendingPostMedia(){
  let allUploaded=true;
  for(const post of posts.filter(item=>item.author===profile.name&&item.mediaKey&&!item.cloudMediaSynced)){
   let blob=await mediaGet(post.mediaKey).catch(()=>null);
-  if(!blob)continue;
+  if(!blob){allUploaded=false;continue;}
   try{
    if(blob.size>1350000){blob=await compressPhotoForCloud(blob);await mediaPut(post.mediaKey,blob);post.mediaType=blob.type;}
    const response=await fetch(API_BASE+"/api/media/"+encodeURIComponent(post.id),{method:"PUT",headers:{authorization:"Bearer "+sessionToken,"content-type":blob.type||post.mediaType||"image/jpeg"},body:blob});
@@ -275,11 +275,11 @@ async function syncCloudData(){
   });
   const savedData=await savedResponse.json();
   if(!savedResponse.ok||!savedData.ok)throw new Error(savedData.error||"クラウドへの保存に失敗しました");
-  await uploadPendingPostMedia();
+  const mediaUploaded=await uploadPendingPostMedia();
   localStorage.setItem(firstCloudSyncKey,"1");
   writeLocalState(currentLocalState());
   renderAll();
-  return true;
+  return mediaUploaded;
  }catch(error){
   console.warn("旅ログのクラウド同期に失敗:",error);
   return false;
