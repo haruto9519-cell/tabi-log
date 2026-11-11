@@ -29,7 +29,14 @@
 .demo-instruction{text-align:center;margin:16px auto;color:#6c716f;font-size:11px}
 .demo-modal{position:fixed;inset:0;z-index:3000;display:none;overflow:auto;align-items:flex-start;justify-content:center;padding:60px 14px 35px;background:radial-gradient(ellipse at 50% 25%,#30445a,#101c2b 72%)}
 .demo-modal.open{display:flex}
-.demo-modal .ticket-stage{width:min(850px,100%)}
+.demo-modal .ticket-stage{width:min(850px,100%);position:relative}
+.demo-modal .ticket-reveal-preview{position:absolute;z-index:0;inset:0 0 auto;height:300px;display:flex;align-items:center;justify-content:center;overflow:hidden;border:1px solid #c5a873;border-radius:9px;background:linear-gradient(135deg,#fbf9f2,#e9e1d2);color:#26384a;clip-path:inset(0 calc((1 - var(--tear-progress,0))*50%) 0 calc((1 - var(--tear-progress,0))*50%));transition:clip-path .06s linear;box-shadow:inset 0 0 0 7px #fff5}
+.demo-modal .ticket-reveal-inner{width:100%;padding:24px 36px;text-align:center}
+.demo-modal .ticket-reveal-inner small{display:block;color:#9a8053;font-size:8px;letter-spacing:.2em}
+.demo-modal .ticket-reveal-inner strong{display:block;margin:9px 0;font:600 clamp(19px,3vw,28px) Georgia,serif}
+.demo-modal .ticket-reveal-inner p{max-width:600px;margin:0 auto;color:#65706e;font-size:11px;line-height:1.7}
+.demo-modal .ticket-reveal-inner>div{display:flex;justify-content:center;gap:18px;flex-wrap:wrap;margin-top:14px;color:#92794f;font-size:8px;letter-spacing:.12em}
+.demo-modal .boarding-ticket{z-index:2}
 .demo-modal .ticket-detail{display:none}
 .demo-modal.torn .ticket-detail{display:block}
 .demo-modal .ticket-detail.show{opacity:1;transform:translateY(0)}
@@ -52,7 +59,7 @@
 .demo-modal.torn .ticket-stub-half{animation:demo-right .65s forwards}
 @keyframes demo-left{to{transform:translateX(-30px) rotate(-1deg);opacity:.12}}
 @keyframes demo-right{to{transform:translateX(30px) rotate(1deg);opacity:.12}}
-@media(max-width:600px){.demo-ticket-card{grid-template-columns:minmax(0,1fr) 72px}.demo-ticket-main{padding:13px}.demo-modal{padding:58px 9px 28px}.demo-modal .boarding-ticket{grid-template-columns:minmax(0,1fr) 42px 76px;min-height:230px}.demo-modal .ticket-main-half{padding:16px 11px}.demo-modal .ticket-topline{font-size:7px}.demo-modal .ticket-route{margin:22px 0 12px}.demo-modal .ticket-route strong{font-size:20px}.demo-modal .ticket-main-half>h2{font-size:17px;margin-bottom:15px}.demo-modal .ticket-fields{grid-template-columns:1fr;gap:7px}.demo-modal .ticket-fields small{display:inline;margin-right:6px}.demo-modal .ticket-fields b{font-size:9px}.demo-modal .ticket-detail-grid{grid-template-columns:1fr}}
+@media(max-width:600px){.demo-modal .ticket-reveal-preview{height:230px}.demo-modal .ticket-reveal-inner{padding:15px 8px}.demo-modal .ticket-reveal-inner p{font-size:9px}.demo-modal .ticket-reveal-inner>div{gap:7px;font-size:7px}.demo-ticket-card{grid-template-columns:minmax(0,1fr) 72px}.demo-ticket-main{padding:13px}.demo-modal{padding:58px 9px 28px}.demo-modal .boarding-ticket{grid-template-columns:minmax(0,1fr) 42px 76px;min-height:230px}.demo-modal .ticket-main-half{padding:16px 11px}.demo-modal .ticket-topline{font-size:7px}.demo-modal .ticket-route{margin:22px 0 12px}.demo-modal .ticket-route strong{font-size:20px}.demo-modal .ticket-main-half>h2{font-size:17px;margin-bottom:15px}.demo-modal .ticket-fields{grid-template-columns:1fr;gap:7px}.demo-modal .ticket-fields small{display:inline;margin-right:6px}.demo-modal .ticket-fields b{font-size:9px}.demo-modal .ticket-detail-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -78,6 +85,7 @@
 <div class="demo-modal" id="demoModal" aria-hidden="true">
  <button class="ticket-close" id="demoClose" aria-label="閉じる">×</button>
  <div class="ticket-stage">
+  <div class="ticket-reveal-preview" aria-hidden="true"><div class="ticket-reveal-inner"><small>YOUR JOURNEY IS WAITING</small><strong>秋の京都、寺社めぐり</strong><p>紅葉の京都で巡った場所、旅程、日記や写真。チケットの切れ目から、旅の記録が少しずつ見えてきます。</p><div><span>4 PLACES</span><span>3 VISITED</span><span>2026.11.03 — 11.05</span></div></div></div>
   <div class="boarding-ticket">
    <div class="ticket-main-half">
     <div class="ticket-topline"><span>TABI LOG AIRWAYS</span><span>JOURNEY PASS</span></div>
@@ -103,14 +111,14 @@
  </div>
 </div>
 <script>
-(()=>{const modal=document.getElementById("demoModal"),track=document.getElementById("demoTrack"),progress=document.getElementById("demoProgress"),grip=document.getElementById("demoGrip"),detail=document.getElementById("demoDetail"),help=document.getElementById("demoHelp");let active=false,amount=0;
+(()=>{const modal=document.getElementById("demoModal"),stage=modal.querySelector(".ticket-stage"),track=document.getElementById("demoTrack"),progress=document.getElementById("demoProgress"),grip=document.getElementById("demoGrip"),detail=document.getElementById("demoDetail"),help=document.getElementById("demoHelp");let active=false,amount=0;
 function open(){modal.classList.add("open");modal.setAttribute("aria-hidden","false");document.body.style.overflow="hidden";}
-function close(){modal.classList.remove("open","torn");modal.setAttribute("aria-hidden","true");document.body.style.overflow="";progress.style.height="0";grip.style.top="0";amount=0;active=false;detail.classList.remove("show");detail.style.display="none";help.textContent="中央のミシン目を上から下へなぞって開封";}
-function tear(){if(modal.classList.contains("torn"))return;active=false;modal.classList.add("torn");help.textContent="旅の記録を開きました";document.getElementById("demoTapOpen").style.display="none";detail.style.display="block";requestAnimationFrame(()=>detail.classList.add("show"));}
+function close(){modal.classList.remove("open","torn");modal.setAttribute("aria-hidden","true");document.body.style.overflow="";progress.style.height="0";grip.style.top="0";stage.style.setProperty("--tear-progress","0");amount=0;active=false;detail.classList.remove("show");detail.style.display="none";help.textContent="中央のミシン目を上から下へなぞって開封";}
+function tear(){if(modal.classList.contains("torn"))return;active=false;stage.style.setProperty("--tear-progress","1");modal.classList.add("torn");help.textContent="旅の記録を開きました";document.getElementById("demoTapOpen").style.display="none";detail.style.display="block";requestAnimationFrame(()=>detail.classList.add("show"));}
 document.getElementById("demoOpen").addEventListener("click",open);document.getElementById("demoClose").addEventListener("click",close);document.getElementById("demoTapOpen").addEventListener("click",tear);
 modal.addEventListener("click",e=>{if(e.target===modal)close();});
 track.addEventListener("pointerdown",e=>{const r=track.getBoundingClientRect();if(e.clientY<r.top)return;active=true;amount=Math.max(0,Math.min(1,(e.clientY-r.top)/r.height));track.setPointerCapture(e.pointerId);});
-track.addEventListener("pointermove",e=>{if(!active)return;const r=track.getBoundingClientRect();amount=Math.max(amount,Math.max(0,Math.min(1,(e.clientY-r.top)/r.height)));progress.style.height=(amount*100)+"%";grip.style.top=(amount*100)+"%";if(amount>=.85)tear();});
+track.addEventListener("pointermove",e=>{if(!active)return;const r=track.getBoundingClientRect();amount=Math.max(amount,Math.max(0,Math.min(1,(e.clientY-r.top)/r.height)));progress.style.height=(amount*100)+"%";grip.style.top=(amount*100)+"%";stage.style.setProperty("--tear-progress",String(amount));if(amount>=.85)tear();});
 track.addEventListener("pointerup",()=>active=false);track.addEventListener("pointercancel",()=>active=false);
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&modal.classList.contains("open"))close();});
 })();
