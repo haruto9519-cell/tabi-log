@@ -371,7 +371,7 @@ function renderTicketMap(trip,layer){
   });
  });
  if(bounds.length>1)L.polyline(bounds,{color:"#b18b52",weight:4,opacity:.82,dashArray:"7 7"}).addTo(map);
- map.fitBounds(bounds,{padding:[28,28],maxZoom:13});
+ if(bounds.length===1)map.setView(bounds[0],13);else map.fitBounds(bounds,{padding:[28,28],maxZoom:13});
  setTimeout(()=>map.invalidateSize({pan:false}),120);
  setTimeout(()=>map.invalidateSize({pan:false}),500);
 }
