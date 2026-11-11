@@ -32,3 +32,7 @@ jobs:
         run: |
           npx --yes wrangler@4 d1 execute tabi-log-db --local --command "PRAGMA table_info(posts)" --config wrangler.toml | tee /tmp/tabi-log-post-columns.txt
           grep -q "media_data" /tmp/tabi-log-post-columns.txt
+          npx --yes wrangler@4 d1 execute tabi-log-db --local --command "PRAGMA table_info(trips)" --config wrangler.toml | tee /tmp/tabi-log-trip-columns.txt
+          grep -q "origin_country" /tmp/tabi-log-trip-columns.txt
+          grep -q "arrival_airport" /tmp/tabi-log-trip-columns.txt
+          grep -q "first_attraction" /tmp/tabi-log-trip-columns.txt
