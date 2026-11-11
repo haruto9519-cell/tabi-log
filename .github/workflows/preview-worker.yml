@@ -1,0 +1,51 @@
+name: Preview Tabi Log Worker
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - "worker/**"
+      - "config.js"
+      - ".github/workflows/preview-worker.yml"
+  workflow_dispatch:
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: worker
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check Cloudflare credentials
+        run: |
+          test -n "$CLOUDFLARE_API_TOKEN" || { echo "::error::GitHub Actions secret CLOUDFLARE_API_TOKEN is not set"; exit 1; }
+          test -n "$CLOUDFLARE_ACCOUNT_ID" || { echo "::error::GitHub Actions secret CLOUDFLARE_ACCOUNT_ID is not set"; exit 1; }
+      - name: Apply migrations to isolated Preview D1 only
+        run: npx --yes wrangler@4 d1 migrations apply tabi-log-preview-db --remote --config wrangler.preview.toml
+      - name: Deploy isolated Worker Preview (never production)
+        run: npx --yes wrangler@4 preview --config wrangler.toml --name feat-d1-photo-sync
+      - name: Verify isolated Worker Preview
+        shell: bash
+        run: |
+          set -euo pipefail
+          url="https://feat-d1-photo-sync-tabi-log.haruto-9519.workers.dev/api/health"
+          for attempt in $(seq 1 12); do
+            response="$(curl -fsS -H 'Cache-Control: no-cache' "$url?check=${GITHUB_RUN_ID}-${attempt}" || true)"
+            echo "$response"
+            if echo "$response" | grep -q '"version":"2.4-d1-media"' &&
+               echo "$response" | grep -q '"mediaSchemaReady":true' &&
+               echo "$response" | grep -q '"mediaStorageReady":true' &&
+               echo "$response" | grep -q '"mediaStorageProvider":"cloudflare-d1"'; then
+              echo "Isolated Worker Preview and D1 schema verified"
+              echo "Preview URL: https://feat-d1-photo-sync-tabi-log.haruto-9519.workers.dev"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "::error::Worker Preview or Preview D1 schema verification failed"
+          exit 1
