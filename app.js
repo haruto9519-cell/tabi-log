@@ -1,4 +1,25 @@
-const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const $=s=>document.querySelector(s), $=s=>[...document.querySelectorAll(s)];
+// Register ticket opening before the rest of the app initializes. This keeps
+// ticket taps working even if an unrelated later initializer fails.
+document.addEventListener("click",event=>{
+ const target=event.target;
+ const card=target instanceof Element?target.closest("[data-open-ticket]"):null;
+ if(!card)return;
+ event.preventDefault();
+ event.stopImmediatePropagation();
+ try{openTravelTicket(card.dataset.openTicket);}
+ catch(error){console.error("チケットを開けませんでした",error);const notice=document.querySelector("#toast");if(notice){notice.textContent="チケットを開けませんでした。ページを再読み込みしてください。";notice.classList.add("show");}}
+},true);
+document.addEventListener("keydown",event=>{
+ if(event.key!=="Enter"&&event.key!==" ")return;
+ const target=event.target;
+ const card=target instanceof Element?target.closest("[data-open-ticket]"):null;
+ if(!card)return;
+ event.preventDefault();
+ event.stopImmediatePropagation();
+ try{openTravelTicket(card.dataset.openTicket);}
+ catch(error){console.error("チケットを開けませんでした",error);const notice=document.querySelector("#toast");if(notice){notice.textContent="チケットを開けませんでした。ページを再読み込みしてください。";notice.classList.add("show");}}
+},true);
 const DB_NAME="tabiLogMedia", STORE="media";
 function openMediaDB(){return new Promise((resolve,reject)=>{const r=indexedDB.open(DB_NAME,1);r.onupgradeneeded=()=>r.result.createObjectStore(STORE);r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);});}
 async function mediaPut(key,blob){const db=await openMediaDB();return new Promise((res,rej)=>{const tx=db.transaction(STORE,"readwrite");tx.objectStore(STORE).put(blob,key);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error);});}
