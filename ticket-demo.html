@@ -491,3 +491,52 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape"&&modal.classList.con
  .demo-modal .stub-footer{font-size:5px;letter-spacing:.06em}
 }
 </style>
+
+
+<style>
+/* Make the actual stub column match the paper width; the old mobile grid was still only 76px. */
+.demo-modal .boarding-ticket{
+  grid-template-columns:minmax(0,1fr) 0 var(--ticket-stub-width,190px) !important;
+}
+.demo-modal .ticket-stub-half{
+  grid-column:3;
+  width:100%;
+  min-width:0;
+  justify-self:stretch;
+  padding:20px 14px 15px;
+  display:flex;
+  flex-direction:column;
+  align-items:stretch;
+  gap:10px;
+  text-align:left;
+}
+.demo-modal .ticket-stub-half .stub-heading,
+.demo-modal .ticket-stub-half .stub-number,
+.demo-modal .ticket-stub-half .stub-info,
+.demo-modal .ticket-stub-half .stub-date,
+.demo-modal .ticket-stub-half .ticket-barcode,
+.demo-modal .ticket-stub-half .stub-footer{
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  box-sizing:border-box;
+}
+.demo-modal .ticket-stub-half .stub-info{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:6px;
+}
+.demo-modal .ticket-stub-half .stub-info>div{min-width:0}
+@media(max-width:600px){
+  .demo-modal .boarding-ticket{
+    grid-template-columns:minmax(0,1fr) 0 118px !important;
+  }
+  .demo-modal .ticket-stub-half{padding:14px 9px 11px;gap:8px}
+  .demo-modal .stub-heading span{font-size:7px;letter-spacing:.06em}
+  .demo-modal .stub-heading small{font-size:5px;letter-spacing:.06em}
+  .demo-modal .stub-number strong{font-size:20px;letter-spacing:0}
+  .demo-modal .stub-info b{font-size:16px}
+  .demo-modal .stub-date b{font-size:8px;letter-spacing:0}
+  .demo-modal .stub-footer{font-size:5px;letter-spacing:.04em}
+}
+</style>
