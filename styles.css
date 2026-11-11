@@ -1333,3 +1333,57 @@ body.ticket-open{overflow:hidden}
 @media(max-width:600px){.ticket-reveal-preview{height:240px}.ticket-reveal-inner{padding:16px 9px}.ticket-reveal-inner p{font-size:9px}.ticket-reveal-inner>div{gap:7px;font-size:7px}}
 
 .ticket-perforation{background:transparent;border-left-color:#b89a66;border-right-color:#b89a66}
+
+/* Real paper boarding pass + tear-through reveal */
+.ticket-stage{--ticket-stub-width:150px;position:relative;isolation:isolate}
+.ticket-reveal-preview{z-index:0;inset:0;height:300px;display:flex;align-items:center;justify-content:center;overflow:hidden;border:1px solid #c5a873;border-radius:8px;background:radial-gradient(ellipse at 15% 10%,#fffdf7 0,transparent 48%),repeating-linear-gradient(0deg,#f8f5ed 0,#f8f5ed 2px,#f5f1e8 3px,#f8f5ed 5px);color:#26384a;clip-path:polygon(calc(100% - var(--ticket-stub-width) - 1px) 0,calc(100% - var(--ticket-stub-width) + 1px) 0,calc(100% - var(--ticket-stub-width) + 1px) var(--tear-progress,0%),calc(100% - var(--ticket-stub-width) - 1px) var(--tear-progress,0%));transition:clip-path .06s linear;box-shadow:0 12px 32px #0002,inset 0 0 0 5px #fff8}
+.ticket-reveal-inner{position:relative;width:100%;padding:24px 34px;text-align:center}
+.ticket-reveal-inner .reveal-kicker{font-size:8px;letter-spacing:.28em;color:#9a8053}
+.ticket-reveal-inner>strong{display:block;margin:12px 0 8px;font:600 clamp(21px,3vw,30px) Georgia,"Yu Mincho",serif;color:#26384a}
+.ticket-reveal-inner>p{max-width:590px;margin:0 auto;color:#65706e;font-size:11px;line-height:1.8}
+.ticket-reveal-inner .reveal-stats{display:flex;justify-content:center;gap:24px;flex-wrap:wrap;margin-top:19px;color:#92794f;font-size:8px;letter-spacing:.13em}
+.reveal-stats b{font:600 15px Georgia,serif;margin-right:3px}
+.reveal-stamp{position:absolute;right:24px;bottom:8px;padding:7px 5px;border:1px solid #b28f59;border-radius:50%;color:#b28f59;font:8px/1.25 Georgia,serif;transform:rotate(-12deg);opacity:.65}
+.boarding-ticket{--ticket-stub-width:150px;grid-template-columns:minmax(0,1fr) 0 var(--ticket-stub-width);gap:0;overflow:visible;border:0;border-radius:0;background:transparent;box-shadow:none;z-index:2}
+.ticket-main-half,.ticket-stub-half{position:relative;min-width:0;background-color:#f7f3e9;background-image:radial-gradient(#b7a98e20 .55px,transparent .7px),linear-gradient(135deg,#fffdf8,#eee7d9);background-size:4px 4px,100% 100%;box-shadow:0 12px 32px #0004,inset 0 0 0 1px #d2c2a5}
+.ticket-main-half{border-radius:8px 0 0 8px}
+.ticket-main-half:before,.ticket-stub-half:before{content:"";position:absolute;inset:7px;pointer-events:none;border:1px solid #c9b89565;border-radius:4px}
+.ticket-stub-half{border-radius:0 8px 8px 0;gap:12px;padding:18px 9px}
+.ticket-perforation{position:absolute;z-index:5;left:calc(100% - var(--ticket-stub-width));top:0;bottom:0;width:38px;margin-left:-19px;display:flex;align-items:center;justify-content:center;border:0;background:transparent}
+.ticket-perforation:before,.ticket-perforation:after{width:16px;height:16px;background:#142337;box-shadow:inset 0 0 0 1px #b99a66}
+.perforation-label{top:12px;font-size:6px;letter-spacing:.2em;text-shadow:0 1px #fff}
+.tear-track{width:38px;min-height:100%;height:100%;touch-action:pan-x;cursor:ns-resize}
+.tear-track:before{left:50%;top:0;bottom:0;border-left:1px dashed #a78b5d;border-top:0;opacity:.9}
+.tear-progress{left:50%;top:0;width:2px;height:0;background:linear-gradient(180deg,#9a7440,#c7a66f);box-shadow:0 0 5px #98713c55}
+.tear-grip{width:25px;height:25px;background:linear-gradient(145deg,#263c50,#101e2d);box-shadow:0 2px 6px #0005;border-color:#c5a873}
+.ticket-stub-half small{font-size:7px;letter-spacing:.2em}
+.ticket-stub-half strong{font-family:Georgia,"Yu Mincho",serif;font-size:12px}
+.ticket-stub-half span{font-size:8px}
+.ticket-barcode{height:42px;width:80%;display:flex;align-items:stretch;justify-content:center;gap:2px;padding:4px 0;opacity:.82}
+.ticket-barcode i{display:block;width:2px;background:#28394a}
+.ticket-barcode i:nth-child(3n){width:4px}.ticket-barcode i:nth-child(4n){width:1px}.ticket-barcode i:nth-child(5n){margin-right:3px}
+.ticket-stub-half>b{font-size:12px;letter-spacing:.24em}
+.ticket-experience.is-torn .ticket-reveal-preview{clip-path:inset(0);transition:clip-path .28s ease}
+.ticket-experience.is-torn .ticket-main-half{animation:ticket-real-tear-main .7s cubic-bezier(.2,.75,.25,1) forwards;clip-path:polygon(0 0,100% 0,98% 4%,100% 8%,97.5% 12%,100% 16%,97.5% 20%,100% 24%,97.5% 28%,100% 32%,97.5% 36%,100% 40%,97.5% 44%,100% 48%,97.5% 52%,100% 56%,97.5% 60%,100% 64%,97.5% 68%,100% 72%,97.5% 76%,100% 80%,97.5% 84%,100% 88%,97.5% 92%,100% 96%,98% 100%,0 100%)}
+.ticket-experience.is-torn .ticket-stub-half{animation:ticket-real-tear-stub .7s cubic-bezier(.2,.75,.25,1) forwards;clip-path:polygon(0 0,100% 0,100% 100%,0 100%,2% 96%,0 92%,2.5% 88%,0 84%,2.5% 80%,0 76%,2.5% 72%,0 68%,2.5% 64%,0 60%,2.5% 56%,0 52%,2.5% 48%,0 44%,2.5% 40%,0 36%,2.5% 32%,0 28%,2.5% 24%,0 20%,2.5% 16%,0 12%,2.5% 8%,0 4%)}
+@keyframes ticket-real-tear-main{to{transform:translateX(-78px) rotate(-2deg);filter:drop-shadow(0 14px 12px #0005)}}
+@keyframes ticket-real-tear-stub{to{transform:translateX(78px) rotate(2.2deg);filter:drop-shadow(0 14px 12px #0005)}}
+.ticket-experience.is-torn .ticket-perforation{opacity:0;transition:opacity .18s .08s}
+.ticket-detail{position:relative;z-index:1}
+@media(max-width:600px){
+ .ticket-stage{--ticket-stub-width:76px}
+ .boarding-ticket{--ticket-stub-width:76px;grid-template-columns:minmax(0,1fr) 0 var(--ticket-stub-width);min-height:240px}
+ .ticket-reveal-preview{height:240px}
+ .ticket-reveal-inner{padding:17px 10px}
+ .ticket-reveal-inner>p{font-size:9px}
+ .ticket-reveal-inner .reveal-stats{gap:9px;font-size:7px}
+ .reveal-stats b{font-size:12px}
+ .reveal-stamp{right:7px;bottom:5px;font-size:6px}
+ .ticket-main-half{padding:18px 12px}
+ .ticket-stub-half{padding:8px 4px;gap:9px}
+ .ticket-barcode{height:28px;gap:1px}
+ .ticket-stub-half strong{font-size:9px}
+ .ticket-perforation{width:30px;margin-left:-15px}
+ .tear-track{width:30px}
+}
+@media(prefers-reduced-motion:reduce){.ticket-experience.is-torn .ticket-main-half,.ticket-experience.is-torn .ticket-stub-half{animation:none;transform:translateX(0);filter:none}}
