@@ -1411,3 +1411,31 @@ body.ticket-open{overflow:hidden}
 .ticket-route strong{display:block;font-size:clamp(15px,2.6vw,29px);line-height:1.18;overflow-wrap:anywhere}
 .ticket-flight strong{font-size:clamp(12px,2vw,18px);letter-spacing:.02em}
 .ticket-route-subline{flex-wrap:wrap;overflow-wrap:anywhere}
+
+/* Final tear-state correction: remove every trace of the perforation after separation. */
+.ticket-experience.is-torn .ticket-perforation{
+  opacity:0;
+  visibility:hidden;
+  pointer-events:none;
+  transition:opacity .16s .06s,visibility 0s .24s;
+}
+.ticket-experience.is-torn .ticket-perforation::before,
+.ticket-experience.is-torn .ticket-perforation::after,
+.ticket-experience.is-torn .tear-track,
+.ticket-experience.is-torn .tear-progress,
+.ticket-experience.is-torn .tear-grip,
+.ticket-experience.is-torn .perforation-label{
+  opacity:0;
+  visibility:hidden;
+}
+/* Printed-paper finish: subtle stock grain, ink rules and clean ticket edges. */
+.ticket-experience .ticket-main-half,
+.ticket-experience .ticket-stub-half{
+  background-color:#f7f3e9;
+  background-image:radial-gradient(#a99a7b20 .55px,transparent .75px),linear-gradient(135deg,#fffdf8 0%,#f3eddf 58%,#eae1d1 100%);
+  background-size:4px 4px,100% 100%;
+  box-shadow:inset 0 0 0 1px #d5c7ad,0 12px 32px #0004;
+}
+.ticket-experience .ticket-topline{border-bottom:1px solid #d9cdb8;padding-bottom:10px;text-shadow:0 1px #fff8}
+.ticket-experience .ticket-fields{border-top:1px solid #cfc2a9}
+.ticket-experience .ticket-barcode{border-top:1px solid #d5c7ad;padding-top:7px}
