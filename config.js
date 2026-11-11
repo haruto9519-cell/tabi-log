@@ -1,6 +1,6 @@
 // Use the isolated Worker Preview for the feature branch Pages preview.
 // Production pages continue to use the production Worker.
-const isTabiLogPreview = location.hostname !== "tabi-log.pages.dev" && location.hostname.endsWith(".tabi-log.pages.dev");
+const isTabiLogPreview = location.hostname === "feat-d1-photo-sync.tabi-log.pages.dev";
 window.TABI_LOG_API_BASE = isTabiLogPreview
   ? "https://feat-d1-photo-sync-tabi-log.haruto-9519.workers.dev"
   : "https://tabi-log.haruto-9519.workers.dev";
