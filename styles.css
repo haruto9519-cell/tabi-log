@@ -1548,3 +1548,24 @@ body.has-opened-ticket #mytrips .map-card{display:block;margin-top:18px}
 #mytrips .ticket-card .ticket-card-stub{flex-shrink:0}
 @media(min-width:900px){#mytrips #tripCards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}#mytrips #tripCards>.empty-state{grid-column:1/-1}}
 @media(max-width:600px){#mytrips #tripCards{display:grid;grid-template-columns:1fr;gap:10px}#mytrips .ticket-card{min-width:0}}
+
+
+/* Ticket management controls live inside the opened ticket detail. */
+.ticket-detail-management{
+ display:grid;
+ grid-template-columns:repeat(2,minmax(0,1fr));
+ gap:9px;
+}
+.ticket-detail-management .btn{
+ min-width:0;
+ width:100%;
+ min-height:42px;
+ padding:10px 12px;
+ white-space:normal;
+ line-height:1.4;
+}
+@media(max-width:600px){
+ .ticket-detail-management{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+ .ticket-detail-management .btn{font-size:11px;padding:10px 7px}
+ .ticket-detail-grid{grid-template-columns:minmax(0,1fr)}
+}
