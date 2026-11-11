@@ -1387,3 +1387,21 @@ body.ticket-open{overflow:hidden}
  .tear-track{width:30px}
 }
 @media(prefers-reduced-motion:reduce){.ticket-experience.is-torn .ticket-main-half,.ticket-experience.is-torn .ticket-stub-half{animation:none;transform:translateX(0);filter:none}}
+
+/* Ticket split: the archive is behind the paper, never below it. */
+.ticket-reveal-preview{position:absolute;top:0;left:0;right:0;z-index:1;display:block;height:auto;min-height:300px;overflow:hidden;box-sizing:border-box;clip-path:polygon(calc(100% - var(--ticket-stub-width) - 1px) 0,calc(100% - var(--ticket-stub-width) + 1px) 0,calc(100% - var(--ticket-stub-width) + 1px) var(--tear-progress,0%),calc(100% - var(--ticket-stub-width) - 1px) var(--tear-progress,0%));transition:clip-path .72s cubic-bezier(.18,.72,.2,1)}
+.ticket-stage.is-torn .ticket-reveal-preview{position:relative;clip-path:inset(0);overflow:visible;min-height:300px;transition:clip-path .72s cubic-bezier(.18,.72,.2,1)}
+.ticket-reveal-preview .ticket-detail{display:block;width:100%;max-width:none;margin:0;padding:20px clamp(16px,3.5vw,34px) 30px;box-sizing:border-box;border:0;border-top:1px solid #d7c9b0;border-radius:0;background:transparent;box-shadow:none;opacity:0;transform:translateY(14px);transition:opacity .48s .12s,transform .48s .12s}
+.ticket-reveal-preview .ticket-detail.is-visible{opacity:1;transform:translateY(0)}
+.ticket-stage>.ticket-detail{display:none!important}
+.ticket-stage.is-torn .boarding-ticket{position:absolute;top:0;left:0;right:0;width:100%;pointer-events:none}
+.ticket-route-subline{display:flex;align-items:center;justify-content:center;gap:8px;margin:-8px 0 19px;padding:7px 10px;border-top:1px solid #d9cdb8;border-bottom:1px solid #d9cdb8;color:#8b795d;font-size:10px;letter-spacing:.04em}
+.ticket-route-subline span{font-size:9px;color:#82745c}
+.ticket-route-subline i{font-style:normal;color:#b18d57}
+.ticket-route-subline strong{font-weight:600;color:#34475a}
+.ticket-experience.is-torn .ticket-main-half{animation:ticket-archive-main .82s cubic-bezier(.2,.75,.25,1) forwards}
+.ticket-experience.is-torn .ticket-stub-half{animation:ticket-archive-stub .82s cubic-bezier(.2,.75,.25,1) forwards}
+@keyframes ticket-archive-main{to{transform:translateX(-125%) rotate(-3deg);opacity:0;filter:drop-shadow(0 14px 12px #0005)}}
+@keyframes ticket-archive-stub{to{transform:translateX(145%) rotate(3deg);opacity:0;filter:drop-shadow(0 14px 12px #0005)}}
+@media(max-width:600px){.ticket-route-subline{gap:4px;margin:-6px 0 14px;padding:6px 3px;font-size:8px}.ticket-route-subline span{font-size:7px}.ticket-route-subline strong{font-size:8px}.ticket-stage.is-torn .boarding-ticket{position:absolute}}
+@media(prefers-reduced-motion:reduce){.ticket-stage.is-torn .ticket-reveal-preview{transition:none}.ticket-experience.is-torn .ticket-main-half,.ticket-experience.is-torn .ticket-stub-half{animation:none;opacity:0;transform:translateX(0)}}
