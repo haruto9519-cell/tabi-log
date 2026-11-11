@@ -185,6 +185,18 @@
 @media(prefers-reduced-motion:reduce){.demo-ticket-card{transition:none}}
 </style>
 
+
+<style>
+/* Printed airline pictogram, not a platform emoji glyph. */
+.demo-route-line{height:1px}
+.demo-route-line .demo-plane-mark{
+ position:absolute;left:50%;top:50%;width:34px;height:34px;
+ padding:2px 5px;overflow:visible;transform:translate(-50%,-50%) rotate(0deg);
+ background:#f5efe3;fill:#a48758;stroke:#a48758;stroke-width:.35;
+}
+@media(max-width:600px){.demo-route-line .demo-plane-mark{width:27px;height:27px;padding:2px 4px}}
+</style>
+
 </head>
 <body>
 <main class="demo-page">
@@ -199,7 +211,7 @@
     <span class="demo-ticket-top"><span class="demo-airline">TABI LOG <b>／</b> AIRWAYS</span><span class="demo-pass-type">TRAVEL ARCHIVE <b>№ 001</b></span></span>
     <span class="demo-ticket-route">
      <span class="demo-airport"><small>JOURNEY TO</small><strong>東京・浅草</strong><em>TOKYO · JAPAN</em></span>
-     <i class="demo-route-line"><b>✈</b></i>
+     <i class="demo-route-line"><svg class="demo-plane-mark" viewBox="0 0 64 64" aria-hidden="true"><path d="M59 27.5 37 33 23 10.5c-.8-1.3-2.3-1.9-3.7-1.4l-2.1.7 8.1 25.4-13.2 3.3-6.3-6.2-3.2 1 4.3 10.3-1.1 11.1 3.2-1 4.7-7.5 13.2-3.3 3.1 26.5 2.2-.6c1.5-.4 2.5-1.7 2.4-3.2l-1.4-26.2 22-5.5c2.4-.6 3.8-2.8 3.2-5.2-.5-2.2-2.8-3.6-5.2-3z"/></svg></i>
      <span class="demo-destination-code"><small>TRIP ID</small><strong>TKY</strong><em>ASAKUSA</em></span>
     </span>
     <span class="demo-ticket-title">東京・浅草と下町散策</span>
