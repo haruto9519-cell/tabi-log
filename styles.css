@@ -1405,3 +1405,9 @@ body.ticket-open{overflow:hidden}
 @keyframes ticket-archive-stub{to{transform:translateX(145%) rotate(3deg);opacity:0;filter:drop-shadow(0 14px 12px #0005)}}
 @media(max-width:600px){.ticket-route-subline{gap:4px;margin:-6px 0 14px;padding:6px 3px;font-size:8px}.ticket-route-subline span{font-size:7px}.ticket-route-subline strong{font-size:8px}.ticket-experience.is-torn .ticket-stage .boarding-ticket{position:absolute}}
 @media(prefers-reduced-motion:reduce){.ticket-experience.is-torn .ticket-stage .ticket-reveal-preview{transition:none}.ticket-experience.is-torn .ticket-main-half,.ticket-experience.is-torn .ticket-stub-half{animation:none;opacity:0;transform:translateX(0)}}
+
+.ticket-route>div{min-width:0;flex:1}
+.ticket-route>div:last-child{text-align:right}
+.ticket-route strong{display:block;font-size:clamp(15px,2.6vw,29px);line-height:1.18;overflow-wrap:anywhere}
+.ticket-flight strong{font-size:clamp(12px,2vw,18px);letter-spacing:.02em}
+.ticket-route-subline{flex-wrap:wrap;overflow-wrap:anywhere}
