@@ -1,4 +1,4 @@
-const $=s=>document.querySelector(s), $=s=>[...document.querySelectorAll(s)];
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 // Register ticket opening before the rest of the app initializes. This keeps
 // ticket taps working even if an unrelated later initializer fails.
 document.addEventListener("click",event=>{
