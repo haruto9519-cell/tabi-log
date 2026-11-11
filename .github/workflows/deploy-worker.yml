@@ -26,14 +26,6 @@ jobs:
         run: |
           test -n "$CLOUDFLARE_API_TOKEN" || { echo "::error::GitHub Actions secret CLOUDFLARE_API_TOKEN is not set"; exit 1; }
           test -n "$CLOUDFLARE_ACCOUNT_ID" || { echo "::error::GitHub Actions secret CLOUDFLARE_ACCOUNT_ID is not set"; exit 1; }
-      - name: Ensure private R2 bucket exists
-        shell: bash
-        run: |
-          if ! npx --yes wrangler@4 r2 bucket list --config wrangler.toml | grep -q 'tabi-log-media'; then
-            npx --yes wrangler@4 r2 bucket create tabi-log-media --config wrangler.toml
-          else
-            echo "R2 bucket tabi-log-media already exists"
-          fi
       - name: Apply pending D1 migrations
         run: npx --yes wrangler@4 d1 migrations apply tabi-log-db --remote --config wrangler.toml
       - name: Deploy and explicitly promote Worker version
@@ -58,7 +50,7 @@ jobs:
           for attempt in $(seq 1 12); do
             response="$(curl -fsS -H 'Cache-Control: no-cache' "https://tabi-log.haruto-9519.workers.dev/api/health?release=${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-${attempt}" || true)"
             echo "$response"
-            if echo "$response" | grep -q '"version":"2.3-r2-media"' &&
+            if echo "$response" | grep -q '"version":"2.4-d1-media"' &&
                echo "$response" | grep -q '"configured":true' &&
                echo "$response" | grep -q '"coreSchemaReady":true' &&
                echo "$response" | grep -q '"shareSchemaReady":true' &&
@@ -68,8 +60,9 @@ jobs:
                echo "$response" | grep -q '"expensesSchemaReady":true' &&
                echo "$response" | grep -q '"planImportsSchemaReady":true' &&
                echo "$response" | grep -q '"stopCoordinatesSchemaReady":true' &&
+               echo "$response" | grep -q '"mediaSchemaReady":true' &&
                echo "$response" | grep -q '"mediaStorageReady":true' &&
-               echo "$response" | grep -q '"mediaStorageProvider":"cloudflare-r2"'; then
+               echo "$response" | grep -q '"mediaStorageProvider":"cloudflare-d1"'; then
               echo "Worker and D1 schema verified"
               exit 0
             fi

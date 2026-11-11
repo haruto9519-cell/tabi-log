@@ -2,8 +2,32 @@ const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const DB_NAME="tabiLogMedia", STORE="media";
 function openMediaDB(){return new Promise((resolve,reject)=>{const r=indexedDB.open(DB_NAME,1);r.onupgradeneeded=()=>r.result.createObjectStore(STORE);r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);});}
 async function mediaPut(key,blob){const db=await openMediaDB();return new Promise((res,rej)=>{const tx=db.transaction(STORE,"readwrite");tx.objectStore(STORE).put(blob,key);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error);});}
+async function compressPhotoForCloud(file){
+ if(!file||!file.type.startsWith("image/"))throw new Error("画像ファイルを選択してください");
+ if(file.size<=1350000)return file;
+ if(typeof createImageBitmap!=="function")throw new Error("このブラウザでは写真の圧縮に対応していません。1.35MB以下の写真を選んでください");
+ const bitmap=await createImageBitmap(file,{imageOrientation:"from-image"});
+ try{
+  let scale=Math.min(1,1600/Math.max(bitmap.width,bitmap.height));
+  for(let pass=0;pass<5;pass++){
+   const canvas=document.createElement("canvas");
+   canvas.width=Math.max(1,Math.round(bitmap.width*scale));
+   canvas.height=Math.max(1,Math.round(bitmap.height*scale));
+   const context=canvas.getContext("2d",{alpha:false});
+   if(!context)throw new Error("写真の圧縮に失敗しました");
+   context.drawImage(bitmap,0,0,canvas.width,canvas.height);
+   for(const quality of [0.84,0.76,0.68,0.60]){
+    const output=await new Promise(resolve=>canvas.toBlob(resolve,"image/webp",quality));
+    if(output&&output.size<=1350000)return new File([output],"tabi-photo.webp",{type:"image/webp",lastModified:Date.now()});
+   }
+   scale*=0.78;
+  }
+  throw new Error("写真を1.35MB以下に圧縮できませんでした。別の写真を選んでください");
+ }finally{bitmap.close?.();}
+}
 async function mediaGet(key){const db=await openMediaDB();return new Promise((res,rej)=>{const r=db.transaction(STORE).objectStore(STORE).get(key);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});}
 async function mediaDelete(key){if(!key)return;const db=await openMediaDB();return new Promise((res,rej)=>{const tx=db.transaction(STORE,"readwrite");tx.objectStore(STORE).delete(key);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error);});}
+async function renderAvatarImage(){const key=profile.avatarMediaKey;const targets=[$("#profileAvatar"),$("#travelerAvatar")].filter(Boolean);if(!key){targets.forEach(el=>{el.replaceChildren(document.createTextNode((profile.name||"旅").slice(0,1)));el.classList.remove("has-avatar-image");});return;}try{const blob=await mediaGet(key);if(!blob)throw new Error("画像が見つかりません");const url=URL.createObjectURL(blob);targets.forEach(el=>{const img=document.createElement("img");img.src=url;img.alt="プロフィール画像";el.replaceChildren(img);el.classList.add("has-avatar-image");});}catch(error){console.warn("プロフィール画像の読み込みに失敗:",error);profile.avatarMediaKey="";save();targets.forEach(el=>{el.replaceChildren(document.createTextNode((profile.name||"旅").slice(0,1)));el.classList.remove("has-avatar-image");});}}
 async function loadPostMedia(post){
  if(!post?.mediaKey)return null;
  const local=await mediaGet(post.mediaKey).catch(()=>null);
@@ -21,13 +45,14 @@ async function loadPostMedia(post){
 async function uploadPendingPostMedia(){
  let allUploaded=true;
  for(const post of posts.filter(item=>item.author===profile.name&&item.mediaKey&&!item.cloudMediaSynced)){
-  const blob=await mediaGet(post.mediaKey).catch(()=>null);
-  if(!blob)continue;
+  let blob=await mediaGet(post.mediaKey).catch(()=>null);
+  if(!blob){allUploaded=false;continue;}
   try{
-   const response=await fetch(API_BASE+"/api/media/"+encodeURIComponent(post.id),{method:"PUT",headers:{authorization:"Bearer "+sessionToken,"content-type":blob.type||post.mediaType||"image/jpeg"},body:blob});
+   const cloudBlob=blob.size>1350000?await compressPhotoForCloud(blob):blob;
+   const response=await fetch(API_BASE+"/api/media/"+encodeURIComponent(post.id),{method:"PUT",headers:{authorization:"Bearer "+sessionToken,"content-type":cloudBlob.type||post.mediaType||"image/jpeg"},body:cloudBlob});
    const data=await response.json();
    if(!response.ok||!data.ok)throw new Error(data.error||"写真をクラウドに保存できませんでした");
-   post.cloudMediaKey=data.key;post.cloudMediaSynced=true;
+   post.cloudMediaKey=data.key;post.mediaType=data.mediaType||cloudBlob.type||post.mediaType;post.cloudMediaSynced=true;
   }catch(error){allUploaded=false;console.warn("写真のクラウド保存に失敗:",post.id,error);}
  }
  return allUploaded;
@@ -182,7 +207,7 @@ async function syncCloudData(){
   if(!response.ok||!remote.ok)throw new Error(remote.error||"クラウドの旅行記録を取得できませんでした");
   cloudSyncHydrating=true;
   const remoteTrips=(remote.trips||[]).map(t=>({
-   id:t.id,title:t.title,area:t.area,date:t.start_date||"",endDate:t.end_date||"",archived:Boolean(t.archived),
+   id:t.id,title:t.title,area:t.area,date:t.start_date||"",endDate:t.end_date||"",archived:Boolean(t.archived),originCountry:t.origin_country||"",arrivalAirport:t.arrival_airport||"",firstAttraction:t.first_attraction||"",
    description:t.description||"",visibility:t.visibility||"private",budgetAmount:Number(t.budget_amount||0),budgetCurrency:t.budget_currency||"JPY",
    stops:Array.isArray(t.stops)?t.stops:[],actual:Array.isArray(t.actual)?t.actual:[],
    dayPlans:Array.isArray(t.dayPlans)?t.dayPlans.map(day=>({date:day.date,items:(day.items||[]).map((item,index)=>({id:item.id||uid(),name:item.name,startTime:item.startTime||"",endTime:item.endTime||"",note:item.note||"",sortOrder:Number.isInteger(item.sortOrder)?item.sortOrder:index,visited:Boolean(item.visited)}))})):[],
@@ -212,7 +237,7 @@ async function syncCloudData(){
   for(const p of remotePosts){
     const local=posts.find(item=>item.id===p.id);
     if(!local)posts.push(p);
-    else if(p.cloudMediaSynced){local.mediaKey=local.mediaKey||p.id;local.cloudMediaKey=p.cloudMediaKey;local.mediaType=p.mediaType;local.cloudMediaSynced=true;}
+    else if(p.cloudMediaSynced&&local.cloudMediaSynced!==false){local.mediaKey=local.mediaKey||p.id;local.cloudMediaKey=p.cloudMediaKey;local.mediaType=p.mediaType;local.cloudMediaSynced=true;}
     else if(p.mediaType&&!local.mediaType)local.mediaType=p.mediaType;
    }
   // Signed-in cloud data is authoritative for expenses so deletions on another device do not reappear.
@@ -251,10 +276,11 @@ async function syncCloudData(){
   });
   const savedData=await savedResponse.json();
   if(!savedResponse.ok||!savedData.ok)throw new Error(savedData.error||"クラウドへの保存に失敗しました");
+  const mediaUploaded=await uploadPendingPostMedia();
   localStorage.setItem(firstCloudSyncKey,"1");
   writeLocalState(currentLocalState());
   renderAll();
-  return true;
+  return mediaUploaded;
  }catch(error){
   console.warn("旅ログのクラウド同期に失敗:",error);
   return false;
@@ -272,7 +298,58 @@ function renderFeed(){let list=visiblePosts();let q=$("#feedSearch").value.trim(
 $("#feed").innerHTML=list.length?list.map(p=>`<article class="post-card"><div class="post-visual ${p.visual||"v1"}" id="visual-${p.id}"><span class="symbol">${p.symbol||"📍"}</span><span class="visual-bottom">${esc(p.place)}</span></div><div class="post-body"><div class="post-meta"><span class="mini-avatar">${esc((p.author||"旅").slice(0,1))}</span><span>${esc(p.author)} · ${esc(p.date||"今日")}</span><span>· ${esc(p.category||"旅")}</span></div><h3>${esc(p.title)}</h3><p>${esc(p.story)}</p><span class="post-place">📍 ${esc(p.place)}</span><div class="post-actions"><button class="action ${p.liked?"active":""}" data-like="${p.id}">♥ ${p.likes||0}</button><button class="action" data-comment="${p.id}">コメント ${p.comments?.length||0}</button><button class="action" data-save="${p.id}">${p.saved?"保存済み":"保存"}</button><button class="action" data-remix="${p.id}">旅程にコピー</button><button class="action" data-follow="${esc(p.author)}">${following.includes(p.author)?"フォロー中":"フォロー"}</button><button class="action" data-block="${esc(p.author)}">非表示</button><button class="action" data-report="${p.id}">通報</button></div></div></article>`).join(""):`<div class="empty-state">該当する旅の記録はありません。</div>`;
 list.forEach(async p=>{if(p.mediaKey||p.driveFileId){try{let blob=await loadPostMedia(p);if(blob){let url=URL.createObjectURL(blob);mediaUrls[p.id]=url;let el=$("#visual-"+p.id);if(el){el.querySelector(".symbol")?.remove();let m=document.createElement("img");m.src=url;el.prepend(m);}}}catch{}}});
 }
-function renderTrips(){let own=trips.filter(t=>t.owner==="me"||t.source==="native"&&t.isMine);if(!own.length)own=trips.filter(t=>t.isMine);const query=($("#tripSearch")?.value||"").trim().toLowerCase(),view=$("#tripStatusFilter")?.value||"active",sort=$("#tripSort")?.value||"date-desc";own=own.filter(t=>view==="all"||(view==="archived"?Boolean(t.archived):!t.archived));if(query)own=own.filter(t=>(String(t.title||"")+" "+String(t.area||"")+" "+String(t.description||"")).toLowerCase().includes(query));own.sort((a,b)=>sort==="date-asc"?String(a.date||"").localeCompare(String(b.date||"")):sort==="name"?String(a.title||"").localeCompare(String(b.title||""),"ja"):String(b.date||"").localeCompare(String(a.date||"")));$("#tripTotal").textContent=own.length+"件";$("#tripCards").innerHTML=own.length?own.map(t=>{const places=[...new Set([...(Array.isArray(t.stopLocations)?t.stopLocations:[]).map(p=>p.name),...(Array.isArray(t.stops)?t.stops:[])].filter(Boolean))];const visited=Array.isArray(t.actual)?t.actual:[];return `<article class="trip-card ${selectedTrip===t.id?"selected":""}"><h3>${esc(t.title)}</h3><p>${esc(t.area)} · ${fmt(t.date)}${t.endDate?" – "+fmt(t.endDate):""}<br>${esc(t.description||"")}</p><div class="trip-meta"><span>予定 ${places.length}か所</span><span>訪問済み ${visited.length}か所</span><span>${t.source==="aileron"?"Aileron連携":"手動管理"}</span></div><div class="trip-tools"><button class="action" type="button" data-select-trip="${t.id}">地図と訪問先</button><button class="action" type="button" data-itinerary="${t.id}">日程管理</button><button class="action" type="button" data-edit-trip="${t.id}">旅行を編集</button><button class="action" type="button" data-copy-trip="${t.id}">旅行を複製</button><button class="action" type="button" data-archive-trip="${t.id}">${t.archived?"アーカイブ解除":"アーカイブ"}</button><button class="action" type="button" data-delete-trip="${t.id}">旅行を削除</button><button class="action" type="button" data-share-trip="${t.id}">${shareRecords[t.id]?"共有リンクをコピー":"旅行を共有"}</button>${shareRecords[t.id]?`<button class="action" type="button" data-revoke-share="${t.id}">共有を停止</button>`:""}</div>${places.length?`<div class="trip-visit-list"><span class="trip-visit-label">訪問記録</span>${places.map(name=>`<button type="button" class="stop-pill ${visited.includes(name)?"is-visited":""}" data-actual-place="${esc(name)}" data-actual-place-trip="${t.id}" ${visited.includes(name)?"disabled":""}>${visited.includes(name)?"✓ ":"＋ "}${esc(name)}</button>`).join("")}</div>`:""}</article>`}).join(""):`<div class="empty-state">Aileronから旅行プランを取り込むと、ここに旅が表示されます。</div>`;renderMap();}
+
+function closeTicketExperience(){
+ const layer=document.getElementById("ticketExperience");
+ if(!layer)return;
+ layer.classList.remove("is-open","is-torn");document.body.classList.remove("ticket-open");
+ setTimeout(()=>layer.remove(),420);
+}
+function finishTicketTear(layer){
+ if(layer.dataset.opening==="1")return;
+ layer.dataset.opening="1";layer.classList.add("is-torn");
+ const ticket=layer.querySelector(".boarding-ticket");
+ const preview=layer.querySelector(".ticket-reveal-preview");
+ const detail=layer.querySelector(".ticket-detail");
+ const help=layer.querySelector(".ticket-tear-help");
+ const fallback=layer.querySelector(".ticket-open-fallback");
+ if(fallback)fallback.remove();
+ if(help)help.textContent="YOUR JOURNEY ARCHIVE";
+ if(ticket)ticket.setAttribute("aria-hidden","true");
+ if(preview)preview.remove();
+ window.setTimeout(()=>{
+  ticket?.remove();
+  if(detail){detail.hidden=false;detail.classList.add("is-visible");detail.scrollIntoView({behavior:"smooth",block:"start"});}
+ },780);
+}
+function openTravelTicket(tripId){
+ const trip=trips.find(item=>item.id===tripId);if(!trip)return;
+ selectedTrip=tripId;document.body.classList.add("has-opened-ticket");renderMap();
+ document.getElementById("ticketExperience")?.remove();
+ const places=[...new Set([...(Array.isArray(trip.stopLocations)?trip.stopLocations:[]).map(p=>p.name),...(Array.isArray(trip.stops)?trip.stops:[])].filter(Boolean))];
+ const visited=Array.isArray(trip.actual)?trip.actual:[];
+ const days=[...(trip.dayPlans||[])].sort((a,b)=>String(a.date||"").localeCompare(String(b.date||"")));
+ const entries=posts.filter(p=>p.tripId===trip.id&&p.author===profile.name).sort((a,b)=>String(a.date||"").localeCompare(String(b.date||"")));
+ const spent=expenses.filter(item=>item.tripId===trip.id).reduce((sum,item)=>sum+Number(item.amount||0),0);
+ const dateText=(trip.date?fmt(trip.date):"日付未設定")+(trip.endDate?" — "+fmt(trip.endDate):"");
+ const firstMemory=entries[0];const firstDay=days[0];
+ const previewHtml='<div class="ticket-reveal-preview" aria-hidden="true"><div class="ticket-reveal-inner"><div class="reveal-kicker">THE JOURNEY BEHIND THE TICKET</div><strong>'+esc(trip.title||"旅の記録")+'</strong><p>'+esc(firstMemory?.story||trip.description||"訪れた場所、旅程、写真や日記。あなたの旅の記録がここに保管されています。")+'</p><div class="reveal-stats"><span><b>'+places.length+'</b> PLACES</span><span><b>'+visited.length+'</b> VISITED</span><span>'+esc(firstDay?.date||dateText)+'</span></div><div class="reveal-stamp">TRAVEL<br>ARCHIVE</div></div></div>';
+ const layer=document.createElement("div");layer.id="ticketExperience";layer.className="ticket-experience";
+ const h='<button class="ticket-close" type="button" aria-label="閉じる">×</button><div class="ticket-stage">'+previewHtml+'<div class="boarding-ticket"><div class="ticket-main-half"><div class="ticket-topline"><span class="ticket-brand">TABI LOG <b>TRAVEL</b></span><span class="ticket-doc-type">JOURNEY / ARCHIVE COPY</span></div><div class="ticket-route"><div><small>'+(trip.originCountry?"FROM COUNTRY":"DESTINATION")+'</small><strong>'+esc(trip.originCountry||trip.area||"旅の目的地")+'</strong></div><span class="ticket-route-line"><i></i><b>✈</b><i></i></span><div class="ticket-flight"><small>'+(trip.arrivalAirport?"ARRIVAL AIRPORT":"TRIP NO.")+'</small><strong>'+esc(trip.arrivalAirport||String(trip.id||"").slice(-6).toUpperCase())+'</strong></div></div>'+(trip.arrivalAirport?'<div class="ticket-route-subline"><span>'+esc(trip.arrivalAirport)+'</span><i>→</i><strong>'+esc(trip.firstAttraction||places[0]||"観光地未設定")+'</strong></div>':'')+'<h2>'+esc(trip.title||"旅の記録")+'</h2><div class="ticket-fields"><div><small>DATE</small><b>'+esc(dateText)+'</b></div><div><small>STOPS</small><b>'+places.length+' PLACES</b></div><div><small>VISITED</small><b>'+visited.length+' / '+places.length+'</b></div></div></div><div class="ticket-perforation"><span class="perforation-label">CUT HERE</span><div class="tear-track"><div class="tear-progress"></div><span class="tear-grip">✂</span></div></div><div class="ticket-stub-half"><small>TRAVEL PASS</small><div class="ticket-stub-code">TL · ARCHIVE</div><div class="ticket-barcode" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><strong>'+esc((trip.title||"MY JOURNEY").slice(0,32))+'</strong><span>'+esc(trip.date?fmt(trip.date):"YOUR MEMORY")+'</span><b>KEEP THIS MEMORY</b></div></div><p class="ticket-tear-help">中央のミシン目を上から下へゆっくり切り離してください</p><button class="ticket-open-fallback" type="button">タップして開く</button><section class="ticket-detail" hidden><div class="ticket-detail-heading"><span>YOUR JOURNEY ARCHIVE</span><h2>'+esc(trip.title||"旅の記録")+'</h2><p>'+esc(trip.area||"")+' · '+esc(dateText)+'</p></div><div class="ticket-detail-grid"><article><small>TRAVEL NOTES</small><p>'+esc(trip.description||"この旅に登録されたメモはありません。")+'</p></article><article><small>VISIT RECORD</small><p>'+visited.length+' / '+places.length+' か所を訪問</p><div class="ticket-place-list">'+(places.length?places.map(name=>'<span class="'+(visited.includes(name)?"visited":"")+'">'+(visited.includes(name)?"✓ ":"")+esc(name)+'</span>').join(""):"訪問先はまだ登録されていません。")+'</div></article><article><small>ITINERARY</small>'+(days.length?days.map(day=>'<div class="ticket-day"><b>'+esc(day.date||"日付未設定")+'</b>'+(day.items||[]).map(item=>'<p>'+esc(item.startTime||"")+' '+esc(item.name||"")+(item.visited?" ✓":"")+'</p>').join("")+'</div>').join(""):"<p>日程はまだ登録されていません。</p>")+'</article><article><small>TRAVEL BUDGET</small><p>予算：'+(trip.budgetAmount?esc(Number(trip.budgetAmount).toLocaleString("ja-JP")+" "+(trip.budgetCurrency||"JPY")):"未設定")+'</p><p>記録済み支出：'+spent.toLocaleString("ja-JP")+' 円</p></article></div><section class="ticket-memories"><small>DIARY & MEMORIES</small>'+(entries.length?entries.map(p=>'<article class="ticket-memory"><div class="ticket-memory-media" id="ticket-memory-'+esc(p.id)+'">'+(p.mediaKey||p.mediaType?"📷":"✧")+'</div><div><b>'+esc(p.title||"旅の思い出")+'</b><small>'+esc(p.date||"")+(p.place?" · "+esc(p.place):"")+'</small><p>'+esc(p.story||"")+'</p></div></article>').join(""):"<p>この旅行に紐づく日記はまだありません。</p>")+'</section><div class="ticket-detail-actions"><button type="button" class="btn navy" data-ticket-itinerary="'+esc(trip.id)+'">日程を管理</button><button type="button" class="btn ghost" data-ticket-edit="'+esc(trip.id)+'">旅行を編集</button></div></section></div>';
+ layer.innerHTML=h;document.body.append(layer);document.body.classList.add("ticket-open");requestAnimationFrame(()=>layer.classList.add("is-open"));
+ layer.querySelector(".ticket-close").addEventListener("click",closeTicketExperience);
+ layer.querySelector(".ticket-open-fallback").addEventListener("click",()=>finishTicketTear(layer));
+ layer.addEventListener("click",event=>{if(event.target===layer)closeTicketExperience();});
+ const track=layer.querySelector(".tear-track"),progress=layer.querySelector(".tear-progress"),grip=layer.querySelector(".tear-grip");let drawing=false,maxProgress=0;
+ track.addEventListener("pointerdown",e=>{const r=track.getBoundingClientRect();if(e.clientY>r.top+r.height*.18)return;drawing=true;maxProgress=Math.max(0,Math.min(1,(e.clientY-r.top)/r.height));track.setPointerCapture(e.pointerId);});
+ track.addEventListener("pointermove",e=>{if(!drawing)return;const r=track.getBoundingClientRect();const pct=Math.max(0,Math.min(1,(e.clientY-r.top)/r.height));maxProgress=Math.max(maxProgress,pct);progress.style.height=(maxProgress*100)+"%";grip.style.top=(maxProgress*100)+"%";layer.querySelector(".ticket-stage")?.style.setProperty("--tear-progress",(maxProgress*100)+"%");if(maxProgress>=.88){drawing=false;finishTicketTear(layer);}});
+ track.addEventListener("pointerup",()=>drawing=false);track.addEventListener("pointercancel",()=>drawing=false);
+ layer.querySelector("[data-ticket-itinerary]").addEventListener("click",()=>{closeTicketExperience();openItinerary(trip.id);});
+ layer.querySelector("[data-ticket-edit]").addEventListener("click",()=>{closeTicketExperience();const f=$("#tripEditForm");f.elements.id.value=trip.id;f.elements.title.value=trip.title||"";f.elements.area.value=trip.area||"";f.elements.date.value=trip.date||"";f.elements.endDate.value=trip.endDate||"";f.elements.description.value=trip.description||"";f.elements.budgetAmount.value=trip.budgetAmount||"";f.elements.budgetCurrency.value=trip.budgetCurrency||"JPY";f.elements.stops.value=(trip.stops||[]).join(", ");f.elements.visibility.value=trip.visibility||"private";openDialog("#tripEditDialog");});
+ entries.forEach(async p=>{if(!p.mediaKey&&!p.mediaType)return;try{const blob=await loadPostMedia(p);const host=layer.querySelector("#ticket-memory-"+CSS.escape(p.id));if(blob&&host){const media=document.createElement(blob.type.startsWith("video/")?"video":"img");media.src=URL.createObjectURL(blob);media.alt=p.title||"旅行の思い出";if(media.tagName==="VIDEO"){media.controls=true;media.muted=true;media.playsInline=true;}host.replaceChildren(media);}}catch(error){console.warn("チケット内の写真を読み込めませんでした",error);}});
+}
+
+function renderTrips(){let own=trips.filter(t=>t.owner==="me"||t.source==="native"&&t.isMine);if(!own.length)own=trips.filter(t=>t.isMine);const query=($("#tripSearch")?.value||"").trim().toLowerCase(),view=$("#tripStatusFilter")?.value||"active",sort=$("#tripSort")?.value||"date-desc";own=own.filter(t=>view==="all"||(view==="archived"?Boolean(t.archived):!t.archived));if(query)own=own.filter(t=>(String(t.title||"")+" "+String(t.area||"")+" "+String(t.description||"")).toLowerCase().includes(query));own.sort((a,b)=>sort==="date-asc"?String(a.date||"").localeCompare(String(b.date||"")):sort==="name"?String(a.title||"").localeCompare(String(b.title||""),"ja"):String(b.date||"").localeCompare(String(a.date||"")));$("#tripTotal").textContent=own.length+"件";$("#tripCards").innerHTML=own.length?own.map(t=>{const places=[...new Set([...(Array.isArray(t.stopLocations)?t.stopLocations:[]).map(p=>p.name),...(Array.isArray(t.stops)?t.stops:[])].filter(Boolean))];const visited=Array.isArray(t.actual)?t.actual:[];return `<article class="trip-card ticket-card ${selectedTrip===t.id?"selected":""}" data-open-ticket="${esc(t.id)}" tabindex="0" role="button" aria-label="${esc(t.title||"旅の記録")}のチケットを開く"><div class="ticket-card-main"><div class="ticket-card-top"><span>TABI LOG AIRWAYS</span><span>JOURNEY PASS</span></div><div class="ticket-card-route"><div><small>DESTINATION</small><h3>${esc(t.area||t.title)}</h3></div><span>✈</span></div><strong class="ticket-card-title">${esc(t.title)}</strong><div class="ticket-card-meta"><span>${fmt(t.date)}${t.endDate?" — "+fmt(t.endDate):""}</span><span>${places.length} PLACES</span><span>${visited.length} VISITED</span></div><p>${esc(t.description||"")}</p><div class="ticket-card-cta">TAP TO OPEN <span>↗</span></div></div><div class="ticket-card-stub"><span>BOARDING PASS</span><b>${esc(String(t.id||"").slice(-6).toUpperCase())}</b><i>✂ · · · · · · · · · ·</i><small>${t.source==="aileron"?"AILERON CONNECTED":"PERSONAL JOURNEY"}</small></div></div><div class="trip-meta"><span>予定 ${places.length}か所</span><span>訪問済み ${visited.length}か所</span><span>${t.source==="aileron"?"Aileron連携":"手動管理"}</span></div><div class="trip-tools"><button class="action" type="button" data-select-trip="${t.id}">地図と訪問先</button><button class="action" type="button" data-itinerary="${t.id}">日程管理</button><button class="action" type="button" data-edit-trip="${t.id}">旅行を編集</button><button class="action" type="button" data-copy-trip="${t.id}">旅行を複製</button><button class="action" type="button" data-archive-trip="${t.id}">${t.archived?"アーカイブ解除":"アーカイブ"}</button><button class="action" type="button" data-delete-trip="${t.id}">旅行を削除</button><button class="action" type="button" data-share-trip="${t.id}">${shareRecords[t.id]?"共有リンクをコピー":"旅行を共有"}</button>${shareRecords[t.id]?`<button class="action" type="button" data-revoke-share="${t.id}">共有を停止</button>`:""}</div>${places.length?`<div class="trip-visit-list"><span class="trip-visit-label">訪問記録</span>${places.map(name=>`<button type="button" class="stop-pill ${visited.includes(name)?"is-visited":""}" data-actual-place="${esc(name)}" data-actual-place-trip="${t.id}" ${visited.includes(name)?"disabled":""}>${visited.includes(name)?"✓ ":"＋ "}${esc(name)}</button>`).join("")}</div>`:""}</article>`}).join(""):`<div class="empty-state">Aileronから旅行プランを取り込むと、ここに旅が表示されます。</div>`;}
 $("#tripSearch")?.addEventListener("input",renderTrips);$("#tripStatusFilter")?.addEventListener("change",renderTrips);$("#tripSort")?.addEventListener("change",renderTrips);
 function renderItineraryItems(){
  const trip=trips.find(item=>item.id===activeItineraryTripId),host=$("#itineraryItems");
@@ -406,7 +483,7 @@ async function processPendingImport(){
 }
 
 function renderDiary(){let mine=posts.filter(p=>p.author===profile.name).sort((a,b)=>String(b.date).localeCompare(String(a.date)));$("#diaryTimeline").innerHTML=mine.length?mine.map(p=>`<div class="timeline-item"><div class="timeline-date">${esc(p.date||"今日")}</div><div class="timeline-line"></div><article class="timeline-card"><div class="timeline-thumb" id="diary-thumb-${p.id}">${p.mediaKey||p.mediaType?"📷":p.symbol||"📍"}</div><div class="timeline-content"><small>📍 ${esc(p.place)}</small><h3>${esc(p.title)}</h3><p>${esc(p.story)}</p><div class="timeline-actions"><button class="action" type="button" data-edit-diary="${p.id}">編集</button><button class="action" type="button" data-delete-diary="${p.id}">削除</button></div></div></article></div>`).join(""):`<div class="empty-state">ここに日記・思い出が時系列で並びます。「日記を追加」から記録できます。</div>`;mine.forEach(async p=>{if(!p.mediaKey&&!p.mediaType)return;try{const blob=await loadPostMedia(p);const thumb=$("#diary-thumb-"+p.id);if(blob&&thumb){const media=document.createElement(blob.type.startsWith("video/")?"video":"img");media.src=URL.createObjectURL(blob);media.alt=p.title||"旅行の思い出";if(media.tagName==="VIDEO"){media.controls=true;media.muted=true;media.playsInline=true;}thumb.replaceChildren(media);}}catch(error){console.warn("写真の読み込みに失敗:",error);}});}
-function renderProfile(){let mine=posts.filter(p=>p.author===profile.name);$("#profileName").textContent=profile.name;$("#profileBio").textContent=profile.bio;$("#profileAvatar").textContent=(profile.name||"旅").slice(0,1);$("#profilePostCount").textContent=mine.length;$("#profileTripCount").textContent=trips.filter(t=>t.isMine).length;if($("#followingCount"))$("#followingCount").textContent=0;$("#statTrips").textContent=trips.filter(t=>t.isMine).length;$("#statPosts").textContent=mine.length;$("#statSaved").textContent=saved.length;}
+function renderProfile(){let mine=posts.filter(p=>p.author===profile.name);$("#profileName").textContent=profile.name;$("#profileBio").textContent=profile.bio;if($("#travelerName"))$("#travelerName").textContent=profile.name;if($("#travelerBio"))$("#travelerBio").textContent=profile.bio;$("#profilePostCount").textContent=mine.length;$("#profileTripCount").textContent=trips.filter(t=>t.isMine).length;if($("#followingCount"))$("#followingCount").textContent=0;$("#statTrips").textContent=trips.filter(t=>t.isMine).length;$("#statPosts").textContent=mine.length;$("#statSaved").textContent=saved.length;if($("#mobileStatTrips"))$("#mobileStatTrips").textContent=trips.filter(t=>t.isMine).length;if($("#mobileStatPosts"))$("#mobileStatPosts").textContent=mine.length;if($("#mobileStatSaved"))$("#mobileStatSaved").textContent=saved.length;}renderAvatarImage();
 function renderExpenses(){
  const host=$("#expenseList"),summary=$("#expenseSummary");if(!host||!summary)return;
  const ownTrips=trips.filter(t=>t.isMine);
@@ -529,11 +606,11 @@ $("#postForm").addEventListener("submit",async e=>{
   successMessage.textContent=file&&file.size?"写真と日記はこの端末に保存しました。別の端末には自動で同期されません。":"日記をこの端末に保存しました。ログインしていない場合、別の端末には自動で同期されません。";
  }
 });
-$("#diaryEditForm").addEventListener("submit",async e=>{e.preventDefault();const f=e.currentTarget,id=f.elements.id.value,p=posts.find(x=>x.id===id&&x.author===profile.name);if(!p){toast("編集する日記が見つかりません");return;}const data=new FormData(f),file=data.get("mediaReplace");if(file&&file.size){const allowed=["image/jpeg","image/png","image/webp"];if(!allowed.includes(file.type)){toast("保存できる形式はJPEG・PNG・WebPです");return;}if(file.size>5*1024*1024){toast("写真1枚の上限は5MBです");return;}try{await mediaPut(p.id,file);p.mediaKey=p.id;p.mediaType=file.type;p.cloudMediaSynced=false;}catch{toast("端末内への保存に失敗しました");return;}}p.title=String(data.get("title")||"").trim();p.place=String(data.get("place")||"").trim();p.story=String(data.get("story")||"").trim();p.date=String(data.get("capturedAt")||"");p.visibility=String(data.get("visibility")||"private");save();closeDialog("#diaryEditDialog");renderAll();let synced=true;if(signedInUser&&sessionToken){clearTimeout(cloudSyncTimer);synced=await syncCloudData();}toast(file&&file.size?(synced&&p.cloudMediaSynced?"写真をクラウドに更新しました":"日記を更新しました（写真はこの端末内に保存）"):"日記を更新しました");});
+$("#diaryEditForm").addEventListener("submit",async e=>{e.preventDefault();const f=e.currentTarget,id=f.elements.id.value,p=posts.find(x=>x.id===id&&x.author===profile.name);if(!p){toast("編集する日記が見つかりません");return;}const data=new FormData(f);let file=data.get("mediaReplace");if(file&&file.size){const allowed=["image/jpeg","image/png","image/webp"];if(!allowed.includes(file.type)){toast("保存できる形式はJPEG・PNG・WebPです");return;}if(file.size>5*1024*1024){toast("写真1枚の上限は5MBです");return;}try{await mediaPut(p.id,file);p.mediaKey=p.id;p.mediaType=file.type;p.cloudMediaSynced=false;}catch{toast("端末内への保存に失敗しました");return;}}p.title=String(data.get("title")||"").trim();p.place=String(data.get("place")||"").trim();p.story=String(data.get("story")||"").trim();p.date=String(data.get("capturedAt")||"");p.visibility=String(data.get("visibility")||"private");save();closeDialog("#diaryEditDialog");renderAll();let synced=true;if(signedInUser&&sessionToken){clearTimeout(cloudSyncTimer);synced=await syncCloudData();}toast(file&&file.size?(synced&&p.cloudMediaSynced?"写真をクラウドに更新しました":"日記を更新しました（写真はこの端末内に保存）"):"日記を更新しました");});
 $("#diaryTimeline").addEventListener("click",async e=>{const b=e.target.closest("button");if(!b)return;const id=b.dataset.editDiary||b.dataset.deleteDiary;if(!id)return;const p=posts.find(x=>x.id===id&&x.author===profile.name);if(!p)return;if(b.dataset.editDiary){const f=$("#diaryEditForm");f.elements.id.value=p.id;f.elements.title.value=p.title||"";f.elements.place.value=p.place||"";f.elements.capturedAt.value=String(p.date||"").slice(0,16);f.elements.story.value=p.story||"";f.elements.visibility.value=p.visibility||"private";openDialog("#diaryEditDialog");return;}if(b.dataset.deleteDiary&&confirm(p.mediaKey?"この日記と写真を削除しますか？":"この日記を削除しますか？")){try{await deleteDiaryEntry(p);renderAll();toast(p.mediaKey?"✓ 写真と日記を削除しました":"✓ 日記を削除しました");}catch(err){toast(err.message||"削除に失敗しました");}}});
 
-$("#editProfile").onclick=()=>{let f=$("#profileForm");f.elements.name.value=profile.name;f.elements.bio.value=profile.bio;openDialog("#profileDialog")};
-$("#profileForm").addEventListener("submit",e=>{e.preventDefault();let f=new FormData(e.currentTarget),old=profile.name;profile={name:f.get("name"),bio:f.get("bio")};posts.forEach(p=>{if(p.author===old)p.author=profile.name});save();closeDialog("#profileDialog");renderAll();toast("プロフィールを更新しました")});
+$("#editProfile").onclick=()=>{let f=$("#profileForm");f.elements.name.value=profile.name;f.elements.bio.value=profile.bio;f.elements.avatar.value="";f.elements.removeAvatar.checked=false;openDialog("#profileDialog")};
+$("#profileForm").addEventListener("submit",async e=>{e.preventDefault();const form=e.currentTarget,f=new FormData(form),old=profile.name,file=f.get("avatar");let next={...profile,name:String(f.get("name")||"").trim(),bio:String(f.get("bio")||"").trim()};try{if(file&&file.size){if(!file.type.match(/^image\/(jpeg|png|webp)$/))throw new Error("JPG・PNG・WebP画像を選択してください");if(file.size>5*1024*1024)throw new Error("画像は5MB以下にしてください");const key="profile-avatar-"+(activeAccountStorageId||"guest");await mediaPut(key,file);next.avatarMediaKey=key;}else if(f.get("removeAvatar")==="on"){if(profile.avatarMediaKey)await mediaDelete(profile.avatarMediaKey);next.avatarMediaKey="";}profile=next;posts.forEach(p=>{if(p.author===old)p.author=profile.name});save();closeDialog("#profileDialog");renderAll();toast("プロフィールを更新しました");}catch(error){toast(error.message||"画像を保存できませんでした");}});
 $("#privacySettings").onclick=()=>openDialog("#privacyDialog");
 function refreshExpenseTripSelect(selectedId=""){const select=$("#expenseTripSelect");const own=trips.filter(t=>t.isMine);select.innerHTML=own.map(t=>`<option value="${t.id}">${esc(t.title)}</option>`).join("");if(selectedId&&own.some(t=>t.id===selectedId))select.value=selectedId;}
 $("#openExpense").onclick=()=>{const form=$("#expenseForm");form.reset();form.elements.id.value="";refreshExpenseTripSelect(selectedTrip||"");if(!form.elements.tripId.options.length){toast("先に旅行を作成してください");return;}form.elements.date.value=new Date().toISOString().slice(0,10);openDialog("#expenseDialog");};
@@ -546,6 +623,8 @@ if(b.dataset.comment){let c=prompt("コメントを入力（この端末内の�
 if(b.dataset.remix){let t=trips.find(x=>x.id===p.tripId);if(t){trips.unshift({...t,id:uid(),title:t.title+"（参考）",stops:[...t.stops],actual:[],isMine:true,owner:"me",visibility:"private"})}else{trips.unshift({id:uid(),title:p.title+"を参考にした旅",area:p.place,description:"投稿を参考に作成",stops:[p.place],actual:[],isMine:true,owner:"me",visibility:"private"})}save();renderAll();toast("参考旅程を作成しました")}
 if(b.dataset.report){let reason=prompt("通報理由を入力してください（テスト用）");if(reason?.trim())toast("通報内容をこの画面では送信せず、テスト記録として受け付けました")}
 });
+$("#tripCards").addEventListener("click",e=>{const card=e.target.closest("[data-open-ticket]");if(card&&!e.target.closest("button"))openTravelTicket(card.dataset.openTicket);});
+$("#tripCards").addEventListener("keydown",e=>{const card=e.target.closest("[data-open-ticket]");if(card&&(e.key==="Enter"||e.key===" ")){e.preventDefault();openTravelTicket(card.dataset.openTicket);}});
 $("#tripCards").addEventListener("click",async e=>{let b=e.target.closest("button");if(!b)return;let t=trips.find(x=>x.id===b.dataset.selectTrip||x.id===b.dataset.editTrip||x.id===b.dataset.itinerary||x.id===b.dataset.addStop||x.id===b.dataset.copyTrip||x.id===b.dataset.archiveTrip||x.id===b.dataset.actual||x.id===b.dataset.actualPlaceTrip||x.id===b.dataset.deleteTrip||x.id===b.dataset.shareTrip||x.id===b.dataset.revokeShare);if(!t)return;
 if(b.dataset.itinerary){openItinerary(t.id);return;}
 if(b.dataset.selectTrip){selectedTrip=t.id;renderTrips()}

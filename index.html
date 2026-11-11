@@ -2,16 +2,16 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#10263d">
-<meta name="description" content="Aileronで作成した旅行プランに、訪問記録・写真・日記を重ねて残せる旅行ログ。写真は端末内に保存されます。">
+<meta name="theme-color" content="#101c2b">
+<meta name="description" content="Aileronで作成した旅行プランに、訪問記録・写真・日記を重ねて残せる旅行ログ。Googleログイン中は写真をクラウドにも同期できます。">
 <title>旅ログ — 自分の旅を、ひとつに。</title>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""><link rel="stylesheet" href="styles.css?v=20261110-mobile-nav-a11y-v2">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""><link rel="stylesheet" href="styles.css?v=20261111-ticket-archive-v1">
 </head>
 <body>
 <a class="skip-link" href="#main-content">本文へスキップ</a>
 <header class="topbar">
  <a class="brand" href="#home"><span class="brand-icon">旅</span><span>旅ログ</span></a>
- <nav aria-label="メインナビゲーション"><a href="#mytrips">マイ旅行</a><a href="#diary">思い出</a><a href="#mypage">プロフィール</a></nav>
+ <nav aria-label="メインナビゲーション"><a href="#features">機能</a><a href="#mytrips">マイ旅行</a><a href="#diary">思い出</a><a href="#mypage">マイページ</a></nav>
  <div class="auth-area"><div id="googleLogin"></div><div id="authStatus" aria-live="polite"></div></div>
  <div class="header-actions"><button class="btn ghost" id="openTrip">Aileronでプランを作る</button><button class="btn gold" id="openPost">＋ 思い出を記録</button></div>
 </header>
@@ -26,30 +26,53 @@
   <small>ログイン後、旅行一覧に戻って取り込み結果を表示します。</small>
  </div>
 </section>
-<section class="hero">
- <div class="hero-content">
-  <span class="kicker">YOUR PERSONAL TRAVEL JOURNAL</span>
-  <h1>自分の旅を、<br><em>ひとつに。</em></h1>
-  <p>Aileronで作った旅行プランに、訪れた場所・写真・日記を重ねて、旅の記録として残そう。</p>
-  <div class="hero-buttons"><a class="btn gold" href="#mytrips">旅行を整理する</a><button class="btn outline-light" id="heroTrip">Aileronでプランを作る</button></div>
-  <div class="hero-note"><span>01 計画する</span><i></i><span>02 記録する</span><i></i><span>03 振り返る・共有する</span></div>
+<section class="hero traveler-home" aria-label="トラベラープロフィール">
+ <div class="social-profile">
+  <div class="social-profile-head">
+   <div class="social-avatar-ring"><div class="traveler-avatar" id="travelerAvatar">旅</div></div>
+   <div class="social-profile-main">
+    <div class="social-profile-top"><strong id="travelerName">旅好きユーザー</strong><a class="social-edit-link" href="#mypage">プロフィール設定</a></div>
+    <div class="social-profile-stats">
+     <div><b id="statPosts">0</b><span>投稿</span></div>
+     <div><b id="statTrips">0</b><span>旅行</span></div>
+     <div><b id="statSaved">0</b><span>保存</span></div>
+    </div>
+    <p id="travelerBio">旅の記録を、少しずつ。</p>
+   </div>
+  </div>
+  <div class="social-profile-mobile-stats">
+   <div><b id="mobileStatPosts">0</b><span>投稿</span></div>
+   <div><b id="mobileStatTrips">0</b><span>旅行</span></div>
+   <div><b id="mobileStatSaved">0</b><span>保存</span></div>
+  </div>
+  <div class="social-highlights" aria-label="旅のカテゴリー">
+   <a href="#diary"><span class="highlight-ring"><i>✧</i></span><small>思い出</small></a>
+   <a href="#mytrips"><span class="highlight-ring"><i>⌖</i></span><small>旅の記録</small></a>
+   <a href="#expenses"><span class="highlight-ring"><i>￥</i></span><small>旅の予算</small></a>
+   <a href="#mypage"><span class="highlight-ring highlight-add"><i>＋</i></span><small>マイページ</small></a>
+  </div>
  </div>
- <div class="hero-visual">
-  <div class="hero-map-grid"></div>
-  <svg viewBox="0 0 540 360" class="hero-route" aria-hidden="true"><path d="M65 270 C130 60 210 300 280 145 S420 65 480 240" fill="none" stroke="#d7ad6c" stroke-width="4" stroke-dasharray="8 9"/><circle cx="65" cy="270" r="9" fill="#d7ad6c"/><circle cx="280" cy="145" r="9" fill="#d7ad6c"/><circle cx="480" cy="240" r="9" fill="#d7ad6c"/></svg>
-  <div class="floating-photo fp1"><div class="photo-art kyoto">⛩</div><b>旅の写真</b><small>思い出を整理</small></div>
-  <div class="floating-photo fp2"><div class="photo-art sea">🌊</div><b>旅の日記</b><small>その日の記録</small></div>
-  <div class="map-tag">YOUR JOURNEY, YOUR MEMORY</div>
+ <div class="social-profile-actions">
+  <a class="btn gold" href="#diary">思い出を見る</a>
+  <button class="btn outline-light" id="openDiaryEntry">＋ 投稿する</button>
  </div>
 </section>
-<section class="quick-stats">
- <div><b id="statTrips">0</b><span>保存した旅行</span></div>
- <div><b id="statPosts">0</b><span>日記・思い出</span></div>
- <div><b id="statSaved">0</b><span>保存した旅</span></div>
- <div class="stat-message">旅のすべてを、自分のペースで。</div>
+<section class="feature-hub" id="features">
+ <div class="feature-heading"><div><span class="kicker">ONE APP. MANY POSSIBILITIES.</span><h2>旅に必要な機能を、<br><em>ひとつに集約。</em></h2></div><p>別々のアプリを行き来しなくても、旅の情報をまとめて管理。使いたい機能からすぐにアクセスできます。</p></div>
+ <div class="feature-grid">
+  <a class="feature-card feature-primary" href="#mytrips"><span class="feature-index">01 / PLAN</span><span class="feature-icon">⌖</span><h3>旅行・地図管理</h3><p>旅行プランを保存。訪問先を地図で確認し、行き先や訪問状況を整理。</p><span class="feature-link">旅行を管理する ↗</span></a>
+  <a class="feature-card" href="#mytrips"><span class="feature-index">02 / SCHEDULE</span><span class="feature-icon">▤</span><h3>日程・タイムライン</h3><p>日付・時刻・訪問先・メモを登録。予定の順番も調整。</p><span class="feature-link">日程を確認する ↗</span></a>
+  <a class="feature-card" href="#diary"><span class="feature-index">03 / MEMORY</span><span class="feature-icon">▧</span><h3>写真・旅行日記</h3><p>写真と文章を場所・日時に紐づけて、旅の記録を時系列で保存。</p><span class="feature-link">思い出を残す ↗</span></a>
+  <a class="feature-card" href="#expenses" data-feature-expenses><span class="feature-index">04 / BUDGET</span><span class="feature-icon">￥</span><h3>予算・支出管理</h3><p>交通費・宿泊費・食費などを記録。旅行予算と支出をチェック。</p><span class="feature-link">支出を管理する ↗</span></a>
+  <a class="feature-card" href="#mytrips"><span class="feature-index">05 / VISIT LOG</span><span class="feature-icon">◎</span><h3>訪問チェック</h3><p>予定した場所を訪問済みに変更。計画と実際の旅を見比べる。</p><span class="feature-link">訪問先を確認する ↗</span></a>
+  <a class="feature-card" href="#mytrips"><span class="feature-index">06 / SHARE</span><span class="feature-icon">↗</span><h3>旅行の共有</h3><p>旅行ごとに共有リンクを発行。不要になったリンクは停止。</p><span class="feature-link">共有機能を見る ↗</span></a>
+  <a class="feature-card" href="#mypage"><span class="feature-index">07 / BACKUP</span><span class="feature-icon">⤓</span><h3>バックアップ・復元</h3><p>旅行・日記・支出などのデータをJSONで保存・復元。</p><span class="feature-link">データを管理する ↗</span></a>
+  <a class="feature-card" href="#mypage"><span class="feature-index">08 / CLOUD SYNC</span><span class="feature-icon">☁</span><h3>Googleログイン・同期</h3><p>ログイン中は対応データをクラウド同期。写真も対応条件下で別端末から閲覧。</p><span class="feature-link">アカウントを確認する ↗</span></a>
+ </div>
+ <div class="feature-note"><span>※</span> 写真のクラウド同期はGoogleログイン時のみ。端末内保存とクラウド保存の対象・条件は機能ごとに異なります。</div>
 </section>
 <section id="mytrips" class="section muted-section">
- <div class="section-heading"><div><span class="kicker">MY JOURNEYS</span><h2>旅の計画を地図ごと引き継ぐ。</h2><p>Aileronで作成した旅行プランを取り込み、訪問先のピンに写真や思い出を重ねていきます。</p></div><button class="btn navy" id="newTrip2">Aileronで旅行プランを作る</button></div>
+ <div class="section-heading"><div><span class="kicker">MY JOURNEYS</span><h2>旅の記録をチケットにして保管。</h2><p>旅行ごとに搭乗券のような記念チケットが並びます。選択すると旅程・写真・地図が開きます。</p></div><button class="btn navy" id="newTrip2">Aileronで旅行プランを作る</button></div>
  <div class="planner-layout">
   <div class="trip-column"><div class="subhead"><b>あなたの旅行</b><span id="tripTotal"></span></div><div class="trip-list-controls"><input id="tripSearch" type="search" placeholder="旅行名・目的地を検索" aria-label="旅行を検索"><select id="tripStatusFilter" aria-label="旅行の表示"><option value="active">通常の旅行</option><option value="archived">アーカイブ</option><option value="all">すべて</option></select><select id="tripSort" aria-label="旅行の並び順"><option value="date-desc">日付が新しい順</option><option value="date-asc">日付が古い順</option><option value="name">名前順</option></select></div><div id="tripCards"></div></div>
   <div class="map-card">
@@ -63,7 +86,7 @@
  <div class="section-heading"><div><span class="kicker">MY TRAVEL DIARY</span><h2>旅の思い出を振り返る。</h2><p>写真・場所・その日の気持ちを、時系列で残そう。</p></div><button class="btn navy" id="openDiaryEntry" type="button">＋ 日記を追加</button></div>
  <div id="diaryTimeline" class="timeline"></div>
 </section>
-<section id="expenses" class="section muted-section" hidden>
+<section id="expenses" class="section muted-section">
  <div class="section-heading"><div><span class="kicker">TRAVEL BUDGET</span><h2>旅の予算と支出を管理する。</h2><p>旅行ごとの予算、費目別の支出、予算との差額を確認できます。</p></div><button class="btn navy" id="openExpense" type="button">＋ 支出を記録</button></div>
  <div id="expenseSummary" class="expense-summary"></div>
  <div id="expenseList" class="expense-list"></div>
@@ -130,7 +153,7 @@
  <div class="two-fields"><label>場所<input name="place" list="postPlaceOptions" required maxlength="80" placeholder="訪問先のピン名を選ぶか入力"></label><datalist id="postPlaceOptions"></datalist><label>日時<input name="capturedAt" type="datetime-local"></label></div>
  <label>思い出・日記<textarea name="story" required maxlength="2000" placeholder="訪れた場所、体験したこと、感じたことを残そう"></textarea></label>
  <div class="photo-source-options"><label>📷 カメラで撮影<input name="mediaCamera" type="file" accept="image/jpeg,image/png,image/webp" capture="environment"></label><label>🖼️ 写真ライブラリから選択<input name="mediaLibrary" type="file" accept="image/jpeg,image/png,image/webp"></label></div>
- <p class="hint">写真はこのブラウザの端末内に保存されます。別の端末には自動で同期されません。ブラウザの閲覧データを消去すると写真も消える場合があります。JPEG・PNG・WebP、1枚5MBまで。動画は現在非対応です。</p>
+ <p class="hint">写真は端末内に元データを保存します。Googleログイン中は圧縮したコピーをクラウドにも保存し、同じアカウントで別の端末から閲覧できます。ログインしていない場合は端末内のみです。JPEG・PNG・WebP、1枚5MBまで。クラウド保存用コピーは1.35MB以下に圧縮します。動画は現在非対応です。</p>
  <label>公開範囲<select name="visibility"><option value="private">自分のみ</option><option value="public">みんなに公開</option></select></label><p class="hint">公開した記録は誰でも閲覧できます。住所・連絡先・顔がはっきり分かる写真・今いる場所など、個人を特定できる情報は載せないでください。</p><input type="hidden" name="category" value="旅の記録">
  <button class="btn navy full" type="submit">記録を保存</button>
 </form></dialog>
@@ -142,15 +165,15 @@
  <div class="two-fields"><label>場所<input name="place" required maxlength="80"></label><label>日時<input name="capturedAt" type="datetime-local"></label></div>
  <label>思い出・日記<textarea name="story" required maxlength="2000"></textarea></label>
  <label>写真を差し替える（任意）<input name="mediaReplace" type="file" accept="image/jpeg,image/png,image/webp"></label>
- <p class="hint">新しい写真を選ぶと、この記録の写真を差し替えます。写真データはこの端末内に保存されます。</p>
+ <p class="hint">新しい写真を選ぶと、この記録の写真を差し替えます。端末には元データを保存し、Googleログイン中はクラウド用コピーも同期します。</p>
  <label>公開設定<select name="visibility"><option value="private">自分のみ</option><option value="public">公開</option></select></label>
  <button class="btn navy full" type="submit">変更を保存</button>
 </form></dialog>
-<dialog id="profileDialog"><form id="profileForm"><div class="dialog-title"><div><span class="kicker">PROFILE</span><h3>プロフィール編集</h3></div><button type="button" class="close" data-close="profileDialog">×</button></div><label>表示名<input name="name" maxlength="30" required></label><label>自己紹介<textarea name="bio" maxlength="140"></textarea></label><button class="btn navy full" type="submit">保存</button></form></dialog>
+<dialog id="profileDialog"><form id="profileForm"><div class="dialog-title"><div><span class="kicker">PROFILE</span><h3>プロフィール編集</h3></div><button type="button" class="close" data-close="profileDialog">×</button></div><label>プロフィール画像<input name="avatar" type="file" accept="image/jpeg,image/png,image/webp"></label><p class="hint">JPG・PNG・WebP対応。選んだ画像はこの端末に保存されます（最大5MB）。</p><label class="avatar-remove-option"><input name="removeAvatar" type="checkbox"> アイコン画像を使わず、表示名の頭文字に戻す</label><label>表示名<input name="name" maxlength="30" required></label><label>自己紹介<textarea name="bio" maxlength="140"></textarea></label><button class="btn navy full" type="submit">保存</button></form></dialog>
 <dialog id="privacyDialog"><div class="dialog-inner"><div class="dialog-title"><div><span class="kicker">PRIVACY</span><h3>プライバシーと共有</h3></div><button class="close" data-close="privacyDialog">×</button></div><p>旅ログでは、旅行記録を自分だけで管理することを基本にします。</p><ul><li>旅行・日記は自分のみを初期設定にします</li><li>共有は旅行ごとに専用URLを発行した場合のみ行います</li><li>共有URLは知っている人が閲覧できるリンクとして扱います</li><li>非公開の日記は共有カードに含めません</li><li>正確な位置情報の自動取得・公開は行いません</li></ul><button class="btn navy full" data-close="privacyDialog">確認</button></div></dialog>
 <!-- 旧データ互換用。SNS画面としては表示しません。 -->
 <section hidden aria-hidden="true"><input id="feedSearch"><select id="feedSort"><option value="recommend">おすすめ</option></select><button class="chip" data-category="すべて"></button><div id="feed"></div></section>
 <div id="toast" role="status" aria-live="polite"></div>
-<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script><script id="googleIdentityScript" src="https://accounts.google.com/gsi/client" async defer></script><script src="config.js"></script><script src="app.js?v=20261110-local-photo-message-v6"></script>
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script><script id="googleIdentityScript" src="https://accounts.google.com/gsi/client" async defer></script><script src="config.js?v=20261111-preview-api-v8"></script><script src="app.js?v=20261111-ticket-archive-v1"></script>
 <script>document.addEventListener("DOMContentLoaded",()=>{const b=document.getElementById("openDiaryEntry");if(b)b.addEventListener("click",()=>document.getElementById("openPost")?.click());});</script>
 </body></html>

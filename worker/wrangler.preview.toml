@@ -1,0 +1,13 @@
+name = "tabi-log"
+main = "src/index.js"
+compatibility_date = "2026-11-08"
+
+# This config is used only to apply migrations to the isolated Preview D1 database.
+[[d1_databases]]
+binding = "DB"
+database_name = "tabi-log-preview-db"
+database_id = "39d3d802-4d06-43d3-976e-21629d9b063f"
+migrations_dir = "migrations"
+
+[vars]
+GOOGLE_CLIENT_ID = "88585688478-1i3t68qc8ek9ffo3f0u4qj4rfvsm1n5h.apps.googleusercontent.com"

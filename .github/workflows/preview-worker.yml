@@ -1,0 +1,81 @@
+name: Preview Tabi Log Worker
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - "worker/**"
+      - "config.js"
+      - ".github/workflows/preview-worker.yml"
+  workflow_dispatch:
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: worker
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check Cloudflare credentials
+        run: |
+          test -n "$CLOUDFLARE_API_TOKEN" || { echo "::error::GitHub Actions secret CLOUDFLARE_API_TOKEN is not set"; exit 1; }
+          test -n "$CLOUDFLARE_ACCOUNT_ID" || { echo "::error::GitHub Actions secret CLOUDFLARE_ACCOUNT_ID is not set"; exit 1; }
+      - name: Apply migrations to isolated Preview D1 only
+        run: npx --yes wrangler@4 d1 migrations apply tabi-log-preview-db --remote --config wrangler.preview.toml
+      - name: Ensure legacy coordinate column exists in Preview D1 only
+        shell: bash
+        run: |
+          if ! npx --yes wrangler@4 d1 execute tabi-log-preview-db --remote --command "PRAGMA table_info(trip_stops)" --config wrangler.preview.toml | grep -q "external_place_id"; then
+            npx --yes wrangler@4 d1 execute tabi-log-preview-db --remote --command "ALTER TABLE trip_stops ADD COLUMN external_place_id TEXT" --config wrangler.preview.toml
+          fi
+      - name: Deploy isolated Worker Preview (never production)
+        run: npx --yes wrangler@4 preview --config wrangler.toml --name feat-d1-photo-sync
+      - name: Verify isolated Worker Preview
+        shell: bash
+        run: |
+          set -euo pipefail
+          url="https://feat-d1-photo-sync-tabi-log.haruto-9519.workers.dev/api/health"
+          for attempt in $(seq 1 12); do
+            response="$(curl -fsS -H 'Cache-Control: no-cache' "$url?check=${GITHUB_RUN_ID}-${attempt}" || true)"
+            echo "$response"
+            if echo "$response" | grep -q '"version":"2.4-d1-media"' &&
+               echo "$response" | grep -q '"coreSchemaReady":true' &&
+               echo "$response" | grep -q '"shareSchemaReady":true' &&
+               echo "$response" | grep -q '"authSchemaReady":true' &&
+               echo "$response" | grep -q '"itinerarySchemaReady":true' &&
+               echo "$response" | grep -q '"archiveSchemaReady":true' &&
+               echo "$response" | grep -q '"expensesSchemaReady":true' &&
+               echo "$response" | grep -q '"planImportsSchemaReady":true' &&
+               echo "$response" | grep -q '"stopCoordinatesSchemaReady":true' &&
+               echo "$response" | grep -q '"arrivalTicketSchemaReady":true' &&
+               echo "$response" | grep -q '"mediaSchemaReady":true' &&
+               echo "$response" | grep -q '"mediaStorageReady":true' &&
+               echo "$response" | grep -q '"mediaStorageProvider":"cloudflare-d1"'; then
+              echo "Isolated Worker Preview and D1 schema verified"
+              echo "Preview URL: https://feat-d1-photo-sync-tabi-log.haruto-9519.workers.dev"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "::error::Worker Preview or Preview D1 schema verification failed"
+          exit 1
+      - name: Verify private media authorization and Preview CORS
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="https://feat-d1-photo-sync-tabi-log.haruto-9519.workers.dev"
+          status="$(curl -sS -o /tmp/media-auth.json -w "%{http_code}" "$base/api/media/ci-auth-check")"
+          test "$status" = "401"
+          allowed="$(curl -sS -D - -o /dev/null -X OPTIONS "$base/api/media/ci-auth-check" -H "Origin: https://feat-d1-photo-sync.tabi-log.pages.dev" -H "Access-Control-Request-Method: GET" | awk 'BEGIN{IGNORECASE=1} /^access-control-allow-origin:/ {gsub(/\r/, "", $2); print $2}' | tail -1)"
+          echo "Allowed preview origin: $allowed"
+          test "$allowed" = "https://feat-d1-photo-sync.tabi-log.pages.dev"
+          denied_headers="$(curl -sS -D - -o /dev/null -X OPTIONS "$base/api/media/ci-auth-check" -H "Origin: https://untrusted.tabi-log.pages.dev" -H "Access-Control-Request-Method: GET" 2>/dev/null || true)"
+          denied="$(printf '%s\n' "$denied_headers" | grep -i '^access-control-allow-origin:' || true)"
+          echo "Untrusted origin header: $denied"
+          test -z "$denied"
+          echo "Unauthenticated media access is rejected; only the configured Preview Pages origin receives CORS access."

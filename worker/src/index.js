@@ -1,5 +1,6 @@
+// Tabi Log Worker: private photo media is stored in D1; no R2 binding required.
 const ALLOWED_ORIGINS = new Set(["https://tabi-log.pages.dev", "http://localhost:8788", "http://127.0.0.1:8788"]);
-const CORS_ORIGINS = new Set([...ALLOWED_ORIGINS, "https://tabi-hikaku.pages.dev", "https://aileron-japan-travel.pages.dev"]);
+const CORS_ORIGINS = new Set([...ALLOWED_ORIGINS, "https://feat-d1-photo-sync.tabi-log.pages.dev", "https://tabi-hikaku.pages.dev", "https://aileron-japan-travel.pages.dev", "https://feat-arrival-airport-ticket.aileron-japan-travel.pages.dev"]);
 const cors = (request) => {
   const origin = request.headers.get("Origin") || "";
   const headers = {
@@ -209,6 +210,9 @@ function cleanAileronPlan(input) {
   const budgetAmount = Number(input.budgetAmount || 0);
   const budgetCurrency = cleanText(input.budgetCurrency || "JPY", 3).toUpperCase();
   const travelers = Number(input.travelers || 1);
+  const originCountry = cleanText(input.originCountry, 80);
+  const arrivalAirport = cleanText(input.arrivalAirport, 120);
+  const firstAttraction = cleanText(input.firstAttraction, 120);
   if (!title || !area || !Number.isSafeInteger(budgetAmount) || budgetAmount < 0 || budgetAmount > 100000000 ||
       !/^[A-Z]{3}$/.test(budgetCurrency) || !Number.isInteger(travelers) || travelers < 1 || travelers > 20) return null;
   const stops = Array.isArray(input.stops) ? input.stops.slice(0, 20).map((item, index) => {
@@ -224,7 +228,7 @@ function cleanAileronPlan(input) {
     return { name, latitude, longitude, nights, sortOrder: index, externalPlaceId: cleanText(item?.externalPlaceId, 120) };
   }).filter(Boolean) : [];
   if (!stops.length) return null;
-  return { title, area, description, startDate: startDate || null, endDate: endDate || null, budgetAmount, budgetCurrency, travelers, origin: cleanText(input.origin, 80), stops };
+  return { title, area, description, startDate: startDate || null, endDate: endDate || null, budgetAmount, budgetCurrency, travelers, origin: cleanText(input.origin, 80), originCountry, arrivalAirport, firstAttraction, stops };
 }
 async function createPlanImport(request, env) {
   if (!env.DB) return bad(request, "旅行連携データベースが未設定です", 503);
@@ -277,14 +281,20 @@ export default {
     const path = url.pathname;
     if (request.method === "OPTIONS") return new Response(null, { headers: cors(request) });
     if (path === "/api/health" && request.method === "GET") {
-      const database = { configured: Boolean(env.DB), mediaStorageReady: Boolean(env.MEDIA_BUCKET), mediaStorageProvider: env.MEDIA_BUCKET ? "cloudflare-r2" : "device-local-only", archiveSchemaReady: false, coreSchemaReady: false, shareSchemaReady: false, itinerarySchemaReady: false, expensesSchemaReady: false, planImportsSchemaReady: false, stopCoordinatesSchemaReady: false };
+      const database = { configured: Boolean(env.DB), mediaStorageReady: false, mediaStorageProvider: "unavailable", mediaSchemaReady: false, archiveSchemaReady: false, coreSchemaReady: false, shareSchemaReady: false, itinerarySchemaReady: false, expensesSchemaReady: false, planImportsSchemaReady: false, stopCoordinatesSchemaReady: false };
       if (env.DB) {
         try {
           const result = await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table'").all();
           const tables = new Set((result.results || []).map(row => row.name));
           database.coreSchemaReady = ["users","trips","trip_stops","posts","likes","comments","follows","saved_trips","reports","blocks"].every(name => tables.has(name));
+          const postColumns = await env.DB.prepare("PRAGMA table_info(posts)").all();
+          database.mediaSchemaReady = (postColumns.results || []).some(column => column.name === "media_data");
+          database.mediaStorageReady = database.mediaSchemaReady;
+          database.mediaStorageProvider = database.mediaSchemaReady ? "cloudflare-d1" : "unavailable";
           const tripColumns = await env.DB.prepare("PRAGMA table_info(trips)").all();
-          database.archiveSchemaReady = (tripColumns.results || []).some(column => column.name === "archived");
+          const tripColumnNames = new Set((tripColumns.results || []).map(column => column.name));
+          database.archiveSchemaReady = tripColumnNames.has("archived");
+          database.arrivalTicketSchemaReady = ["origin_country","arrival_airport","first_attraction"].every(name => tripColumnNames.has(name));
           database.shareSchemaReady = ["share_links","share_rate_limits"].every(name => tables.has(name));
           database.authSchemaReady = tables.has("auth_sessions");
           database.itinerarySchemaReady = tables.has("itinerary_items");
@@ -297,7 +307,7 @@ export default {
           database.querySucceeded = false;
         }
       }
-      return json(request, { ok: true, service: "tabi-log-api", version: "2.3-r2-media", database });
+      return json(request, { ok: true, service: "tabi-log-api", version: "2.4-d1-media", database });
     }
     if (path === "/api/auth/session" && request.method === "POST") return createAuthSession(request, env);
     if (path === "/api/auth/logout" && request.method === "POST") return logoutSession(request, env);
@@ -328,8 +338,8 @@ export default {
       const statements = [
         env.DB.prepare("UPDATE plan_imports SET claimed_at=?,claimed_by=? WHERE id=? AND claimed_at IS NULL AND expires_at>?")
           .bind(now, user.id, record.id, now),
-        env.DB.prepare("INSERT INTO trips(id,user_id,title,area,description,visibility,source,external_plan_id,start_date,end_date,budget_amount,budget_currency) SELECT ?,?,?,?,?,'private','aileron',?,?,?,?,? WHERE EXISTS(SELECT 1 FROM plan_imports WHERE id=? AND claimed_by=? AND claimed_at=?)")
-          .bind(tripId, user.id, plan.title, plan.area, plan.description, record.id, plan.startDate, plan.endDate, plan.budgetAmount, plan.budgetCurrency, record.id, user.id, now)
+        env.DB.prepare("INSERT INTO trips(id,user_id,title,area,description,visibility,source,external_plan_id,origin_country,arrival_airport,first_attraction,start_date,end_date,budget_amount,budget_currency) SELECT ?,?,?,?,?,'private','aileron',?,?,?,?,?,?,?,? WHERE EXISTS(SELECT 1 FROM plan_imports WHERE id=? AND claimed_by=? AND claimed_at=?)")
+          .bind(tripId, user.id, plan.title, plan.area, plan.description, record.id, plan.originCountry, plan.arrivalAirport, plan.firstAttraction, plan.startDate, plan.endDate, plan.budgetAmount, plan.budgetCurrency, record.id, user.id, now)
       ];
       for (const stop of plan.stops) {
         statements.push(env.DB.prepare("INSERT INTO trip_stops(id,trip_id,name,note,sort_order,location_precision,latitude,longitude,external_place_id) SELECT ?,?,?,?,?,'approximate',?,?,? WHERE EXISTS(SELECT 1 FROM trips WHERE id=? AND user_id=?)")
@@ -347,29 +357,29 @@ export default {
     const mediaMatch = path.match(/^\/api\/media\/([A-Za-z0-9_-]{1,80})$/);
     if (mediaMatch && ["GET", "PUT", "DELETE"].includes(request.method)) {
       const postId = mediaMatch[1];
-      const post = await env.DB.prepare("SELECT id,media_key,media_type FROM posts WHERE id=? AND user_id=?").bind(postId, user.id).first();
+      const post = await env.DB.prepare("SELECT id,media_key,media_type,media_data FROM posts WHERE id=? AND user_id=?").bind(postId, user.id).first();
       if (!post) return bad(request, "対象の日記が見つかりません", 404);
-      if (!env.MEDIA_BUCKET) return bad(request, "写真クラウド保存がまだ有効になっていません", 503);
+      if (!post.media_data && request.method === "GET") return bad(request, "クラウド写真が見つかりません", 404);
       const objectKey = "users/" + user.id + "/posts/" + postId;
       if (request.method === "GET") {
-        if (post.media_key !== objectKey) return bad(request, "クラウド写真が見つかりません", 404);
-        const object = await env.MEDIA_BUCKET.get(objectKey);
-        if (!object) return bad(request, "クラウド写真が見つかりません", 404);
-        return new Response(object.body, { headers: { "content-type": post.media_type || object.httpMetadata?.contentType || "application/octet-stream", "cache-control": "private, no-store", "x-content-type-options": "nosniff", ...cors(request) } });
+        return new Response(post.media_data, { headers: { "content-type": post.media_type || "application/octet-stream", "cache-control": "private, no-store", "x-content-type-options": "nosniff", ...cors(request) } });
       }
       if (request.method === "PUT") {
         const mediaType = (request.headers.get("content-type") || "").split(";")[0].trim().toLowerCase();
         if (!["image/jpeg", "image/png", "image/webp"].includes(mediaType)) return bad(request, "対応形式はJPEG・PNG・WebPです", 415);
         const declaredSize = Number(request.headers.get("content-length") || 0);
-        if (declaredSize > 5 * 1024 * 1024) return bad(request, "写真は5MB以下にしてください", 413);
+        if (declaredSize > 1400000) return bad(request, "写真は1.35MB以下に圧縮してください", 413);
         const body = await request.arrayBuffer();
-        if (!body.byteLength || body.byteLength > 5 * 1024 * 1024) return bad(request, "写真は1バイト以上5MB以下にしてください", 413);
-        await env.MEDIA_BUCKET.put(objectKey, body, { httpMetadata: { contentType: mediaType, cacheControl: "private, no-store" }, customMetadata: { ownerId: user.id, postId } });
-        await env.DB.prepare("UPDATE posts SET media_key=?,media_type=? WHERE id=? AND user_id=?").bind(objectKey, mediaType, postId, user.id).run();
-        return json(request, { ok: true, key: objectKey, mediaType, size: body.byteLength });
+        if (!body.byteLength || body.byteLength > 1400000) return bad(request, "写真は1バイト以上1.35MB以下にしてください", 413);
+        const currentBytes = Number((await env.DB.prepare("SELECT COALESCE(SUM(length(media_data)),0) AS bytes FROM posts WHERE user_id=?").bind(user.id).first())?.bytes || 0);
+        const previousBytes = Number(post.media_data?.byteLength || post.media_data?.length || 0);
+        if (currentBytes - previousBytes + body.byteLength > 80 * 1024 * 1024) return bad(request, "アカウントの写真保存上限80MBに達します。不要な写真を削除してください", 413);
+        const totalBytes = Number((await env.DB.prepare("SELECT COALESCE(SUM(length(media_data)),0) AS bytes FROM posts").first())?.bytes || 0);
+        if (totalBytes - previousBytes + body.byteLength > 400 * 1024 * 1024) return bad(request, "旅ログ全体の写真保存上限400MBに達します。不要な写真を削除してください", 507);
+        await env.DB.prepare("UPDATE posts SET media_key=?,media_type=?,media_data=? WHERE id=? AND user_id=?").bind(objectKey, mediaType, body, postId, user.id).run();
+        return json(request, { ok: true, key: objectKey, mediaType, size: body.byteLength, storage: "cloudflare-d1" });
       }
-      if (post.media_key === objectKey) await env.MEDIA_BUCKET.delete(objectKey);
-      await env.DB.prepare("UPDATE posts SET media_key=NULL,media_type=NULL WHERE id=? AND user_id=?").bind(postId, user.id).run();
+      await env.DB.prepare("UPDATE posts SET media_key=NULL,media_type=NULL,media_data=NULL WHERE id=? AND user_id=?").bind(postId, user.id).run();
       return json(request, { ok: true });
     }
 
@@ -389,12 +399,13 @@ export default {
     }
     if (path === "/api/sync" && request.method === "GET") {
       const tripRows = await env.DB.prepare(
-        "SELECT t.id,t.title,t.area,t.description,t.visibility,t.start_date,t.end_date,t.budget_amount,t.budget_currency,t.archived,t.source,s.name AS stop_name,s.note AS stop_note,s.sort_order,s.latitude AS stop_latitude,s.longitude AS stop_longitude,s.external_place_id FROM trips t LEFT JOIN trip_stops s ON s.trip_id=t.id WHERE t.user_id=? AND t.source IN ('native','aileron') ORDER BY t.created_at DESC,s.sort_order ASC"
+        "SELECT t.id,t.title,t.area,t.description,t.visibility,t.start_date,t.end_date,t.budget_amount,t.budget_currency,t.archived,t.source,t.origin_country,t.arrival_airport,t.first_attraction,s.name AS stop_name,s.note AS stop_note,s.sort_order,s.latitude AS stop_latitude,s.longitude AS stop_longitude,s.external_place_id FROM trips t LEFT JOIN trip_stops s ON s.trip_id=t.id WHERE t.user_id=? AND t.source IN ('native','aileron') ORDER BY t.created_at DESC,s.sort_order ASC"
       ).bind(user.id).all();
       const tripMap = new Map();
       for (const row of tripRows.results || []) {
         if (!tripMap.has(row.id)) tripMap.set(row.id, {
           id: row.id, title: row.title, area: row.area, description: row.description,
+          origin_country: row.origin_country || "", arrival_airport: row.arrival_airport || "", first_attraction: row.first_attraction || "",
           visibility: row.visibility, start_date: row.start_date, end_date: row.end_date, budget_amount: row.budget_amount || 0, budget_currency: row.budget_currency || "JPY", archived: Boolean(row.archived),
           source: row.source, stops: [], stopLocations: [], actual: [], dayPlans: []
         });
