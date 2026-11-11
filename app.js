@@ -502,7 +502,7 @@ function renderAll(){renderFeed();renderTrips();renderDiary();renderProfile();re
 function openDialog(id){$(id).showModal()}function closeDialog(id){$(id).close()}
 $$("[data-close]").forEach(b=>b.addEventListener("click",()=>closeDialog("#"+b.dataset.close)));
 $("#closeSaveSuccess").addEventListener("click",()=>closeDialog("#saveSuccessDialog"));
-$("#openTrip").onclick=()=>location.assign("https://aileron-japan-travel.pages.dev/");$("#newTrip2").onclick=()=>openDialog("#tripDialog");$("#heroTrip").onclick=()=>location.assign("https://aileron-japan-travel.pages.dev/");$("#openPost").onclick=()=>{refreshTripSelect();openDialog("#postDialog")};
+$("#openTrip").onclick=()=>location.assign("https://aileron-japan-travel.pages.dev/");$("#newTrip2").onclick=()=>location.assign("https://aileron-japan-travel.pages.dev/");$("#heroTrip").onclick=()=>location.assign("https://aileron-japan-travel.pages.dev/");$("#openPost").onclick=()=>{refreshTripSelect();openDialog("#postDialog")};
 function refreshPostPlaces(tripId){
  const trip=trips.find(t=>t.id===tripId),host=$("#postPlaceOptions");if(!host)return;
  const places=[...new Set([...(trip?.stops||[]),...(trip?.stopLocations||[]).map(p=>p.name).filter(Boolean)])];
