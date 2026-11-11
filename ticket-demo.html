@@ -300,7 +300,7 @@
     <div class="ticket-fields ticket-flight-data"><div><small>FLIGHT</small><b>TL 001</b></div><div><small>DATE</small><b>03 NOV 2026</b></div><div><small>BOARDING</small><b>09:40</b></div><div><small>SEAT</small><b>12A</b></div></div>
    </div>
    <div class="ticket-perforation"><span class="perforation-label">CUT HERE</span><div class="tear-track" id="demoTrack"><div class="tear-progress" id="demoProgress"></div><span class="tear-grip" id="demoGrip">✂</span></div></div>
-   <div class="ticket-stub-half"><small>BOARDING PASS</small><strong>TL 001</strong><span>GATE <b>24</b></span><span>SEAT <b>12A</b></span><span>03 NOV 2026</span><div class="ticket-barcode" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><b>TABI LOG</b></div>
+   <div class="ticket-stub-half"><div class="stub-heading"><span>TABI LOG AIRWAYS</span><small>PASSENGER COUPON</small></div><div class="stub-number"><small>FLIGHT</small><strong>TL 001</strong></div><div class="stub-info"><div><small>GATE</small><b>24</b></div><div><small>SEAT</small><b>12A</b></div></div><div class="stub-date"><small>DATE</small><b>03 NOV 2026</b></div><div class="ticket-barcode" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><b class="stub-footer">TABI LOG · KEEP THIS COUPON</b></div>
   </div>
   <p class="ticket-tear-help" id="demoHelp">中央のミシン目を上から下へなぞって開封</p>
   <button class="ticket-open-fallback" id="demoTapOpen" type="button">タップして開く</button>
@@ -403,5 +403,38 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape"&&modal.classList.con
 .demo-modal.torn .ticket-stage > .boarding-ticket .ticket-main-half,
 .demo-modal.torn .ticket-stage > .boarding-ticket .ticket-stub-half{
   animation-fill-mode:forwards !important;
+}
+</style>
+
+<style>
+/* Rebuild the detachable coupon with a clear airline-ticket information hierarchy. */
+.demo-modal .ticket-stub-half{
+  display:flex;flex-direction:column;align-items:stretch;justify-content:space-between;
+  gap:12px;padding:20px 14px 15px;text-align:left;
+  background:linear-gradient(145deg,#f1eadb 0%,#e8deca 100%);
+  box-shadow:inset 1px 0 #fff8,inset -1px 0 #cdbb98,inset 0 0 18px #9d89551a;
+}
+.demo-modal .stub-heading{display:flex;flex-direction:column;gap:4px;padding-bottom:9px;border-bottom:1px solid #c9b995}
+.demo-modal .stub-heading span{font-size:9px;font-weight:800;letter-spacing:.12em;color:#34485b}
+.demo-modal .stub-heading small,.demo-modal .stub-number>small,.demo-modal .stub-info small,.demo-modal .stub-date small{font-size:7px;letter-spacing:.15em;color:#9a8053}
+.demo-modal .stub-number{display:flex;flex-direction:column;gap:3px}
+.demo-modal .stub-number strong{font:600 25px/1 Georgia,serif;letter-spacing:.05em;color:#263c50}
+.demo-modal .stub-info{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:9px 0;border-top:1px solid #cfc2a9;border-bottom:1px solid #cfc2a9}
+.demo-modal .stub-info>div,.demo-modal .stub-date{display:flex;flex-direction:column;gap:4px}
+.demo-modal .stub-info b{font:600 19px/1 Arial,sans-serif;color:#263c50}
+.demo-modal .stub-date b{font:600 10px Arial,sans-serif;letter-spacing:.05em;color:#34485b}
+.demo-modal .ticket-stub-half .ticket-barcode{align-self:center;width:100%;height:43px;margin:0;padding:5px 0;border-top:1px solid #cfc2a9;border-bottom:1px solid #cfc2a9}
+.demo-modal .stub-footer{display:block;text-align:center;font:700 6px Arial,sans-serif;letter-spacing:.12em;color:#9a8053}
+@media(max-width:600px){
+ .demo-modal .ticket-stub-half{gap:9px;padding:13px 6px 10px}
+ .demo-modal .stub-heading{gap:3px;padding-bottom:6px}
+ .demo-modal .stub-heading span{font-size:6px;letter-spacing:.06em}
+ .demo-modal .stub-heading small,.demo-modal .stub-number>small,.demo-modal .stub-info small,.demo-modal .stub-date small{font-size:5px;letter-spacing:.08em}
+ .demo-modal .stub-number strong{font-size:18px}
+ .demo-modal .stub-info{gap:4px;padding:7px 0}
+ .demo-modal .stub-info b{font-size:14px}
+ .demo-modal .stub-date b{font-size:7px;letter-spacing:0}
+ .demo-modal .ticket-stub-half .ticket-barcode{height:28px}
+ .demo-modal .stub-footer{font-size:4px;letter-spacing:.04em}
 }
 </style>
