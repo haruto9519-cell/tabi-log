@@ -1988,3 +1988,88 @@ body.has-opened-ticket #mytrips .map-card{display:block;margin-top:18px}
  background:#203449!important;color:#fff8e9!important;border:1px solid #b99a66!important;
  position:relative;z-index:5;cursor:pointer;
 }
+
+
+/* Authentic printed boarding-pass styling for the unopened ticket cards */
+#tripCards .ticket-card{
+ height:88px!important;min-height:88px!important;
+ position:relative!important;overflow:hidden!important;
+ border:1px solid #a88a59!important;border-radius:4px!important;
+ background:
+  radial-gradient(ellipse at 12% 15%,#ffffffb8 0 1px,transparent 2px),
+  repeating-linear-gradient(0deg,#fffdf7 0 3px,#f8f2e7 4px,#fffdf7 7px),
+  linear-gradient(105deg,#fffdf7 0%,#f4ead8 75%,#e8dcc5 100%)!important;
+ box-shadow:0 3px 8px #17263820,inset 0 0 0 2px #fff9ed,inset 0 -2px 0 #d7c7a8!important;
+}
+#tripCards .ticket-card-main{
+ grid-template-rows:12px 1fr 12px!important;
+ padding:7px 13px 6px 16px!important;
+ row-gap:4px!important;
+}
+#tripCards .ticket-card-top{
+ display:flex!important;align-items:center!important;
+ border-bottom:1px solid #d8c9ad;
+ color:#8c744f!important;font:700 6px/1 Arial,sans-serif!important;
+ letter-spacing:.19em!important;
+}
+#tripCards .ticket-card-top span:last-child{
+ max-width:45%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+#tripCards .ticket-card-route{gap:11px!important}
+#tripCards .ticket-card-endpoint small{
+ font:700 6px/1 Arial,sans-serif!important;letter-spacing:.22em!important;
+ color:#9b8053!important;
+}
+#tripCards .ticket-card-endpoint h3{
+ font:700 16px/1.15 Georgia,"Yu Mincho",serif!important;
+ letter-spacing:.015em;color:#23394e!important;
+}
+#tripCards .ticket-route-arrow{
+ color:#a78957!important;font-size:18px!important;
+}
+#tripCards .ticket-card-meta{
+ border-top:1px solid #dfd2bb;padding-top:3px;
+ font:600 6px/1 Arial,sans-serif!important;letter-spacing:.08em;
+ color:#887657!important;
+}
+#tripCards .ticket-card-stub{
+ position:relative!important;overflow:hidden!important;
+ display:flex!important;justify-content:center!important;
+ background:
+  repeating-linear-gradient(135deg,#eee5d4 0 4px,#f6efdf 4px 8px)!important;
+ border-left:1px dashed #9e8050!important;
+}
+#tripCards .ticket-card-stub:before,
+#tripCards .ticket-card-stub:after{
+ content:"";position:absolute;left:-6px;width:11px;height:11px;
+ border-radius:50%;background:#f4eee2;border:1px solid #b99a66;
+}
+#tripCards .ticket-card-stub:before{top:-6px}
+#tripCards .ticket-card-stub:after{bottom:-6px}
+#tripCards .ticket-card-stub>b{
+ font:700 11px/1 "Courier New",monospace!important;
+ letter-spacing:.13em;color:#26394b!important;
+}
+#tripCards .ticket-card-stub>i{
+ display:block;width:72%;height:15px;margin:2px auto 0;
+ overflow:hidden;font-size:0!important;
+ background:repeating-linear-gradient(90deg,#26394b 0 1px,transparent 1px 3px,#26394b 3px 5px,transparent 5px 7px);
+ border-top:1px solid #c6b797;border-bottom:1px solid #c6b797;
+}
+#tripCards .ticket-card-stub>span{
+ font:700 5px/1 Arial,sans-serif!important;letter-spacing:.12em;
+ color:#8a7048!important;
+}
+#tripCards .ticket-card-stub>small{
+ font:600 4px/1.2 Arial,sans-serif!important;letter-spacing:.08em;
+ color:#877657!important;
+}
+@media(max-width:560px){
+ #tripCards .ticket-card{height:82px!important;min-height:82px!important;grid-template-columns:minmax(0,1fr) 48px!important}
+ #tripCards .ticket-card-main{grid-template-rows:11px 1fr 11px!important;padding:6px 8px 5px 11px!important;row-gap:4px!important}
+ #tripCards .ticket-card-endpoint h3{font-size:14px!important}
+ #tripCards .ticket-card-route{gap:7px!important}
+ #tripCards .ticket-card-meta{font-size:5px!important;gap:6px!important}
+ #tripCards .ticket-card-stub>span{font-size:4px!important}
+ #tripCards .ticket-card-stub>b{font-size:9px!important}
+}
