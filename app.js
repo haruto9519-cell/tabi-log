@@ -47,11 +47,11 @@ async function uploadPendingPostMedia(){
   let blob=await mediaGet(post.mediaKey).catch(()=>null);
   if(!blob){allUploaded=false;continue;}
   try{
-   if(blob.size>1350000){blob=await compressPhotoForCloud(blob);await mediaPut(post.mediaKey,blob);post.mediaType=blob.type;}
-   const response=await fetch(API_BASE+"/api/media/"+encodeURIComponent(post.id),{method:"PUT",headers:{authorization:"Bearer "+sessionToken,"content-type":blob.type||post.mediaType||"image/jpeg"},body:blob});
+   const cloudBlob=blob.size>1350000?await compressPhotoForCloud(blob):blob;
+   const response=await fetch(API_BASE+"/api/media/"+encodeURIComponent(post.id),{method:"PUT",headers:{authorization:"Bearer "+sessionToken,"content-type":cloudBlob.type||post.mediaType||"image/jpeg"},body:cloudBlob});
    const data=await response.json();
    if(!response.ok||!data.ok)throw new Error(data.error||"写真をクラウドに保存できませんでした");
-   post.cloudMediaKey=data.key;post.cloudMediaSynced=true;
+   post.cloudMediaKey=data.key;post.mediaType=data.mediaType||cloudBlob.type||post.mediaType;post.cloudMediaSynced=true;
   }catch(error){allUploaded=false;console.warn("写真のクラウド保存に失敗:",post.id,error);}
  }
  return allUploaded;
@@ -502,7 +502,6 @@ $("#postForm").addEventListener("submit",async e=>{
   const allowedTypes=["image/jpeg","image/png","image/webp"];
   if(!allowedTypes.includes(file.type)){toast("保存できる形式はJPEG・PNG・WebPです");return;}
   if(file.size>5*1024*1024){toast("写真1枚の上限は5MBです");return;}
-  try{file=await compressPhotoForCloud(file);}catch(error){toast(error.message||"写真を圧縮できませんでした");return;}
  }
  const linkedTripId=String(f.get("tripId")||"");
  const postId=uid();
@@ -555,7 +554,7 @@ $("#postForm").addEventListener("submit",async e=>{
   successMessage.textContent=file&&file.size?"写真と日記はこの端末に保存しました。別の端末には自動で同期されません。":"日記をこの端末に保存しました。ログインしていない場合、別の端末には自動で同期されません。";
  }
 });
-$("#diaryEditForm").addEventListener("submit",async e=>{e.preventDefault();const f=e.currentTarget,id=f.elements.id.value,p=posts.find(x=>x.id===id&&x.author===profile.name);if(!p){toast("編集する日記が見つかりません");return;}const data=new FormData(f);let file=data.get("mediaReplace");if(file&&file.size){const allowed=["image/jpeg","image/png","image/webp"];if(!allowed.includes(file.type)){toast("保存できる形式はJPEG・PNG・WebPです");return;}if(file.size>5*1024*1024){toast("写真1枚の上限は5MBです");return;}try{file=await compressPhotoForCloud(file);await mediaPut(p.id,file);p.mediaKey=p.id;p.mediaType=file.type;p.cloudMediaSynced=false;}catch{toast("端末内への保存に失敗しました");return;}}p.title=String(data.get("title")||"").trim();p.place=String(data.get("place")||"").trim();p.story=String(data.get("story")||"").trim();p.date=String(data.get("capturedAt")||"");p.visibility=String(data.get("visibility")||"private");save();closeDialog("#diaryEditDialog");renderAll();let synced=true;if(signedInUser&&sessionToken){clearTimeout(cloudSyncTimer);synced=await syncCloudData();}toast(file&&file.size?(synced&&p.cloudMediaSynced?"写真をクラウドに更新しました":"日記を更新しました（写真はこの端末内に保存）"):"日記を更新しました");});
+$("#diaryEditForm").addEventListener("submit",async e=>{e.preventDefault();const f=e.currentTarget,id=f.elements.id.value,p=posts.find(x=>x.id===id&&x.author===profile.name);if(!p){toast("編集する日記が見つかりません");return;}const data=new FormData(f);let file=data.get("mediaReplace");if(file&&file.size){const allowed=["image/jpeg","image/png","image/webp"];if(!allowed.includes(file.type)){toast("保存できる形式はJPEG・PNG・WebPです");return;}if(file.size>5*1024*1024){toast("写真1枚の上限は5MBです");return;}try{await mediaPut(p.id,file);p.mediaKey=p.id;p.mediaType=file.type;p.cloudMediaSynced=false;}catch{toast("端末内への保存に失敗しました");return;}}p.title=String(data.get("title")||"").trim();p.place=String(data.get("place")||"").trim();p.story=String(data.get("story")||"").trim();p.date=String(data.get("capturedAt")||"");p.visibility=String(data.get("visibility")||"private");save();closeDialog("#diaryEditDialog");renderAll();let synced=true;if(signedInUser&&sessionToken){clearTimeout(cloudSyncTimer);synced=await syncCloudData();}toast(file&&file.size?(synced&&p.cloudMediaSynced?"写真をクラウドに更新しました":"日記を更新しました（写真はこの端末内に保存）"):"日記を更新しました");});
 $("#diaryTimeline").addEventListener("click",async e=>{const b=e.target.closest("button");if(!b)return;const id=b.dataset.editDiary||b.dataset.deleteDiary;if(!id)return;const p=posts.find(x=>x.id===id&&x.author===profile.name);if(!p)return;if(b.dataset.editDiary){const f=$("#diaryEditForm");f.elements.id.value=p.id;f.elements.title.value=p.title||"";f.elements.place.value=p.place||"";f.elements.capturedAt.value=String(p.date||"").slice(0,16);f.elements.story.value=p.story||"";f.elements.visibility.value=p.visibility||"private";openDialog("#diaryEditDialog");return;}if(b.dataset.deleteDiary&&confirm(p.mediaKey?"この日記と写真を削除しますか？":"この日記を削除しますか？")){try{await deleteDiaryEntry(p);renderAll();toast(p.mediaKey?"✓ 写真と日記を削除しました":"✓ 日記を削除しました");}catch(err){toast(err.message||"削除に失敗しました");}}});
 
 $("#editProfile").onclick=()=>{let f=$("#profileForm");f.elements.name.value=profile.name;f.elements.bio.value=profile.bio;openDialog("#profileDialog")};
