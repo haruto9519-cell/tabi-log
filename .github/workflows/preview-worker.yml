@@ -27,6 +27,12 @@ jobs:
           test -n "$CLOUDFLARE_ACCOUNT_ID" || { echo "::error::GitHub Actions secret CLOUDFLARE_ACCOUNT_ID is not set"; exit 1; }
       - name: Apply migrations to isolated Preview D1 only
         run: npx --yes wrangler@4 d1 migrations apply tabi-log-preview-db --remote --config wrangler.preview.toml
+      - name: Ensure legacy coordinate column exists in Preview D1 only
+        shell: bash
+        run: |
+          if ! npx --yes wrangler@4 d1 execute tabi-log-preview-db --remote --command "PRAGMA table_info(trip_stops)" --config wrangler.preview.toml | grep -q "external_place_id"; then
+            npx --yes wrangler@4 d1 execute tabi-log-preview-db --remote --command "ALTER TABLE trip_stops ADD COLUMN external_place_id TEXT" --config wrangler.preview.toml
+          fi
       - name: Deploy isolated Worker Preview (never production)
         run: npx --yes wrangler@4 preview --config wrangler.toml --name feat-d1-photo-sync
       - name: Verify isolated Worker Preview
@@ -38,6 +44,14 @@ jobs:
             response="$(curl -fsS -H 'Cache-Control: no-cache' "$url?check=${GITHUB_RUN_ID}-${attempt}" || true)"
             echo "$response"
             if echo "$response" | grep -q '"version":"2.4-d1-media"' &&
+               echo "$response" | grep -q '"coreSchemaReady":true' &&
+               echo "$response" | grep -q '"shareSchemaReady":true' &&
+               echo "$response" | grep -q '"authSchemaReady":true' &&
+               echo "$response" | grep -q '"itinerarySchemaReady":true' &&
+               echo "$response" | grep -q '"archiveSchemaReady":true' &&
+               echo "$response" | grep -q '"expensesSchemaReady":true' &&
+               echo "$response" | grep -q '"planImportsSchemaReady":true' &&
+               echo "$response" | grep -q '"stopCoordinatesSchemaReady":true' &&
                echo "$response" | grep -q '"mediaSchemaReady":true' &&
                echo "$response" | grep -q '"mediaStorageReady":true' &&
                echo "$response" | grep -q '"mediaStorageProvider":"cloudflare-d1"'; then
