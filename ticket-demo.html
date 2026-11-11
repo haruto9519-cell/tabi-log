@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#101c2b">
+<title>旅ログ｜搭乗券デザイン テスト</title>
+<link rel="stylesheet" href="styles.css?v=20261111-boarding-ticket-v13">
+<style>
+.demo-page{min-height:100vh;background:#f2f0e9;color:#26384a;padding:28px 18px 70px}
+.demo-head{max-width:760px;margin:0 auto 26px}
+.demo-head a{color:#92764c;font-size:12px;text-decoration:none}
+.demo-head h1{font-size:clamp(23px,5vw,34px);margin:20px 0 8px;color:#203449}
+.demo-head p{font-size:13px;line-height:1.8;color:#6f7776}
+.demo-ticket-wrap{max-width:620px;margin:0 auto}
+.demo-ticket-card{display:grid;grid-template-columns:minmax(0,1fr) 100px;padding:0;overflow:hidden;border:1px solid #b99a66;border-radius:7px;background:linear-gradient(135deg,#fffdf7,#eee7d8);box-shadow:0 9px 24px #17263812;cursor:pointer;text-align:left;width:100%;color:#26384a}
+.demo-ticket-main{padding:18px}
+.demo-ticket-top{display:flex;justify-content:space-between;color:#987d50;font-size:8px;letter-spacing:.18em}
+.demo-ticket-route{display:flex;align-items:center;justify-content:space-between;margin:19px 0 12px}
+.demo-ticket-route small{display:block;color:#987d50;font-size:8px;letter-spacing:.15em}
+.demo-ticket-route strong{display:block;font-size:24px;margin-top:4px}
+.demo-ticket-route i{font-style:normal;font-size:27px;color:#ad8d5a}
+.demo-ticket-title{font-weight:700;font-size:14px}
+.demo-ticket-meta{display:flex;flex-wrap:wrap;gap:8px 13px;margin-top:13px;color:#82765f;font-size:9px}
+.demo-ticket-stub{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:13px;background:#e9e1d2;border-left:1px dashed #b99a66;text-align:center}
+.demo-ticket-stub span,.demo-ticket-stub small{font-size:7px;letter-spacing:.14em;color:#92794f;writing-mode:vertical-rl}
+.demo-ticket-stub b{font:18px Georgia,serif}
+.demo-ticket-stub i{font-style:normal;color:#a88a5d;writing-mode:vertical-rl}
+.demo-instruction{text-align:center;margin:16px auto;color:#6c716f;font-size:11px}
+.demo-modal{position:fixed;inset:0;z-index:3000;display:none;overflow:auto;align-items:flex-start;justify-content:center;padding:60px 14px 35px;background:radial-gradient(ellipse at 50% 25%,#30445a,#101c2b 72%)}
+.demo-modal.open{display:flex}
+.demo-modal .ticket-stage{width:min(850px,100%)}
+.demo-modal .ticket-detail{display:none}
+.demo-modal.torn .ticket-detail{display:block}
+.demo-modal .ticket-detail.show{opacity:1;transform:translateY(0)}
+.demo-modal .ticket-perforation{position:relative;display:flex;align-items:center;justify-content:center;border-left:1px dashed #b89a66;border-right:1px dashed #b89a66;background:#eee7d9}
+.demo-modal .ticket-perforation:before,.demo-modal .ticket-perforation:after{content:"";position:absolute;left:50%;width:18px;height:18px;border-radius:50%;background:#142337;transform:translateX(-50%)}
+.demo-modal .ticket-perforation:before{top:-9px}.demo-modal .ticket-perforation:after{bottom:-9px}
+.demo-modal .tear-track{width:56px;height:100%;min-height:190px;touch-action:pan-x;cursor:ns-resize}
+.demo-modal .tear-track:before{left:50%;right:auto;top:0;bottom:0;width:0;height:auto;border-top:0;border-left:2px dashed #b79a69}
+.demo-modal .tear-progress{left:50%;top:0;width:3px;height:0;transform:translateX(-50%)}
+.demo-modal .tear-grip{left:50%;top:0;transform:translate(-50%,-50%)}
+.demo-modal .ticket-detail{width:min(850px,100%);margin-top:25px;padding:clamp(18px,4vw,34px);border:1px solid #b99a66;border-radius:8px;background:#f6f3eb;color:#26384a;opacity:0;transform:translateY(20px);transition:opacity .5s,transform .5s}
+.demo-modal .ticket-detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:18px}
+.demo-modal .ticket-detail-grid article{padding:14px;border:1px solid #ded5c5;border-radius:5px;background:#fffdf8}
+.demo-modal .ticket-detail-grid small,.demo-modal .ticket-detail-heading span{font-size:8px;letter-spacing:.18em;color:#9a8053}
+.demo-modal .ticket-detail-grid p{font-size:11px;line-height:1.8}
+.demo-modal .ticket-close{position:fixed;top:13px;right:14px;z-index:5;width:40px;height:40px;border:1px solid #b99a66;border-radius:50%;background:#17283b;color:#f3e8d2;font-size:24px}
+.demo-modal .ticket-open-fallback{display:block;margin:12px auto;padding:9px 18px;border:1px solid #b89a66;border-radius:3px;background:#1b3045;color:#ead8b4;font-size:10px}
+.demo-modal .ticket-tear-help{text-align:center;color:#e5d6b9;font-size:11px;margin:14px}
+.demo-modal.torn .ticket-main-half{animation:demo-left .65s forwards}
+.demo-modal.torn .ticket-stub-half{animation:demo-right .65s forwards}
+@keyframes demo-left{to{transform:translateX(-30px) rotate(-1deg);opacity:.12}}
+@keyframes demo-right{to{transform:translateX(30px) rotate(1deg);opacity:.12}}
+@media(max-width:600px){.demo-ticket-card{grid-template-columns:minmax(0,1fr) 72px}.demo-ticket-main{padding:13px}.demo-modal{padding:58px 9px 28px}.demo-modal .boarding-ticket{grid-template-columns:minmax(0,1fr) 42px 76px;min-height:230px}.demo-modal .ticket-main-half{padding:16px 11px}.demo-modal .ticket-topline{font-size:7px}.demo-modal .ticket-route{margin:22px 0 12px}.demo-modal .ticket-route strong{font-size:20px}.demo-modal .ticket-main-half>h2{font-size:17px;margin-bottom:15px}.demo-modal .ticket-fields{grid-template-columns:1fr;gap:7px}.demo-modal .ticket-fields small{display:inline;margin-right:6px}.demo-modal .ticket-fields b{font-size:9px}.demo-modal .ticket-detail-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<main class="demo-page">
+ <header class="demo-head">
+  <a href="./">← 旅ログに戻る</a>
+  <h1>旅の記録を、搭乗券に。</h1>
+  <p>これは操作確認用のサンプル画面です。ログイン不要・入力不要で試せます。カードを押して、全画面のチケットを開いてください。</p>
+ </header>
+ <section class="demo-ticket-wrap">
+  <button class="demo-ticket-card" id="demoOpen" type="button">
+   <span class="demo-ticket-main">
+    <span class="demo-ticket-top"><span>TABI LOG AIRWAYS</span><span>JOURNEY PASS</span></span>
+    <span class="demo-ticket-route"><span><small>DESTINATION</small><strong>京都・嵐山</strong></span><i>✈</i></span>
+    <span class="demo-ticket-title">秋の京都、寺社めぐり</span>
+    <span class="demo-ticket-meta"><span>2026.11.03 — 11.05</span><span>4 PLACES</span><span>3 VISITED</span></span>
+   </span>
+   <span class="demo-ticket-stub"><span>BOARDING PASS</span><b>TB-2603</b><i>✂ · · · · · ·</i><small>PERSONAL JOURNEY</small></span>
+  </button>
+  <p class="demo-instruction">↑ サンプルチケットをタップして開く</p>
+ </section>
+</main>
+<div class="demo-modal" id="demoModal" aria-hidden="true">
+ <button class="ticket-close" id="demoClose" aria-label="閉じる">×</button>
+ <div class="ticket-stage">
+  <div class="boarding-ticket">
+   <div class="ticket-main-half">
+    <div class="ticket-topline"><span>TABI LOG AIRWAYS</span><span>JOURNEY PASS</span></div>
+    <div class="ticket-route"><div><small>DESTINATION</small><strong>京都・嵐山</strong></div><span class="ticket-plane">✈</span><div class="ticket-flight"><small>TRIP NO.</small><strong>TB-2603</strong></div></div>
+    <h2>秋の京都、寺社めぐり</h2>
+    <div class="ticket-fields"><div><small>DATE</small><b>2026.11.03 — 11.05</b></div><div><small>STOPS</small><b>4 PLACES</b></div><div><small>VISITED</small><b>3 / 4</b></div></div>
+   </div>
+   <div class="ticket-perforation"><span class="perforation-label">CUT HERE</span><div class="tear-track" id="demoTrack"><div class="tear-progress" id="demoProgress"></div><span class="tear-grip" id="demoGrip">✂</span></div></div>
+   <div class="ticket-stub-half"><small>BOARDING PASS</small><strong>秋の京都、寺社めぐり</strong><span>2026.11.03</span><b>TABI LOG</b></div>
+  </div>
+  <p class="ticket-tear-help" id="demoHelp">中央のミシン目を上から下へなぞって開封</p>
+  <button class="ticket-open-fallback" id="demoTapOpen" type="button">タップして開く</button>
+  <section class="ticket-detail" id="demoDetail">
+   <div class="ticket-detail-heading"><span>YOUR JOURNEY ARCHIVE</span><h2>秋の京都、寺社めぐり</h2><p>京都・嵐山 · 2026.11.03 — 11.05</p></div>
+   <div class="ticket-detail-grid">
+    <article><small>TRAVEL NOTES</small><p>紅葉の季節に京都を散策。気になっていた寺社を巡り、街並みや喫茶店も楽しんだ旅。</p></article>
+    <article><small>VISIT RECORD</small><p>✓ 渡月橋　✓ 竹林の小径　✓ 天龍寺　○ 嵐山公園</p></article>
+    <article><small>ITINERARY</small><p>11/03 嵐山散策<br>11/04 寺社めぐり<br>11/05 市内散策・帰宅</p></article>
+    <article><small>TRAVEL BUDGET</small><p>予算：35,000円<br>記録済み支出：28,400円</p></article>
+   </div>
+   <div class="ticket-memories"><small>DIARY & MEMORIES</small><article class="ticket-memory"><div class="ticket-memory-media">📷</div><div><b>嵐山の朝</b><small>2026.11.03 · 渡月橋</small><p>朝の空気が気持ちよく、川沿いをゆっくり歩いた。</p></div></article></div>
+  </section>
+ </div>
+</div>
+<script>
+(()=>{const modal=document.getElementById("demoModal"),track=document.getElementById("demoTrack"),progress=document.getElementById("demoProgress"),grip=document.getElementById("demoGrip"),detail=document.getElementById("demoDetail"),help=document.getElementById("demoHelp");let active=false,amount=0;
+function open(){modal.classList.add("open");modal.setAttribute("aria-hidden","false");document.body.style.overflow="hidden";}
+function close(){modal.classList.remove("open","torn");modal.setAttribute("aria-hidden","true");document.body.style.overflow="";progress.style.height="0";grip.style.top="0";amount=0;active=false;detail.classList.remove("show");detail.style.display="none";help.textContent="中央のミシン目を上から下へなぞって開封";}
+function tear(){if(modal.classList.contains("torn"))return;active=false;modal.classList.add("torn");help.textContent="旅の記録を開きました";document.getElementById("demoTapOpen").style.display="none";detail.style.display="block";requestAnimationFrame(()=>detail.classList.add("show"));}
+document.getElementById("demoOpen").addEventListener("click",open);document.getElementById("demoClose").addEventListener("click",close);document.getElementById("demoTapOpen").addEventListener("click",tear);
+modal.addEventListener("click",e=>{if(e.target===modal)close();});
+track.addEventListener("pointerdown",e=>{const r=track.getBoundingClientRect();if(e.clientY<r.top)return;active=true;amount=Math.max(0,Math.min(1,(e.clientY-r.top)/r.height));track.setPointerCapture(e.pointerId);});
+track.addEventListener("pointermove",e=>{if(!active)return;const r=track.getBoundingClientRect();amount=Math.max(amount,Math.max(0,Math.min(1,(e.clientY-r.top)/r.height)));progress.style.height=(amount*100)+"%";grip.style.top=(amount*100)+"%";if(amount>=.85)tear();});
+track.addEventListener("pointerup",()=>active=false);track.addEventListener("pointercancel",()=>active=false);
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&modal.classList.contains("open"))close();});
+})();
+</script>
+</body>
+</html>
