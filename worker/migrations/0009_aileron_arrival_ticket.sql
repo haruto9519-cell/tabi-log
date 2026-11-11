@@ -1,0 +1,3 @@
+ALTER TABLE trips ADD COLUMN origin_country TEXT NOT NULL DEFAULT '';
+ALTER TABLE trips ADD COLUMN arrival_airport TEXT NOT NULL DEFAULT '';
+ALTER TABLE trips ADD COLUMN first_attraction TEXT NOT NULL DEFAULT '';
