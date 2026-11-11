@@ -1,6 +1,6 @@
 // Tabi Log Worker: private photo media is stored in D1; no R2 binding required.
 const ALLOWED_ORIGINS = new Set(["https://tabi-log.pages.dev", "http://localhost:8788", "http://127.0.0.1:8788"]);
-const CORS_ORIGINS = new Set([...ALLOWED_ORIGINS, "https://tabi-hikaku.pages.dev", "https://aileron-japan-travel.pages.dev"]);
+const CORS_ORIGINS = new Set([...ALLOWED_ORIGINS, "https://feat-d1-photo-sync.tabi-log.pages.dev", "https://tabi-hikaku.pages.dev", "https://aileron-japan-travel.pages.dev"]);
 const cors = (request) => {
   const origin = request.headers.get("Origin") || "";
   const headers = {
@@ -8,15 +8,7 @@ const cors = (request) => {
     "access-control-allow-headers": "content-type,authorization",
     "vary": "Origin"
   };
-  const isTabiLogPagesPreview = (() => {
-    try {
-      const parsed = new URL(origin);
-      return parsed.protocol === "https:" && parsed.hostname.endsWith(".tabi-log.pages.dev");
-    } catch {
-      return false;
-    }
-  })();
-  if (CORS_ORIGINS.has(origin) || isTabiLogPagesPreview) headers["access-control-allow-origin"] = origin;
+  if (CORS_ORIGINS.has(origin)) headers["access-control-allow-origin"] = origin;
   return headers;
 };
 const json = (request, data, status = 200, extra = {}) => new Response(JSON.stringify(data), {
