@@ -1907,3 +1907,84 @@ body.has-opened-ticket #mytrips .map-card{display:block;margin-top:18px}
  padding:5px 9px;color:#8c7047;font:inherit;font-size:11px;cursor:pointer;
 }
 #editProfileHome:hover{background:#f4eddf}
+
+
+/* Printed route ticket: clearly show FROM -> TO, not a blank strip */
+#tripCards .ticket-card{
+ background:
+  linear-gradient(90deg,#fffdf7 0%,#f5eedf 72%,#e9dfcb 100%)!important;
+ border:1.5px solid #a88750!important;
+ box-shadow:0 3px 9px #17263820,inset 0 0 0 3px #ffffffa8!important;
+}
+#tripCards .ticket-card:before{
+ content:"";position:absolute;left:0;top:0;bottom:0;width:5px;z-index:2;
+ background:repeating-linear-gradient(180deg,#a88750 0 5px,#e2c995 5px 10px);
+}
+#tripCards .ticket-card:after{
+ content:"TABI LOG";position:absolute;right:58px;bottom:3px;z-index:0;
+ color:#a887501c;font:italic 17px Georgia,serif;letter-spacing:.12em;
+ pointer-events:none;
+}
+#tripCards .ticket-card-main{
+ grid-template-columns:minmax(0,1fr)!important;
+ grid-template-rows:12px 1fr 12px!important;
+ row-gap:3px!important;
+ padding:7px 13px 6px 17px!important;
+}
+#tripCards .ticket-card-top{
+ display:flex!important;grid-column:1;grid-row:1;
+ justify-content:space-between;color:#927344!important;
+ font-size:6px!important;letter-spacing:.16em;
+}
+#tripCards .ticket-card-route{
+ grid-column:1;grid-row:2;
+ display:flex!important;align-items:center;justify-content:flex-start;
+ gap:12px!important;margin:0!important;min-width:0;
+}
+#tripCards .ticket-card-endpoint{min-width:0;flex:1}
+#tripCards .ticket-card-endpoint small{
+ display:block!important;color:#9b8053!important;font-size:6px!important;
+ letter-spacing:.18em;line-height:1.1;
+}
+#tripCards .ticket-card-endpoint h3{
+ margin:2px 0 0!important;font-size:15px!important;line-height:1.15;
+ color:#203449!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+#tripCards .ticket-route-arrow{
+ display:block!important;flex:none;font-size:20px!important;
+ color:#ad8b53!important;line-height:1;
+}
+#tripCards .ticket-card-meta{
+ grid-column:1;grid-row:3;display:flex!important;flex-direction:row!important;
+ justify-content:flex-start;align-items:center;gap:10px!important;
+ color:#88795f!important;font-size:6px!important;line-height:1;
+}
+#tripCards .ticket-card-title,#tripCards .ticket-card-main>p{display:none!important}
+#tripCards .ticket-card-stub{
+ background:repeating-linear-gradient(135deg,#eee5d4 0 5px,#e4d8c2 5px 10px)!important;
+ border-left:1px dashed #987644!important;
+}
+#tripCards .ticket-card-stub>span{color:#8b7048!important}
+#tripCards .ticket-card-stub>b{color:#34465a!important}
+#tripCards .ticket-card-stub>i{color:#987644!important}
+@media(max-width:560px){
+ #tripCards .ticket-card{height:76px!important;min-height:76px!important;grid-template-columns:minmax(0,1fr) 42px!important}
+ #tripCards .ticket-card-main{grid-template-rows:11px 1fr 11px!important;padding:6px 8px 5px 12px!important;row-gap:3px!important}
+ #tripCards .ticket-card-route{gap:7px!important}
+ #tripCards .ticket-card-endpoint h3{font-size:13px!important}
+ #tripCards .ticket-card-route .ticket-route-arrow{font-size:16px!important}
+ #tripCards .ticket-card-meta{gap:7px!important;font-size:5px!important}
+ #tripCards .ticket-card-stub>span{font-size:4px!important}
+ #tripCards .ticket-card-stub>b{font-size:10px!important}
+}
+#editProfileHome{
+ display:inline-flex;align-items:center;justify-content:center;
+ appearance:none;background:#f4ead7!important;border:1px solid #b99a66!important;
+ border-radius:4px;padding:7px 11px;color:#49391f!important;
+ font:600 11px/1.2 inherit;cursor:pointer;position:relative;z-index:5;
+}
+#editProfileHome:hover{background:#ead9b9!important}
+#editProfile{
+ background:#203449!important;color:#fff8e9!important;border:1px solid #b99a66!important;
+ position:relative;z-index:5;cursor:pointer;
+}
