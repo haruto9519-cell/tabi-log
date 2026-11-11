@@ -109,6 +109,82 @@
 @keyframes demo-archive-stub{to{transform:translateX(145%) rotate(3deg);opacity:0}}
 @media(max-width:600px){.demo-modal .ticket-route-subline{gap:4px;font-size:7px}.demo-modal .ticket-route-subline strong{font-size:7px}.demo-modal.torn .ticket-stage .boarding-ticket{position:absolute}}
 </style>
+
+<style>
+/* Archive ticket card: printed-paper boarding pass, before opening the full-screen view. */
+.demo-ticket-wrap{max-width:680px}
+.demo-ticket-card{
+ position:relative;grid-template-columns:minmax(0,1fr) 112px;min-height:218px;
+ border:1px solid #b99b6c;border-radius:5px;
+ background:linear-gradient(112deg,#fffdf7 0%,#f6f1e6 57%,#eae1d1 100%);
+ box-shadow:0 3px 7px #17263812,0 16px 34px #17263820,inset 0 0 0 4px #fff9;
+ transition:transform .22s ease,box-shadow .22s ease;
+}
+.demo-ticket-card:hover{transform:translateY(-3px);box-shadow:0 7px 12px #17263816,0 22px 42px #17263826,inset 0 0 0 4px #fff9}
+.demo-ticket-card:focus-visible{outline:3px solid #b18c52;outline-offset:5px}
+.demo-ticket-main{
+ position:relative;display:flex;flex-direction:column;justify-content:space-between;gap:12px;
+ padding:21px 25px 14px;background-image:radial-gradient(#a99a7b18 .55px,transparent .8px);
+ background-size:5px 5px;
+}
+.demo-ticket-top{align-items:center;padding-bottom:11px;border-bottom:1px solid #d6c9b1;color:#30465a;font-size:9px;letter-spacing:.16em}
+.demo-airline{font-weight:800;font-size:11px;letter-spacing:.13em}
+.demo-airline b{color:#b08d59;font-weight:500}
+.demo-pass-type{font-size:7px;letter-spacing:.16em;text-align:right}
+.demo-pass-type b{display:block;margin-top:3px;font-size:8px;color:#a18455}
+.demo-ticket-route{justify-content:flex-start;gap:18px;margin:4px 0 0}
+.demo-airport{min-width:0}
+.demo-airport small,.demo-destination-code small{display:block;color:#9b8052;font-size:7px;letter-spacing:.2em}
+.demo-airport strong{display:block;margin-top:4px;font-size:clamp(23px,4.5vw,34px);letter-spacing:.03em;color:#20384e}
+.demo-airport em,.demo-destination-code em{display:block;margin-top:3px;color:#8c806b;font-size:7px;font-style:normal;letter-spacing:.14em}
+.demo-route-line{position:relative;flex:1;max-width:130px;height:1px;margin:0 2px;background:#b89b6d}
+.demo-route-line:before,.demo-route-line:after{content:"";position:absolute;top:-3px;width:7px;height:7px;border:1px solid #b89b6d;border-radius:50%;background:#f5efe3}
+.demo-route-line:before{left:0}.demo-route-line:after{right:0}
+.demo-route-line b{position:absolute;left:50%;top:50%;padding:0 7px;background:#f5efe3;color:#a48758;font-size:17px;font-weight:400;transform:translate(-50%,-55%)}
+.demo-destination-code strong{display:block;margin-top:2px;color:#2b4155;font:600 22px Georgia,serif;letter-spacing:.08em}
+.demo-ticket-title{font-size:13px;font-weight:700;letter-spacing:.04em;color:#33475a}
+.demo-ticket-meta{display:grid;grid-template-columns:1.6fr .8fr .8fr;gap:10px;padding-top:10px;border-top:1px solid #d6c9b1}
+.demo-ticket-meta span{display:flex;flex-direction:column;gap:4px}
+.demo-ticket-meta small{font-size:6px;letter-spacing:.17em;color:#a0875b}
+.demo-ticket-meta b{font-size:8px;letter-spacing:.04em;color:#435364}
+.demo-ticket-bottom{display:flex;justify-content:space-between;gap:8px;color:#9a896e;font-size:6px;letter-spacing:.12em}
+.demo-ticket-bottom b{color:#a7834e;font-size:11px}
+.demo-ticket-stub{
+ position:relative;gap:9px;padding:17px 8px;background:linear-gradient(145deg,#eee6d7,#e5dac7);
+ border-left:1px dashed #ae9160;box-shadow:inset 5px 0 10px #8c79501a;
+}
+.demo-ticket-stub:before,.demo-ticket-stub:after{
+ content:"";position:absolute;left:-9px;width:17px;height:17px;border-radius:50%;background:#f2f0e9;
+}
+.demo-ticket-stub:before{top:-9px}.demo-ticket-stub:after{bottom:-9px}
+.demo-stub-top{font-size:7px!important;line-height:1.55;letter-spacing:.17em!important;writing-mode:horizontal-tb!important}
+.demo-stub-number{font:20px/1.1 Georgia,serif!important;color:#34495c!important;letter-spacing:.04em}
+.demo-stub-number small{font:10px Georgia,serif;color:#9a8053}
+.demo-stub-barcode{display:flex;align-items:stretch;justify-content:center;gap:2px;width:78%;height:46px;padding:4px 0;border-top:1px solid #c9b99b;border-bottom:1px solid #c9b99b}
+.demo-stub-barcode i{display:block;width:1px;background:#283b4b}
+.demo-stub-barcode i:nth-child(3n){width:3px}.demo-stub-barcode i:nth-child(4n){width:2px}.demo-stub-barcode i:nth-child(5n){margin-right:2px}
+.demo-ticket-stub .demo-stub-foot{font-size:6px;line-height:1.6;letter-spacing:.13em;writing-mode:horizontal-tb}
+.demo-instruction{margin:19px auto;color:#8b806d;font-size:10px;letter-spacing:.08em}
+@media(max-width:600px){
+ .demo-ticket-card{grid-template-columns:minmax(0,1fr) 78px;min-height:194px}
+ .demo-ticket-main{padding:16px 13px 12px;gap:10px}
+ .demo-ticket-top{font-size:7px;padding-bottom:8px}
+ .demo-airline{font-size:9px}.demo-pass-type{font-size:6px}
+ .demo-ticket-route{gap:8px}
+ .demo-airport strong{font-size:clamp(20px,6vw,27px)}
+ .demo-destination-code strong{font-size:18px}
+ .demo-route-line{max-width:48px}
+ .demo-ticket-title{font-size:11px}
+ .demo-ticket-meta{gap:5px}
+ .demo-ticket-meta small{font-size:5px}.demo-ticket-meta b{font-size:6px}
+ .demo-ticket-bottom{font-size:5px}
+ .demo-ticket-stub{padding:13px 4px;gap:8px}
+ .demo-stub-number{font-size:17px!important}
+ .demo-stub-barcode{height:35px;width:85%}
+}
+@media(prefers-reduced-motion:reduce){.demo-ticket-card{transition:none}}
+</style>
+
 </head>
 <body>
 <main class="demo-page">
@@ -118,14 +194,23 @@
   <p>これは操作確認用のサンプル画面です。ログイン不要・入力不要で試せます。カードを押して、全画面のチケットを開いてください。</p>
  </header>
  <section class="demo-ticket-wrap">
-  <button class="demo-ticket-card" id="demoOpen" type="button">
+  <button class="demo-ticket-card" id="demoOpen" type="button" aria-label="東京・浅草と下町散策のチケットを開く">
    <span class="demo-ticket-main">
-    <span class="demo-ticket-top"><span>TABI LOG AIRWAYS</span><span>JOURNEY PASS</span></span>
-    <span class="demo-ticket-route"><span><small>DESTINATION</small><strong>東京・浅草</strong></span><i>✈</i></span>
+    <span class="demo-ticket-top"><span class="demo-airline">TABI LOG <b>／</b> AIRWAYS</span><span class="demo-pass-type">TRAVEL ARCHIVE <b>№ 001</b></span></span>
+    <span class="demo-ticket-route">
+     <span class="demo-airport"><small>JOURNEY TO</small><strong>東京・浅草</strong><em>TOKYO · JAPAN</em></span>
+     <i class="demo-route-line"><b>✈</b></i>
+     <span class="demo-destination-code"><small>TRIP ID</small><strong>TKY</strong><em>ASAKUSA</em></span>
+    </span>
     <span class="demo-ticket-title">東京・浅草と下町散策</span>
-    <span class="demo-ticket-meta"><span>2026.11.03 — 11.05</span><span>4 PLACES</span><span>3 VISITED</span></span>
+    <span class="demo-ticket-meta"><span><small>DATE</small><b>03 NOV — 05 NOV 2026</b></span><span><small>STOPS</small><b>04 PLACES</b></span><span><small>VISITED</small><b>03 / 04</b></span></span>
+    <span class="demo-ticket-bottom"><span>KEEP THIS PASS AS A MEMORY OF YOUR JOURNEY</span><span>OPEN <b>↗</b></span></span>
    </span>
-   <span class="demo-ticket-stub"><span>BOARDING PASS</span><b>TB-2603</b><i>✂ · · · · · ·</i><small>PERSONAL JOURNEY</small></span>
+   <span class="demo-ticket-stub">
+    <span class="demo-stub-top">BOARDING<br>PASS</span><b class="demo-stub-number">TKY<br><small>001</small></b>
+    <span class="demo-stub-barcode" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+    <small class="demo-stub-foot">PERSONAL<br>JOURNEY</small>
+   </span>
   </button>
   <p class="demo-instruction">↑ サンプルチケットをタップして開く</p>
  </section>
