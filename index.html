@@ -2,16 +2,16 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#c9f36a">
+<meta name="theme-color" content="#080d19">
 <meta name="description" content="Aileronで作成した旅行プランに、訪問記録・写真・日記を重ねて残せる旅行ログ。Googleログイン中は写真をクラウドにも同期できます。">
 <title>旅ログ — 自分の旅を、ひとつに。</title>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""><link rel="stylesheet" href="styles.css?v=20261111-editorial-social-v3">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""><link rel="stylesheet" href="styles.css?v=20261111-future-hub-v4">
 </head>
 <body>
 <a class="skip-link" href="#main-content">本文へスキップ</a>
 <header class="topbar">
  <a class="brand" href="#home"><span class="brand-icon">旅</span><span>旅ログ</span></a>
- <nav aria-label="メインナビゲーション"><a href="#mytrips">マイ旅行</a><a href="#diary">思い出</a><a href="#mypage">プロフィール</a></nav>
+ <nav aria-label="メインナビゲーション"><a href="#features">機能</a><a href="#mytrips">マイ旅行</a><a href="#diary">思い出</a><a href="#mypage">マイページ</a></nav>
  <div class="auth-area"><div id="googleLogin"></div><div id="authStatus" aria-live="polite"></div></div>
  <div class="header-actions"><button class="btn ghost" id="openTrip">Aileronでプランを作る</button><button class="btn gold" id="openPost">＋ 思い出を記録</button></div>
 </header>
@@ -27,26 +27,50 @@
  </div>
 </section>
 <section class="hero">
+ <div class="hero-grid-glow" aria-hidden="true"></div>
  <div class="hero-content">
-  <span class="kicker">YOUR PERSONAL TRAVEL JOURNAL</span>
-  <h1>自分の旅を、<br><em>ひとつに。</em></h1>
-  <p>Aileronで作った旅行プランに、訪れた場所・写真・日記を重ねて、旅の記録として残そう。</p>
-  <div class="hero-buttons"><a class="btn gold" href="#mytrips">旅行を整理する</a><button class="btn outline-light" id="heroTrip">Aileronでプランを作る</button></div>
-  <div class="hero-note"><span>01 計画する</span><i></i><span>02 記録する</span><i></i><span>03 振り返る・共有する</span></div>
+  <span class="kicker"><i></i> YOUR TRAVEL, FULLY CONNECTED</span>
+  <h1>旅のすべてを、<br><em>ひとつの場所に。</em></h1>
+  <p>計画から、地図・日程・写真・支出・共有まで。旅の前も、旅の途中も、帰ったあとも使えるトラベルログ。</p>
+  <div class="hero-buttons"><a class="btn gold" href="#mytrips">旅の管理をはじめる <span>↗</span></a><button class="btn outline-light" id="heroTrip">Aileronでプランを作る</button></div>
+  <div class="hero-capabilities"><span>TRIP PLANNER</span><b>·</b><span>MAP & ITINERARY</span><b>·</b><span>MEMORY ARCHIVE</span></div>
  </div>
- <div class="hero-visual">
-  <div class="hero-map-grid"></div>
-  <svg viewBox="0 0 540 360" class="hero-route" aria-hidden="true"><path d="M65 270 C130 60 210 300 280 145 S420 65 480 240" fill="none" stroke="#d7ad6c" stroke-width="4" stroke-dasharray="8 9"/><circle cx="65" cy="270" r="9" fill="#d7ad6c"/><circle cx="280" cy="145" r="9" fill="#d7ad6c"/><circle cx="480" cy="240" r="9" fill="#d7ad6c"/></svg>
-  <div class="floating-photo fp1"><div class="photo-art kyoto">⛩</div><b>旅の写真</b><small>思い出を整理</small></div>
-  <div class="floating-photo fp2"><div class="photo-art sea">🌊</div><b>旅の日記</b><small>その日の記録</small></div>
-  <div class="map-tag">YOUR JOURNEY, YOUR MEMORY</div>
+ <div class="hero-visual" aria-label="旅ログの機能イメージ">
+  <div class="interface-window">
+   <div class="interface-top"><span class="window-dots"><i></i><i></i><i></i></span><b>TABI LOG <small>/ TRAVEL SPACE</small></b><span class="live-indicator">● PERSONAL HUB</span></div>
+   <div class="interface-body">
+    <div class="interface-side"><span class="side-active">▦</span><span>⌖</span><span>▤</span><span>◷</span><span>⚙</span></div>
+    <div class="interface-main">
+     <div class="interface-eyebrow">YOUR JOURNEY DASHBOARD</div>
+     <div class="interface-title">旅の記録を、<strong>一元管理。</strong></div>
+     <div class="interface-metrics"><div><small>TRIPS</small><b>01</b><span>旅行を管理</span></div><div><small>MEMORIES</small><b>∞</b><span>写真と日記</span></div><div><small>TOOLS</small><b>08</b><span>旅の機能</span></div></div>
+     <div class="interface-lower"><div class="interface-map"><span>ROUTE / MAP</span><i></i><i></i><i></i><b>⌖</b></div><div class="interface-modules"><span>▦　日程管理</span><span>◉　写真・日記</span><span>￥　支出管理</span><span>↗　共有・保存</span></div></div>
+    </div>
+   </div>
+   <div class="interface-foot"><span>PLAN</span><i></i><span>TRACK</span><i></i><span>REMEMBER</span><i></i><span>SHARE</span></div>
+  </div>
+  <div class="hero-orbit orbit-a"></div><div class="hero-orbit orbit-b"></div>
  </div>
 </section>
 <section class="quick-stats">
  <div><b id="statTrips">0</b><span>保存した旅行</span></div>
  <div><b id="statPosts">0</b><span>日記・思い出</span></div>
  <div><b id="statSaved">0</b><span>保存した旅</span></div>
- <div class="stat-message">旅のすべてを、自分のペースで。</div>
+ <div class="stat-message">旅の計画も、記録も、振り返りも。</div>
+</section>
+<section class="feature-hub" id="features">
+ <div class="feature-heading"><div><span class="kicker">ONE APP. MANY POSSIBILITIES.</span><h2>旅に必要な機能を、<br><em>ひとつに集約。</em></h2></div><p>別々のアプリを行き来しなくても、旅の情報をまとめて管理。使いたい機能からすぐにアクセスできます。</p></div>
+ <div class="feature-grid">
+  <a class="feature-card feature-primary" href="#mytrips"><span class="feature-index">01 / PLAN</span><span class="feature-icon">⌖</span><h3>旅行・地図管理</h3><p>旅行プランを保存。訪問先を地図で確認し、行き先や訪問状況を整理。</p><span class="feature-link">旅行を管理する ↗</span></a>
+  <a class="feature-card" href="#mytrips"><span class="feature-index">02 / SCHEDULE</span><span class="feature-icon">▤</span><h3>日程・タイムライン</h3><p>日付・時刻・訪問先・メモを登録。予定の順番も調整。</p><span class="feature-link">日程を確認する ↗</span></a>
+  <a class="feature-card" href="#diary"><span class="feature-index">03 / MEMORY</span><span class="feature-icon">▧</span><h3>写真・旅行日記</h3><p>写真と文章を場所・日時に紐づけて、旅の記録を時系列で保存。</p><span class="feature-link">思い出を残す ↗</span></a>
+  <a class="feature-card" href="#expenses" data-feature-expenses><span class="feature-index">04 / BUDGET</span><span class="feature-icon">￥</span><h3>予算・支出管理</h3><p>交通費・宿泊費・食費などを記録。旅行予算と支出をチェック。</p><span class="feature-link">支出を管理する ↗</span></a>
+  <a class="feature-card" href="#mytrips"><span class="feature-index">05 / VISIT LOG</span><span class="feature-icon">◎</span><h3>訪問チェック</h3><p>予定した場所を訪問済みに変更。計画と実際の旅を見比べる。</p><span class="feature-link">訪問先を確認する ↗</span></a>
+  <a class="feature-card" href="#mytrips"><span class="feature-index">06 / SHARE</span><span class="feature-icon">↗</span><h3>旅行の共有</h3><p>旅行ごとに共有リンクを発行。不要になったリンクは停止。</p><span class="feature-link">共有機能を見る ↗</span></a>
+  <a class="feature-card" href="#mypage"><span class="feature-index">07 / BACKUP</span><span class="feature-icon">⤓</span><h3>バックアップ・復元</h3><p>旅行・日記・支出などのデータをJSONで保存・復元。</p><span class="feature-link">データを管理する ↗</span></a>
+  <a class="feature-card" href="#mypage"><span class="feature-index">08 / CLOUD SYNC</span><span class="feature-icon">☁</span><h3>Googleログイン・同期</h3><p>ログイン中は対応データをクラウド同期。写真も対応条件下で別端末から閲覧。</p><span class="feature-link">アカウントを確認する ↗</span></a>
+ </div>
+ <div class="feature-note"><span>※</span> 写真のクラウド同期はGoogleログイン時のみ。端末内保存とクラウド保存の対象・条件は機能ごとに異なります。</div>
 </section>
 <section id="mytrips" class="section muted-section">
  <div class="section-heading"><div><span class="kicker">MY JOURNEYS</span><h2>旅の計画を地図ごと引き継ぐ。</h2><p>Aileronで作成した旅行プランを取り込み、訪問先のピンに写真や思い出を重ねていきます。</p></div><button class="btn navy" id="newTrip2">Aileronで旅行プランを作る</button></div>
