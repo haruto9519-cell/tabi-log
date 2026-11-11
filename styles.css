@@ -1862,3 +1862,48 @@ body.has-opened-ticket #mytrips .map-card{display:block;margin-top:18px}
  #tripCards .ticket-card-stub>span{font-size:4px}
  #tripCards .ticket-card-stub>b{font-size:10px}
 }
+
+
+/* Restore the printed boarding-pass character on compact home tickets */
+#tripCards .ticket-card{
+ position:relative!important;
+ isolation:isolate;
+ background:
+  linear-gradient(90deg,transparent 0 76%,#d9c9aa22 76% 100%),
+  repeating-linear-gradient(135deg,#fffdf8 0,#fffdf8 9px,#f7f1e5 10px,#fffdf8 17px)!important;
+ border:1px solid #b99a66!important;
+ box-shadow:0 3px 10px #17263812,inset 0 0 0 3px #ffffffb8!important;
+}
+#tripCards .ticket-card:before{
+ content:"";
+ position:absolute;z-index:0;left:0;top:0;bottom:0;width:4px;
+ background:linear-gradient(180deg,#d4b77f,#9c7948,#d4b77f);
+}
+#tripCards .ticket-card:after{
+ content:"✧";
+ position:absolute;z-index:0;left:43%;top:50%;
+ transform:translate(-50%,-50%) rotate(-12deg);
+ color:#b89a6640;font:42px Georgia,serif;
+ pointer-events:none;
+}
+#tripCards .ticket-card-main{position:relative;z-index:1}
+#tripCards .ticket-card-route small{color:#9b8053!important}
+#tripCards .ticket-card-route h3{color:#203449!important}
+#tripCards .ticket-card-title{
+ color:#79613f!important;
+ padding-left:12px;
+ border-left:1px solid #cbb58f;
+}
+#tripCards .ticket-card-meta{color:#88795f!important}
+#tripCards .ticket-card-stub{
+ position:relative;z-index:1;
+ background:
+  repeating-linear-gradient(0deg,#eee5d4 0,#eee5d4 5px,#e8deca 6px,#eee5d4 11px)!important;
+}
+#tripCards .ticket-card-stub>b{color:#34465a!important}
+#tripCards .ticket-card-stub>i{color:#a18455!important}
+#editProfileHome{
+ appearance:none;background:transparent;border:1px solid #b99a66;border-radius:3px;
+ padding:5px 9px;color:#8c7047;font:inherit;font-size:11px;cursor:pointer;
+}
+#editProfileHome:hover{background:#f4eddf}
