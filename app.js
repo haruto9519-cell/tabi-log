@@ -318,7 +318,7 @@ function finishTicketTear(layer){
 }
 function openTravelTicket(tripId){
  const trip=trips.find(item=>item.id===tripId);if(!trip)return;
- selectedTrip=tripId;document.body.classList.add("has-opened-ticket");
+ selectedTrip=tripId;document.body.classList.add("has-opened-ticket");renderMap();
  document.getElementById("ticketExperience")?.remove();
  const places=[...new Set([...(Array.isArray(trip.stopLocations)?trip.stopLocations:[]).map(p=>p.name),...(Array.isArray(trip.stops)?trip.stops:[])].filter(Boolean))];
  const visited=Array.isArray(trip.actual)?trip.actual:[];
