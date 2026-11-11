@@ -1318,3 +1318,16 @@ body.ticket-open{overflow:hidden}
 @keyframes ticket-main-cut-horizontal{to{transform:translateX(-34px) rotate(-1deg);opacity:.12}}
 @keyframes ticket-stub-cut-horizontal{to{transform:translateX(34px) rotate(1deg);opacity:.12}}
 @media(max-width:600px){.tear-track{width:38px;min-height:150px}}
+
+/* Reveal the trip archive through the ticket's perforation as it is torn */
+.ticket-stage{position:relative}
+.ticket-reveal-preview{position:absolute;z-index:0;inset:0 0 auto;height:300px;display:flex;align-items:center;justify-content:center;overflow:hidden;border:1px solid #c5a873;border-radius:9px;background:linear-gradient(135deg,#fbf9f2,#e9e1d2);color:#26384a;clip-path:inset(0 calc((1 - var(--tear-progress,0))*50%) 0 calc((1 - var(--tear-progress,0))*50%));transition:clip-path .06s linear;box-shadow:inset 0 0 0 7px #fff5}
+.ticket-reveal-inner{width:100%;padding:24px 36px;text-align:center}
+.ticket-reveal-inner small{display:block;color:#9a8053;font-size:8px;letter-spacing:.2em}
+.ticket-reveal-inner strong{display:block;margin:9px 0;font:600 clamp(19px,3vw,28px) Georgia,serif;color:#26384a}
+.ticket-reveal-inner p{max-width:600px;margin:0 auto;color:#65706e;font-size:11px;line-height:1.7}
+.ticket-reveal-inner>div{display:flex;justify-content:center;gap:18px;flex-wrap:wrap;margin-top:14px;color:#92794f;font-size:8px;letter-spacing:.12em}
+.boarding-ticket{z-index:2}
+.ticket-experience.is-torn .ticket-main-half{animation:ticket-main-cut-horizontal .75s cubic-bezier(.2,.7,.2,1) forwards}
+.ticket-experience.is-torn .ticket-stub-half{animation:ticket-stub-cut-horizontal .75s cubic-bezier(.2,.7,.2,1) forwards}
+@media(max-width:600px){.ticket-reveal-preview{height:240px}.ticket-reveal-inner{padding:16px 9px}.ticket-reveal-inner p{font-size:9px}.ticket-reveal-inner>div{gap:7px;font-size:7px}}
