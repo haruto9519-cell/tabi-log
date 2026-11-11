@@ -1202,3 +1202,9 @@ footer{max-width:1600px;margin:0 auto}
  .social-profile-stats span{font-size:8px}
  .social-highlights{gap:12px}
 }
+
+/* Profile image upload */
+.traveler-avatar.has-avatar-image,.profile-avatar.has-avatar-image{overflow:hidden;padding:0;background:#172d40;}
+.traveler-avatar.has-avatar-image img,.profile-avatar.has-avatar-image img{display:block;width:100%;height:100%;object-fit:cover;border-radius:inherit;}
+.avatar-remove-option{display:flex;align-items:center;gap:9px;font-size:13px;}
+.avatar-remove-option input{width:auto;}
