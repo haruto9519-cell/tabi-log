@@ -1331,3 +1331,5 @@ body.ticket-open{overflow:hidden}
 .ticket-experience.is-torn .ticket-main-half{animation:ticket-main-cut-horizontal .75s cubic-bezier(.2,.7,.2,1) forwards}
 .ticket-experience.is-torn .ticket-stub-half{animation:ticket-stub-cut-horizontal .75s cubic-bezier(.2,.7,.2,1) forwards}
 @media(max-width:600px){.ticket-reveal-preview{height:240px}.ticket-reveal-inner{padding:16px 9px}.ticket-reveal-inner p{font-size:9px}.ticket-reveal-inner>div{gap:7px;font-size:7px}}
+
+.ticket-perforation{background:transparent;border-left-color:#b89a66;border-right-color:#b89a66}
