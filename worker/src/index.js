@@ -1,6 +1,6 @@
 // Tabi Log Worker: private photo media is stored in D1; no R2 binding required.
 const ALLOWED_ORIGINS = new Set(["https://tabi-log.pages.dev", "http://localhost:8788", "http://127.0.0.1:8788"]);
-const CORS_ORIGINS = new Set([...ALLOWED_ORIGINS, "https://feat-d1-photo-sync.tabi-log.pages.dev", "https://tabi-hikaku.pages.dev", "https://aileron-japan-travel.pages.dev"]);
+const CORS_ORIGINS = new Set([...ALLOWED_ORIGINS, "https://feat-d1-photo-sync.tabi-log.pages.dev", "https://tabi-hikaku.pages.dev", "https://aileron-japan-travel.pages.dev", "https://feat-arrival-airport-ticket.aileron-japan-travel.pages.dev"]);
 const cors = (request) => {
   const origin = request.headers.get("Origin") || "";
   const headers = {
@@ -292,7 +292,9 @@ export default {
           database.mediaStorageReady = database.mediaSchemaReady;
           database.mediaStorageProvider = database.mediaSchemaReady ? "cloudflare-d1" : "unavailable";
           const tripColumns = await env.DB.prepare("PRAGMA table_info(trips)").all();
-          database.archiveSchemaReady = (tripColumns.results || []).some(column => column.name === "archived");
+          const tripColumnNames = new Set((tripColumns.results || []).map(column => column.name));
+          database.archiveSchemaReady = tripColumnNames.has("archived");
+          database.arrivalTicketSchemaReady = ["origin_country","arrival_airport","first_attraction"].every(name => tripColumnNames.has(name));
           database.shareSchemaReady = ["share_links","share_rate_limits"].every(name => tables.has(name));
           database.authSchemaReady = tables.has("auth_sessions");
           database.itinerarySchemaReady = tables.has("itinerary_items");
