@@ -130,7 +130,7 @@
  <div class="two-fields"><label>場所<input name="place" list="postPlaceOptions" required maxlength="80" placeholder="訪問先のピン名を選ぶか入力"></label><datalist id="postPlaceOptions"></datalist><label>日時<input name="capturedAt" type="datetime-local"></label></div>
  <label>思い出・日記<textarea name="story" required maxlength="2000" placeholder="訪れた場所、体験したこと、感じたことを残そう"></textarea></label>
  <div class="photo-source-options"><label>📷 カメラで撮影<input name="mediaCamera" type="file" accept="image/jpeg,image/png,image/webp" capture="environment"></label><label>🖼️ 写真ライブラリから選択<input name="mediaLibrary" type="file" accept="image/jpeg,image/png,image/webp"></label></div>
- <p class="hint">写真はこのブラウザの端末内に保存されます。別の端末には自動で同期されません。ブラウザの閲覧データを消去すると写真も消える場合があります。JPEG・PNG・WebP、1枚5MBまで。動画は現在非対応です。</p>
+ <p class="hint">写真は端末内に元データを保存します。Googleログイン中は圧縮したコピーをクラウドにも保存し、同じアカウントで別の端末から閲覧できます。ログインしていない場合は端末内のみです。JPEG・PNG・WebP、1枚5MBまで。クラウド保存用コピーは1.35MB以下に圧縮します。動画は現在非対応です。</p>
  <label>公開範囲<select name="visibility"><option value="private">自分のみ</option><option value="public">みんなに公開</option></select></label><p class="hint">公開した記録は誰でも閲覧できます。住所・連絡先・顔がはっきり分かる写真・今いる場所など、個人を特定できる情報は載せないでください。</p><input type="hidden" name="category" value="旅の記録">
  <button class="btn navy full" type="submit">記録を保存</button>
 </form></dialog>
@@ -142,7 +142,7 @@
  <div class="two-fields"><label>場所<input name="place" required maxlength="80"></label><label>日時<input name="capturedAt" type="datetime-local"></label></div>
  <label>思い出・日記<textarea name="story" required maxlength="2000"></textarea></label>
  <label>写真を差し替える（任意）<input name="mediaReplace" type="file" accept="image/jpeg,image/png,image/webp"></label>
- <p class="hint">新しい写真を選ぶと、この記録の写真を差し替えます。写真データはこの端末内に保存されます。</p>
+ <p class="hint">新しい写真を選ぶと、この記録の写真を差し替えます。端末には元データを保存し、Googleログイン中はクラウド用コピーも同期します。</p>
  <label>公開設定<select name="visibility"><option value="private">自分のみ</option><option value="public">公開</option></select></label>
  <button class="btn navy full" type="submit">変更を保存</button>
 </form></dialog>
@@ -151,6 +151,6 @@
 <!-- 旧データ互換用。SNS画面としては表示しません。 -->
 <section hidden aria-hidden="true"><input id="feedSearch"><select id="feedSort"><option value="recommend">おすすめ</option></select><button class="chip" data-category="すべて"></button><div id="feed"></div></section>
 <div id="toast" role="status" aria-live="polite"></div>
-<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script><script id="googleIdentityScript" src="https://accounts.google.com/gsi/client" async defer></script><script src="config.js"></script><script src="app.js?v=20261110-d1-photo-v7"></script>
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script><script id="googleIdentityScript" src="https://accounts.google.com/gsi/client" async defer></script><script src="config.js?v=20261111-preview-api-v8"></script><script src="app.js?v=20261111-preserve-original-photo-v8"></script>
 <script>document.addEventListener("DOMContentLoaded",()=>{const b=document.getElementById("openDiaryEntry");if(b)b.addEventListener("click",()=>document.getElementById("openPost")?.click());});</script>
 </body></html>
