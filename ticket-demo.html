@@ -242,6 +242,13 @@
 .demo-modal .ticket-stub-half .ticket-barcode i:nth-child(5n){width:3px;margin-right:1px}
 @media(max-width:600px){.demo-route-line .demo-plane-mark{width:25px;height:25px;padding:1px 2px}.demo-modal .ticket-route .ticket-plane{flex-basis:30px;width:30px;height:30px}.demo-modal .ticket-route .ticket-plane-mark{width:26px;height:26px}.demo-modal .ticket-flight-data{grid-template-columns:1fr 1.3fr;gap:8px;padding:9px 7px}.demo-modal .ticket-flight-data b{font-size:10px}.demo-modal .ticket-stub-half .ticket-barcode{height:25px}}
 </style>
+
+<style>
+/* Symmetrical top-down passenger-aircraft silhouette, like a printed ticket pictogram. */
+.demo-route-line .demo-plane-mark{width:29px;height:29px;padding:2px;fill:#a48758;stroke:none;filter:none}
+.demo-modal .ticket-route .ticket-plane-mark{width:34px;height:34px;fill:#a48758;stroke:none;filter:none}
+@media(max-width:600px){.demo-route-line .demo-plane-mark{width:23px;height:23px;padding:1px}.demo-modal .ticket-route .ticket-plane-mark{width:25px;height:25px}}
+</style>
 </head>
 <body>
 <main class="demo-page">
@@ -256,7 +263,7 @@
     <span class="demo-ticket-top"><span class="demo-airline">TABI LOG <b>／</b> AIRWAYS</span><span class="demo-pass-type">TRAVEL ARCHIVE <b>№ 001</b></span></span>
     <span class="demo-ticket-route">
      <span class="demo-airport"><small>JOURNEY TO</small><strong>東京・浅草</strong><em>TOKYO · JAPAN</em></span>
-     <i class="demo-route-line"><svg class="demo-plane-mark" viewBox="0 0 84 84" aria-hidden="true"><path d="M59 27.5 37 33 23 10.5c-.8-1.3-2.3-1.9-3.7-1.4l-2.1.7 8.1 25.4-13.2 3.3-6.3-6.2-3.2 1 4.3 10.3-1.1 11.1 3.2-1 4.7-7.5 13.2-3.3 3.1 26.5 2.2-.6c1.5-.4 2.5-1.7 2.4-3.2l-1.4-26.2 22-5.5c2.4-.6 3.8-2.8 3.2-5.2-.5-2.2-2.8-3.6-5.2-3z"/></svg></i>
+     <i class="demo-route-line"><svg class="demo-plane-mark" viewBox="0 0 84 84" aria-hidden="true"><path d="M42 5c-2.1 0-3.8 1.7-4.1 4.1l-3.5 24.2-19.7 10.2c-1.8.9-2.9 2.7-2.9 4.7v2.2L34 43.5l-1.7 17.2-8.1 5.8v3.3l17.8-3.4 17.8 3.4v-3.3l-8.1-5.8L50 43.5l22.2 6.9v-2.2c0-2-1.1-3.8-2.9-4.7L49.6 33.3 46.1 9.1C45.8 6.7 44.1 5 42 5Z"/></svg></i>
      <span class="demo-destination-code"><small>TRIP ID</small><strong>TKY</strong><em>ASAKUSA</em></span>
     </span>
     <span class="demo-ticket-title">東京・浅草と下町散策</span>
@@ -279,7 +286,7 @@
   <div class="boarding-ticket">
    <div class="ticket-main-half">
     <div class="ticket-topline"><span>TABI LOG AIRWAYS</span><span>JOURNEY PASS</span></div>
-    <div class="ticket-route"><div><small>FROM AIRPORT</small><strong>PARIS CDG</strong></div><span class="ticket-plane" aria-hidden="true"><svg class="ticket-plane-mark" viewBox="0 0 84 84"><path d="M59 27.5 37 33 23 10.5c-.8-1.3-2.3-1.9-3.7-1.4l-2.1.7 8.1 25.4-13.2 3.3-6.3-6.2-3.2 1 4.3 10.3-1.1 11.1 3.2-1 4.7-7.5 13.2-3.3 3.1 26.5 2.2-.6c1.5-.4 2.5-1.7 2.4-3.2l-1.4-26.2 22-5.5c2.4-.6 3.8-2.8 3.2-5.2-.5-2.2-2.8-3.6-5.2-3z"/></svg></span><div class="ticket-flight"><small>ARRIVAL AIRPORT</small><strong>TOKYO HANEDA AIRPORT</strong></div></div>
+    <div class="ticket-route"><div><small>FROM AIRPORT</small><strong>PARIS CDG</strong></div><span class="ticket-plane" aria-hidden="true"><svg class="ticket-plane-mark" viewBox="0 0 84 84"><path d="M42 5c-2.1 0-3.8 1.7-4.1 4.1l-3.5 24.2-19.7 10.2c-1.8.9-2.9 2.7-2.9 4.7v2.2L34 43.5l-1.7 17.2-8.1 5.8v3.3l17.8-3.4 17.8 3.4v-3.3l-8.1-5.8L50 43.5l22.2 6.9v-2.2c0-2-1.1-3.8-2.9-4.7L49.6 33.3 46.1 9.1C45.8 6.7 44.1 5 42 5Z"/></svg></span><div class="ticket-flight"><small>ARRIVAL AIRPORT</small><strong>TOKYO HANEDA AIRPORT</strong></div></div>
     <div class="ticket-route-subline"><span>Tokyo Haneda Airport</span><i>→</i><strong>Senso-ji Temple</strong></div>
     <h2>東京・浅草と下町散策</h2>
     <div class="ticket-fields ticket-flight-data"><div><small>FLIGHT</small><b>TL 001</b></div><div><small>DATE</small><b>03 NOV 2026</b></div><div><small>BOARDING</small><b>09:40</b></div><div><small>SEAT</small><b>12A</b></div></div>
