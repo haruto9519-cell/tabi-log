@@ -109,20 +109,41 @@ function renderAuth(){
 }
 async function restoreSession(){
  if(!sessionToken){renderAuth();return;}
+ let data;
  try{
   const res=await fetch(API_BASE+"/api/me",{headers:{authorization:"Bearer "+sessionToken}});
-  const data=await res.json();
-  if(!res.ok||!data.ok)throw new Error(data.error||"セッションの期限が切れています");
-  signedInUser=data.user;
-  activateAccountStorage(signedInUser);
-  await syncCloudData();
-  await processPendingImport();
- }catch{
-  sessionToken="";
-  sessionStorage.removeItem(SESSION_KEY);
-  signedInUser=null;
+  data=await res.json();
+  if(!res.ok||!data.ok){
+   // Only a confirmed invalid/expired session should sign the user out.
+   // Temporary API errors must never erase a valid local session.
+   if(res.status===401||res.status===403){
+    sessionToken="";
+    sessionStorage.removeItem(SESSION_KEY);
+    signedInUser=null;
+    activeAccountStorageId=null;
+   }else{
+    console.warn("ログイン状態の確認に失敗しました。セッションは保持します。",data.error||res.status);
+    toast("ログイン状態を確認できません。通信回復後に再試行します。");
+   }
+   renderAuth();
+   return;
+  }
+ }catch(error){
+  console.warn("ログイン状態の確認中に通信エラーが発生しました。セッションは保持します。",error);
+  renderAuth();
+  toast("通信エラーのためログイン状態を確認できません。ログイン情報は保持しています。");
+  return;
  }
+ signedInUser=data.user;
+ activateAccountStorage(signedInUser);
  renderAuth();
+ try{
+  const synced=await syncCloudData();
+  if(!synced)console.warn("セッション復元後のクラウド同期は未完了です。ログイン状態は維持します。");
+  await processPendingImport();
+ }catch(error){
+  console.warn("セッション復元後の同期処理に失敗しました。ログイン状態は維持します。",error);
+ }
 }
 async function handleGoogleCredential(response){
  if(!response?.credential){toast("Googleログイン情報を取得できませんでした");return;}
