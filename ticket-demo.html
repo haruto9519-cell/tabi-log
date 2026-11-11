@@ -438,3 +438,20 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape"&&modal.classList.con
  .demo-modal .stub-footer{font-size:4px;letter-spacing:.04em}
 }
 </style>
+
+<style>
+/* Give the detachable coupon enough physical width to read as a real ticket stub. */
+.demo-modal .ticket-stage{--ticket-stub-width:190px}
+.demo-modal .boarding-ticket{--ticket-stub-width:190px}
+.demo-modal .ticket-stub-half{min-width:0;padding-left:18px;padding-right:18px}
+@media(max-width:600px){
+ .demo-modal .ticket-stage{--ticket-stub-width:118px}
+ .demo-modal .boarding-ticket{--ticket-stub-width:118px}
+ .demo-modal .ticket-stub-half{padding:14px 10px 11px}
+ .demo-modal .stub-heading span{font-size:7px;letter-spacing:.08em}
+ .demo-modal .stub-number strong{font-size:20px}
+ .demo-modal .stub-info b{font-size:16px}
+ .demo-modal .stub-date b{font-size:8px}
+ .demo-modal .stub-footer{font-size:5px;letter-spacing:.06em}
+}
+</style>
