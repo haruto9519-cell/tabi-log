@@ -8,7 +8,15 @@ const cors = (request) => {
     "access-control-allow-headers": "content-type,authorization",
     "vary": "Origin"
   };
-  if (CORS_ORIGINS.has(origin)) headers["access-control-allow-origin"] = origin;
+  const isTabiLogPagesPreview = (() => {
+    try {
+      const parsed = new URL(origin);
+      return parsed.protocol === "https:" && parsed.hostname.endsWith(".tabi-log.pages.dev");
+    } catch {
+      return false;
+    }
+  })();
+  if (CORS_ORIGINS.has(origin) || isTabiLogPagesPreview) headers["access-control-allow-origin"] = origin;
   return headers;
 };
 const json = (request, data, status = 200, extra = {}) => new Response(JSON.stringify(data), {
