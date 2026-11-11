@@ -16,6 +16,9 @@ GOOGLE_CLIENT_ID = "88585688478-1i3t68qc8ek9ffo3f0u4qj4rfvsm1n5h.apps.googleuser
 
 [previews]
 
+[previews.vars]
+GOOGLE_CLIENT_ID = "88585688478-1i3t68qc8ek9ffo3f0u4qj4rfvsm1n5h.apps.googleusercontent.com"
+
 [[previews.d1_databases]]
 binding = "DB"
 database_name = "tabi-log-preview-db"
