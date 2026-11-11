@@ -1754,3 +1754,43 @@ body.has-opened-ticket #mytrips .map-card{display:block;margin-top:18px}
 
 /* The route map now belongs to its own ticket detail, not a detached page card. */
 #mytrips .map-card{display:none!important}
+
+
+/* Compact horizontal travel tickets */
+#tripCards .ticket-card{
+ display:grid!important;
+ grid-template-columns:minmax(0,1fr) 76px!important;
+ align-items:stretch;
+ min-height:126px;
+}
+#tripCards .ticket-card-main{
+ display:grid;
+ grid-template-columns:minmax(0,1fr) auto;
+ grid-template-rows:auto auto auto;
+ align-content:center;
+ align-items:center;
+ column-gap:14px;
+ row-gap:5px;
+ padding:12px 16px!important;
+ min-width:0;
+}
+#tripCards .ticket-card-top{grid-column:1/-1;align-self:start;font-size:7px;line-height:1.2}
+#tripCards .ticket-card-route{grid-column:1;grid-row:2;margin:0;min-width:0;justify-content:flex-start;gap:12px}
+#tripCards .ticket-card-route h3{font-size:18px!important;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#tripCards .ticket-card-route>span{font-size:19px}
+#tripCards .ticket-card-title{grid-column:2;grid-row:2;max-width:190px;margin:0!important;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#tripCards .ticket-card-meta{grid-column:1/-1;grid-row:3;gap:5px 12px;font-size:8px;line-height:1.3}
+#tripCards .ticket-card-main>p{display:none}
+#tripCards .ticket-card-stub{gap:8px;padding:8px 5px}
+#tripCards .ticket-card-stub>b{font-size:15px}
+#tripCards .ticket-card-stub>span{font-size:6px}
+#tripCards .ticket-card-stub>i{font-size:7px}
+#tripCards .ticket-card-stub>small{font-size:5px}
+#tripCards .trip-meta{display:none}
+@media(max-width:560px){
+ #tripCards .ticket-card{grid-template-columns:minmax(0,1fr) 58px!important;min-height:112px}
+ #tripCards .ticket-card-main{padding:10px 11px!important;column-gap:7px}
+ #tripCards .ticket-card-route h3{font-size:15px!important}
+ #tripCards .ticket-card-title{max-width:105px;font-size:10px}
+ #tripCards .ticket-card-meta{gap:4px 8px;font-size:7px}
+}
