@@ -210,6 +210,9 @@ function cleanAileronPlan(input) {
   const budgetAmount = Number(input.budgetAmount || 0);
   const budgetCurrency = cleanText(input.budgetCurrency || "JPY", 3).toUpperCase();
   const travelers = Number(input.travelers || 1);
+  const originCountry = cleanText(input.originCountry, 80);
+  const arrivalAirport = cleanText(input.arrivalAirport, 120);
+  const firstAttraction = cleanText(input.firstAttraction, 120);
   if (!title || !area || !Number.isSafeInteger(budgetAmount) || budgetAmount < 0 || budgetAmount > 100000000 ||
       !/^[A-Z]{3}$/.test(budgetCurrency) || !Number.isInteger(travelers) || travelers < 1 || travelers > 20) return null;
   const stops = Array.isArray(input.stops) ? input.stops.slice(0, 20).map((item, index) => {
@@ -225,7 +228,7 @@ function cleanAileronPlan(input) {
     return { name, latitude, longitude, nights, sortOrder: index, externalPlaceId: cleanText(item?.externalPlaceId, 120) };
   }).filter(Boolean) : [];
   if (!stops.length) return null;
-  return { title, area, description, startDate: startDate || null, endDate: endDate || null, budgetAmount, budgetCurrency, travelers, origin: cleanText(input.origin, 80), stops };
+  return { title, area, description, startDate: startDate || null, endDate: endDate || null, budgetAmount, budgetCurrency, travelers, origin: cleanText(input.origin, 80), originCountry, arrivalAirport, firstAttraction, stops };
 }
 async function createPlanImport(request, env) {
   if (!env.DB) return bad(request, "旅行連携データベースが未設定です", 503);
@@ -333,8 +336,8 @@ export default {
       const statements = [
         env.DB.prepare("UPDATE plan_imports SET claimed_at=?,claimed_by=? WHERE id=? AND claimed_at IS NULL AND expires_at>?")
           .bind(now, user.id, record.id, now),
-        env.DB.prepare("INSERT INTO trips(id,user_id,title,area,description,visibility,source,external_plan_id,start_date,end_date,budget_amount,budget_currency) SELECT ?,?,?,?,?,'private','aileron',?,?,?,?,? WHERE EXISTS(SELECT 1 FROM plan_imports WHERE id=? AND claimed_by=? AND claimed_at=?)")
-          .bind(tripId, user.id, plan.title, plan.area, plan.description, record.id, plan.startDate, plan.endDate, plan.budgetAmount, plan.budgetCurrency, record.id, user.id, now)
+        env.DB.prepare("INSERT INTO trips(id,user_id,title,area,description,visibility,source,external_plan_id,origin_country,arrival_airport,first_attraction,start_date,end_date,budget_amount,budget_currency) SELECT ?,?,?,?,?,'private','aileron',?,?,?,?,?,?,?,? WHERE EXISTS(SELECT 1 FROM plan_imports WHERE id=? AND claimed_by=? AND claimed_at=?)")
+          .bind(tripId, user.id, plan.title, plan.area, plan.description, record.id, plan.originCountry, plan.arrivalAirport, plan.firstAttraction, plan.startDate, plan.endDate, plan.budgetAmount, plan.budgetCurrency, record.id, user.id, now)
       ];
       for (const stop of plan.stops) {
         statements.push(env.DB.prepare("INSERT INTO trip_stops(id,trip_id,name,note,sort_order,location_precision,latitude,longitude,external_place_id) SELECT ?,?,?,?,?,'approximate',?,?,? WHERE EXISTS(SELECT 1 FROM trips WHERE id=? AND user_id=?)")
@@ -394,12 +397,13 @@ export default {
     }
     if (path === "/api/sync" && request.method === "GET") {
       const tripRows = await env.DB.prepare(
-        "SELECT t.id,t.title,t.area,t.description,t.visibility,t.start_date,t.end_date,t.budget_amount,t.budget_currency,t.archived,t.source,s.name AS stop_name,s.note AS stop_note,s.sort_order,s.latitude AS stop_latitude,s.longitude AS stop_longitude,s.external_place_id FROM trips t LEFT JOIN trip_stops s ON s.trip_id=t.id WHERE t.user_id=? AND t.source IN ('native','aileron') ORDER BY t.created_at DESC,s.sort_order ASC"
+        "SELECT t.id,t.title,t.area,t.description,t.visibility,t.start_date,t.end_date,t.budget_amount,t.budget_currency,t.archived,t.source,t.origin_country,t.arrival_airport,t.first_attraction,s.name AS stop_name,s.note AS stop_note,s.sort_order,s.latitude AS stop_latitude,s.longitude AS stop_longitude,s.external_place_id FROM trips t LEFT JOIN trip_stops s ON s.trip_id=t.id WHERE t.user_id=? AND t.source IN ('native','aileron') ORDER BY t.created_at DESC,s.sort_order ASC"
       ).bind(user.id).all();
       const tripMap = new Map();
       for (const row of tripRows.results || []) {
         if (!tripMap.has(row.id)) tripMap.set(row.id, {
           id: row.id, title: row.title, area: row.area, description: row.description,
+          origin_country: row.origin_country || "", arrival_airport: row.arrival_airport || "", first_attraction: row.first_attraction || "",
           visibility: row.visibility, start_date: row.start_date, end_date: row.end_date, budget_amount: row.budget_amount || 0, budget_currency: row.budget_currency || "JPY", archived: Boolean(row.archived),
           source: row.source, stops: [], stopLocations: [], actual: [], dayPlans: []
         });
