@@ -90,6 +90,24 @@
 @keyframes ticket-real-tear-stub{to{transform:translateX(78px) rotate(2.2deg);filter:drop-shadow(0 14px 12px #0005)}}
 @media(max-width:600px){.demo-modal .ticket-stage{--ticket-stub-width:76px}.demo-modal .boarding-ticket{--ticket-stub-width:76px}.demo-modal .ticket-reveal-preview{height:230px}.demo-modal .ticket-reveal-inner{padding:15px 8px}.demo-modal .ticket-reveal-inner>p{font-size:9px}.demo-modal .reveal-stats{gap:7px;font-size:7px}.demo-modal .reveal-stats b{font-size:12px}.demo-modal .reveal-stamp{right:6px;bottom:4px;font-size:6px}.demo-modal .ticket-stub-half{padding:8px 4px;gap:9px}.demo-modal .ticket-barcode{height:28px}.demo-modal .ticket-perforation{width:30px;margin-left:-15px}.demo-modal .tear-track{width:30px}}
 
+
+/* Demo mirrors the in-app reveal: the archive is behind the ticket. */
+.demo-modal .ticket-stage{position:relative;isolation:isolate}
+.demo-modal .ticket-reveal-preview{display:block;position:absolute;top:0;left:0;right:0;height:auto;min-height:300px;overflow:hidden;clip-path:polygon(calc(100% - var(--ticket-stub-width) - 1px) 0,calc(100% - var(--ticket-stub-width) + 1px) 0,calc(100% - var(--ticket-stub-width) + 1px) var(--tear-progress,0%),calc(100% - var(--ticket-stub-width) - 1px) var(--tear-progress,0%))}
+.demo-modal.torn .ticket-stage .ticket-reveal-preview{position:relative;clip-path:inset(0);overflow:visible;min-height:300px;transition:clip-path .72s cubic-bezier(.18,.72,.2,1)}
+.demo-modal .ticket-stage>.ticket-detail{display:none!important}
+.demo-modal .ticket-reveal-preview .ticket-detail{display:none;width:100%;max-width:none;margin:0;padding:20px 28px 30px;box-sizing:border-box;border:0;border-top:1px solid #d7c9b0;border-radius:0;background:transparent;box-shadow:none;opacity:0;transform:translateY(14px);transition:opacity .48s .12s,transform .48s .12s}
+.demo-modal.torn .ticket-reveal-preview .ticket-detail{display:block}
+.demo-modal.torn .ticket-reveal-preview .ticket-detail.show{opacity:1;transform:translateY(0)}
+.demo-modal.torn .ticket-stage .boarding-ticket{position:absolute;top:0;left:0;right:0;width:100%;pointer-events:none}
+.demo-modal .ticket-route-subline{display:flex;align-items:center;justify-content:center;gap:8px;margin:-7px 0 16px;padding:6px 8px;border-top:1px solid #d9cdb8;border-bottom:1px solid #d9cdb8;color:#8b795d;font-size:9px}
+.demo-modal .ticket-route-subline i{font-style:normal;color:#b18d57}
+.demo-modal .ticket-route-subline strong{font-weight:600;color:#34475a}
+.demo-modal.torn .ticket-main-half{animation:demo-archive-main .82s cubic-bezier(.2,.75,.25,1) forwards}
+.demo-modal.torn .ticket-stub-half{animation:demo-archive-stub .82s cubic-bezier(.2,.75,.25,1) forwards}
+@keyframes demo-archive-main{to{transform:translateX(-125%) rotate(-3deg);opacity:0}}
+@keyframes demo-archive-stub{to{transform:translateX(145%) rotate(3deg);opacity:0}}
+@media(max-width:600px){.demo-modal .ticket-route-subline{gap:4px;font-size:7px}.demo-modal .ticket-route-subline strong{font-size:7px}.demo-modal.torn .ticket-stage .boarding-ticket{position:absolute}}
 </style>
 </head>
 <body>
@@ -119,7 +137,8 @@
   <div class="boarding-ticket">
    <div class="ticket-main-half">
     <div class="ticket-topline"><span>TABI LOG AIRWAYS</span><span>JOURNEY PASS</span></div>
-    <div class="ticket-route"><div><small>DESTINATION</small><strong>京都・嵐山</strong></div><span class="ticket-plane">✈</span><div class="ticket-flight"><small>TRIP NO.</small><strong>TB-2603</strong></div></div>
+    <div class="ticket-route"><div><small>FROM COUNTRY</small><strong>FRANCE</strong></div><span class="ticket-plane">✈</span><div class="ticket-flight"><small>ARRIVAL AIRPORT</small><strong>TOKYO HANEDA AIRPORT</strong></div></div>
+    <div class="ticket-route-subline"><span>Tokyo Haneda Airport</span><i>→</i><strong>Senso-ji Temple</strong></div>
     <h2>秋の京都、寺社めぐり</h2>
     <div class="ticket-fields"><div><small>DATE</small><b>2026.11.03 — 11.05</b></div><div><small>STOPS</small><b>4 PLACES</b></div><div><small>VISITED</small><b>3 / 4</b></div></div>
    </div>
@@ -141,10 +160,10 @@
  </div>
 </div>
 <script>
-(()=>{const modal=document.getElementById("demoModal"),stage=modal.querySelector(".ticket-stage"),track=document.getElementById("demoTrack"),progress=document.getElementById("demoProgress"),grip=document.getElementById("demoGrip"),detail=document.getElementById("demoDetail"),help=document.getElementById("demoHelp");let active=false,amount=0;
+(()=>{const modal=document.getElementById("demoModal"),stage=modal.querySelector(".ticket-stage"),preview=modal.querySelector(".ticket-reveal-preview"),track=document.getElementById("demoTrack"),progress=document.getElementById("demoProgress"),grip=document.getElementById("demoGrip"),originalDetail=document.getElementById("demoDetail"),detail=originalDetail.cloneNode(true),help=document.getElementById("demoHelp");detail.removeAttribute("id");detail.removeAttribute("hidden");preview.append(detail);let active=false,amount=0;
 function open(){modal.classList.add("open");modal.setAttribute("aria-hidden","false");document.body.style.overflow="hidden";}
-function close(){modal.classList.remove("open","torn");modal.setAttribute("aria-hidden","true");document.body.style.overflow="";progress.style.height="0";grip.style.top="0";stage.style.setProperty("--tear-progress","0%");amount=0;active=false;detail.classList.remove("show");detail.style.display="none";help.textContent="中央のミシン目を上から下へなぞって開封";}
-function tear(){if(modal.classList.contains("torn"))return;active=false;stage.style.setProperty("--tear-progress","100%");modal.classList.add("torn");help.textContent="旅の記録を開きました";document.getElementById("demoTapOpen").style.display="none";detail.style.display="block";requestAnimationFrame(()=>detail.classList.add("show"));}
+function close(){modal.classList.remove("open","torn");modal.setAttribute("aria-hidden","true");document.body.style.overflow="";progress.style.height="0";grip.style.top="0";stage.style.setProperty("--tear-progress","0%");amount=0;active=false;detail.classList.remove("show");detail.style.display="none";preview.setAttribute("aria-hidden","true");help.textContent="中央のミシン目を上から下へなぞって開封";}
+function tear(){if(modal.classList.contains("torn"))return;active=false;stage.style.setProperty("--tear-progress","100%");modal.classList.add("torn");preview.setAttribute("aria-hidden","false");help.textContent="チケットの奥から旅の記録が現れます";document.getElementById("demoTapOpen").style.display="none";detail.style.display="block";requestAnimationFrame(()=>detail.classList.add("show"));}
 document.getElementById("demoOpen").addEventListener("click",open);document.getElementById("demoClose").addEventListener("click",close);document.getElementById("demoTapOpen").addEventListener("click",tear);
 modal.addEventListener("click",e=>{if(e.target===modal)close();});
 track.addEventListener("pointerdown",e=>{const r=track.getBoundingClientRect();if(e.clientY<r.top)return;active=true;amount=Math.max(0,Math.min(1,(e.clientY-r.top)/r.height));track.setPointerCapture(e.pointerId);});
