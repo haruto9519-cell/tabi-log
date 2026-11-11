@@ -1208,3 +1208,102 @@ footer{max-width:1600px;margin:0 auto}
 .traveler-avatar.has-avatar-image img,.profile-avatar.has-avatar-image img{display:block;width:100%;height:100%;object-fit:cover;border-radius:inherit;}
 .avatar-remove-option{display:flex;align-items:center;gap:9px;font-size:13px;}
 .avatar-remove-option input{width:auto;}
+
+
+/* AIRLINE BOARDING PASSES — travel cards and tear-open detail */
+.ticket-card{
+ display:grid;grid-template-columns:minmax(0,1fr) 112px;gap:0;padding:0;overflow:hidden;
+ border:1px solid #b99a66!important;border-radius:7px!important;
+ background:linear-gradient(135deg,#fffdf7,#eee7d8)!important;
+ box-shadow:0 9px 24px #17263812;cursor:pointer;transition:transform .22s,box-shadow .22s;
+}
+.ticket-card:hover,.ticket-card:focus-visible{transform:translateY(-3px);box-shadow:0 16px 32px #17263820;outline:2px solid #b99a66;outline-offset:2px}
+.ticket-card-main{padding:17px 18px 14px;min-width:0}
+.ticket-card-top{display:flex;justify-content:space-between;gap:8px;color:#9b8053;font-size:8px;letter-spacing:.18em}
+.ticket-card-route{display:flex;align-items:center;justify-content:space-between;margin:16px 0 9px;color:#25384b}
+.ticket-card-route small,.ticket-card-meta,.ticket-card-stub small{display:block;color:#987d50;font-size:8px;letter-spacing:.14em}
+.ticket-card-route h3{font-size:21px!important;margin:3px 0 0!important;color:#203449!important}
+.ticket-card-route>span{font-size:25px;color:#ad8d5a}
+.ticket-card-title{display:block;color:#28384a;font-size:13px;margin:0 0 10px}
+.ticket-card-meta{display:flex;flex-wrap:wrap;gap:8px 16px;color:#77766e}
+.ticket-card-main>p{margin:9px 0 0!important;color:#777970!important;font-size:10px!important;line-height:1.65;min-height:0}
+.ticket-card-cta{display:flex;justify-content:space-between;margin-top:13px;padding-top:9px;border-top:1px solid #d8cdb9;color:#9a7c4d;font-size:8px;letter-spacing:.18em}
+.ticket-card-stub{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:12px 7px;background:linear-gradient(160deg,#e8dfcd,#f7f3e9);border-left:1px dashed #b89a66;text-align:center;color:#26384a}
+.ticket-card-stub:before,.ticket-card-stub:after{content:"";position:absolute;left:-7px;width:13px;height:13px;border-radius:50%;background:#f2f0e9;border:1px solid #b99a66}
+.ticket-card-stub:before{top:-7px}.ticket-card-stub:after{bottom:-7px}
+.ticket-card-stub>span{font-size:7px;letter-spacing:.12em;color:#9a8056;writing-mode:vertical-rl}
+.ticket-card-stub>b{font:18px Georgia,serif;letter-spacing:.08em}
+.ticket-card-stub>i{font-size:9px;color:#a88a5d;font-style:normal;writing-mode:vertical-rl;letter-spacing:2px}
+.ticket-card-stub>small{font-size:6px;writing-mode:vertical-rl;letter-spacing:.12em}
+.ticket-experience{position:fixed;inset:0;z-index:2000;overflow:auto;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:clamp(54px,8vh,90px) 18px 50px;background:radial-gradient(ellipse at 50% 25%,#30445a,#101c2b 72%);opacity:0;visibility:hidden;transition:opacity .3s,visibility .3s}
+.ticket-experience.is-open{opacity:1;visibility:visible}
+body.ticket-open{overflow:hidden}
+.ticket-close{position:fixed;top:18px;right:20px;z-index:5;width:42px;height:42px;border:1px solid #b99a66;border-radius:50%;background:#17283b;color:#f3e8d2;font-size:25px;cursor:pointer}
+.ticket-stage{width:min(850px,100%);perspective:1400px}
+.boarding-ticket{position:relative;display:grid;grid-template-columns:minmax(0,1fr) 72px minmax(150px,.28fr);min-height:300px;overflow:hidden;border:1px solid #c5a873;border-radius:9px;background:linear-gradient(135deg,#fbf9f2,#e9e1d2);color:#26384a;box-shadow:0 28px 85px #0007,inset 0 0 0 7px #fff5;transform:translateY(20px) scale(.97);transition:transform .5s cubic-bezier(.2,.8,.2,1)}
+.ticket-experience.is-open .boarding-ticket{transform:translateY(0) scale(1)}
+.ticket-main-half{padding:clamp(22px,4vw,42px);min-width:0}
+.ticket-topline{display:flex;justify-content:space-between;gap:10px;color:#96794b;font-size:9px;letter-spacing:.2em}
+.ticket-route{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:36px 0 20px}
+.ticket-route small,.ticket-flight small,.ticket-fields small{display:block;color:#9a8053;font-size:8px;letter-spacing:.18em;margin-bottom:6px}
+.ticket-route strong{font-size:clamp(22px,4vw,38px);font-weight:600;overflow-wrap:anywhere}
+.ticket-plane{font-size:30px;color:#b08d58}
+.ticket-flight{text-align:right}.ticket-flight strong{font:17px Georgia,serif;letter-spacing:.12em}
+.ticket-main-half>h2{font-size:clamp(20px,3vw,29px);font-weight:500;margin:0 0 25px;color:#24374b}
+.ticket-fields{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:12px;padding-top:16px;border-top:1px solid #d5c9b5}
+.ticket-fields b{font-size:11px;color:#344252}
+.ticket-perforation{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;border-left:1px dashed #b89a66;border-right:1px dashed #b89a66;background:#eee7d9}
+.ticket-perforation:before,.ticket-perforation:after{content:"";position:absolute;left:50%;width:18px;height:18px;border-radius:50%;background:#142337;transform:translateX(-50%)}
+.ticket-perforation:before{top:-9px}.ticket-perforation:after{bottom:-9px}
+.perforation-label{position:absolute;top:17px;color:#a0875c;font-size:7px;letter-spacing:.18em;writing-mode:vertical-rl}
+.tear-track{position:relative;width:100%;height:56px;display:flex;align-items:center;touch-action:pan-y;cursor:ew-resize}
+.tear-track:before{content:"";position:absolute;left:0;right:0;top:50%;border-top:2px dashed #b79a69}
+.tear-progress{position:absolute;left:0;top:50%;width:0;height:3px;background:#9e7740;transform:translateY(-50%);pointer-events:none}
+.tear-grip{position:absolute;left:0;top:50%;display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:#1b3045;color:#e6ca95;border:1px solid #c3a36e;transform:translate(-50%,-50%);font-size:15px;pointer-events:none}
+.ticket-stub-half{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:17px;padding:18px 10px;text-align:center;background:linear-gradient(160deg,#e6ddca,#f7f2e7)}
+.ticket-stub-half small{font-size:8px;color:#9a8053;letter-spacing:.17em;writing-mode:vertical-rl}
+.ticket-stub-half strong{font-size:14px;line-height:1.5;overflow-wrap:anywhere}
+.ticket-stub-half span{font-size:9px;color:#81745f}
+.ticket-stub-half>b{font:16px Georgia,serif;letter-spacing:.18em;color:#9b7c4c}
+.ticket-tear-help{margin:18px 0 10px;text-align:center;color:#e5d6b9;font-size:11px;letter-spacing:.08em}
+.ticket-open-fallback{display:block;margin:0 auto;padding:9px 18px;border:1px solid #b89a66;border-radius:3px;background:#1b3045;color:#ead8b4;font-size:10px;cursor:pointer}
+.ticket-detail{width:min(850px,100%);margin-top:28px;padding:clamp(20px,4vw,38px);border:1px solid #b99a66;border-radius:8px;background:#f6f3eb;color:#26384a;opacity:0;transform:translateY(22px);transition:opacity .55s .18s,transform .55s .18s}
+.ticket-detail[hidden]{display:none}
+.ticket-detail.is-visible{opacity:1;transform:translateY(0)}
+.ticket-experience.is-torn .ticket-main-half{animation:ticket-main-cut .75s cubic-bezier(.2,.7,.2,1) forwards}
+.ticket-experience.is-torn .ticket-stub-half{animation:ticket-stub-cut .75s cubic-bezier(.2,.7,.2,1) forwards}
+.ticket-experience.is-torn .ticket-perforation{opacity:0;transition:opacity .2s}
+@keyframes ticket-main-cut{to{transform:translateY(-32px) rotate(-1deg);opacity:.12}}
+@keyframes ticket-stub-cut{to{transform:translateY(32px) rotate(1deg);opacity:.12}}
+.ticket-detail-heading>span,.ticket-detail-grid article>small,.ticket-memories>small{font-size:8px;letter-spacing:.2em;color:#9a8053}
+.ticket-detail-heading h2{margin:8px 0;color:#203449;font-size:clamp(22px,4vw,32px)}
+.ticket-detail-heading p{color:#77766e;font-size:11px}
+.ticket-detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:22px}
+.ticket-detail-grid article{padding:16px;border:1px solid #ded5c5;border-radius:5px;background:#fffdf8;min-width:0}
+.ticket-detail-grid article p{font-size:11px;line-height:1.8;color:#59615f;overflow-wrap:anywhere}
+.ticket-place-list{display:flex;flex-wrap:wrap;gap:6px}
+.ticket-place-list span{padding:5px 8px;border:1px solid #ded5c5;border-radius:20px;font-size:9px;color:#6f716d}
+.ticket-place-list span.visited{background:#e8efe7;color:#4c7558}
+.ticket-day{padding:8px 0;border-top:1px solid #e6dfd3}.ticket-day p{margin:5px 0}
+.ticket-memories{margin-top:22px;padding-top:18px;border-top:1px solid #dcd2c0}
+.ticket-memory{display:grid;grid-template-columns:92px minmax(0,1fr);gap:14px;padding:13px 0;border-bottom:1px solid #e7e0d4}
+.ticket-memory-media{width:92px;height:76px;display:grid;place-items:center;overflow:hidden;border-radius:4px;background:#e9e3d7;color:#9c8054}
+.ticket-memory-media img,.ticket-memory-media video{width:100%;height:100%;object-fit:cover}
+.ticket-memory b,.ticket-memory small{display:block}.ticket-memory b{font-size:12px}.ticket-memory small{margin-top:4px;color:#927d5e;font-size:9px}.ticket-memory p{font-size:10px;line-height:1.7;color:#626b68}
+.ticket-detail-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:20px}
+@media(max-width:600px){
+ .ticket-card{grid-template-columns:minmax(0,1fr) 76px}
+ .ticket-card-main{padding:13px 12px 11px}.ticket-card-route{margin:12px 0 7px}.ticket-card-route h3{font-size:17px!important}
+ .ticket-card-meta{gap:6px 9px;font-size:7px}.ticket-card-stub{gap:9px;padding:9px 4px}
+ .ticket-experience{padding:64px 10px 35px}
+ .boarding-ticket{grid-template-columns:minmax(0,1fr) 42px 76px;min-height:240px}
+ .ticket-main-half{padding:18px 12px}
+ .ticket-topline{font-size:7px;letter-spacing:.12em}
+ .ticket-route{margin:25px 0 14px;gap:5px}.ticket-route strong{font-size:21px}.ticket-plane{font-size:20px}.ticket-flight strong{font-size:12px}
+ .ticket-main-half>h2{font-size:17px;margin-bottom:18px}
+ .ticket-fields{grid-template-columns:1fr;gap:8px;padding-top:11px}.ticket-fields small{display:inline;margin-right:6px;font-size:7px}.ticket-fields b{font-size:9px}
+ .ticket-stub-half{padding:8px 4px;gap:12px}.ticket-stub-half strong{font-size:10px}.ticket-stub-half span{font-size:7px}
+ .ticket-detail-grid{grid-template-columns:1fr}.ticket-detail{padding:18px 13px}
+ .ticket-memory{grid-template-columns:76px minmax(0,1fr);gap:10px}.ticket-memory-media{width:76px;height:68px}
+}
+@media(prefers-reduced-motion:reduce){.ticket-card,.boarding-ticket,.ticket-detail,.ticket-experience{transition:none}.ticket-experience.is-torn .ticket-main-half,.ticket-experience.is-torn .ticket-stub-half{animation:none;opacity:.2}}
