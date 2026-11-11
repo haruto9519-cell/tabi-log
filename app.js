@@ -679,6 +679,7 @@ $("#postForm").addEventListener("submit",async e=>{
   }
  }
  save();
+ const returnTicketId=document.getElementById("ticketExperience")?._ticketTrip?.id||"";
  formElement.reset();
  closeDialog("#postDialog");
  const successDialog=$("#saveSuccessDialog");
@@ -693,6 +694,7 @@ $("#postForm").addEventListener("submit",async e=>{
  }
  toast("✓ "+(file&&file.size?"写真と日記":"日記")+"を保存しました");
  renderAll();
+ if(returnTicketId&&trips.some(item=>item.id===returnTicketId))openTravelTicket(returnTicketId);
  if(signedInUser&&sessionToken){
   clearTimeout(cloudSyncTimer);
   try{
@@ -717,7 +719,7 @@ $("#diaryEditForm").addEventListener("submit",async e=>{e.preventDefault();const
 $("#diaryTimeline").addEventListener("click",async e=>{const b=e.target.closest("button");if(!b)return;const id=b.dataset.editDiary||b.dataset.deleteDiary;if(!id)return;const p=posts.find(x=>x.id===id&&x.author===profile.name);if(!p)return;if(b.dataset.editDiary){const f=$("#diaryEditForm");f.elements.id.value=p.id;f.elements.title.value=p.title||"";f.elements.place.value=p.place||"";f.elements.capturedAt.value=String(p.date||"").slice(0,16);f.elements.story.value=p.story||"";f.elements.visibility.value=p.visibility||"private";openDialog("#diaryEditDialog");return;}if(b.dataset.deleteDiary&&confirm(p.mediaKey?"この日記と写真を削除しますか？":"この日記を削除しますか？")){try{await deleteDiaryEntry(p);renderAll();toast(p.mediaKey?"✓ 写真と日記を削除しました":"✓ 日記を削除しました");}catch(err){toast(err.message||"削除に失敗しました");}}});
 
 function openProfileEditor(){const f=$("#profileForm"),dialog=$("#profileDialog");if(!f||!dialog){toast("プロフィール編集画面を読み込めませんでした");return;}f.elements.name.value=profile.name||"";f.elements.bio.value=profile.bio||"";f.elements.avatar.value="";f.elements.removeAvatar.checked=false;if(!dialog.open)dialog.showModal();}
-$("#profileForm").addEventListener("submit",async e=>{e.preventDefault();const form=e.currentTarget,f=new FormData(form),old=profile.name,file=f.get("avatar"),nextName=String(f.get("name")||"").trim();if(!nextName){toast("表示名を入力してください");form.elements.name.focus();return;}const next={...profile,name:nextName.slice(0,30),bio:String(f.get("bio")||"").trim().slice(0,140)};try{if(file&&file.size){if(!file.type.match(/^image\/(jpeg|png|webp)$/))throw new Error("JPG・PNG・WebP画像を選択してください");if(file.size>5*1024*1024)throw new Error("画像は5MB以下にしてください");const key="profile-avatar-"+(activeAccountStorageId||"guest");await mediaPut(key,file);next.avatarMediaKey=key;}else if(f.get("removeAvatar")==="on"){if(profile.avatarMediaKey)await mediaDelete(profile.avatarMediaKey);next.avatarMediaKey="";}profile=next;posts.forEach(p=>{if(p.author===old)p.author=profile.name});save();closeDialog("#profileDialog");renderAll();toast("プロフィールを更新しました");}catch(error){toast(error.message||"画像を保存できませんでした");}});
+$("#profileForm").addEventListener("submit",async e=>{e.preventDefault();const form=e.currentTarget,f=new FormData(form),old=profile.name,file=f.get("avatar"),nextName=String(f.get("name")||"").trim();if(!nextName){toast("表示名を入力してください");form.elements.name.focus();return;}const next={...profile,name:nextName.slice(0,30),bio:String(f.get("bio")||"").trim().slice(0,140)};try{if(file&&file.size){if(!file.type.match(/^image\/(jpeg|png|webp)$/))throw new Error("JPG・PNG・WebP画像を選択してください");if(file.size>5*1024*1024)throw new Error("画像は5MB以下にしてください");const key="profile-avatar-"+(activeAccountStorageId||"guest");await mediaPut(key,file);next.avatarMediaKey=key;}else if(f.get("removeAvatar")==="on"){if(profile.avatarMediaKey)await mediaDelete(profile.avatarMediaKey);next.avatarMediaKey="";}const returnTicketId=document.getElementById("ticketExperience")?._ticketTrip?.id||"";profile=next;posts.forEach(p=>{if(p.author===old)p.author=profile.name});save();closeDialog("#profileDialog");renderAll();if(returnTicketId&&trips.some(item=>item.id===returnTicketId))openTravelTicket(returnTicketId);toast("プロフィールを更新しました");}catch(error){toast(error.message||"画像を保存できませんでした");}});
 $("#privacySettings").onclick=()=>openDialog("#privacyDialog");
 function refreshExpenseTripSelect(selectedId=""){const select=$("#expenseTripSelect");const own=trips.filter(t=>t.isMine);select.innerHTML=own.map(t=>`<option value="${t.id}">${esc(t.title)}</option>`).join("");if(selectedId&&own.some(t=>t.id===selectedId))select.value=selectedId;}
 $("#openExpense").onclick=()=>{const form=$("#expenseForm");form.reset();form.elements.id.value="";refreshExpenseTripSelect(selectedTrip||"");if(!form.elements.tripId.options.length){toast("先に旅行を作成してください");return;}form.elements.date.value=new Date().toISOString().slice(0,10);openDialog("#expenseDialog");};
