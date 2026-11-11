@@ -206,3 +206,24 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape"&&modal.classList.con
 .demo-modal .ticket-stub-half{border-left:0}
 .demo-modal .ticket-barcode{border-top:1px solid #d5c7ad;padding-top:7px}
 </style>
+
+
+<style>
+/* Match the production keepsake boarding pass design. */
+.demo-modal .boarding-ticket{min-height:292px;border-radius:5px;background:#f5f0e5;box-shadow:0 26px 70px #0008,0 2px 5px #0003}
+.demo-modal .ticket-main-half,.demo-modal .ticket-stub-half{background-color:#f8f5ec;background-image:radial-gradient(#9c8b6a18 .55px,transparent .8px),linear-gradient(115deg,#fffef9 0%,#f6f1e6 46%,#eee7d8 100%);background-size:5px 5px,100% 100%;box-shadow:inset 0 0 0 1px #d1c3a7,inset 0 0 24px #b7a27b12}
+.demo-modal .ticket-main-half{padding:clamp(20px,4vw,38px);border-radius:5px 0 0 5px}
+.demo-modal .ticket-topline{align-items:center;padding:0 0 12px;border-bottom:2px solid #243b50;color:#253d52;font-size:9px;letter-spacing:.16em}
+.demo-modal .ticket-route{margin:27px 0 19px;gap:16px}
+.demo-modal .ticket-route strong{font-family:Arial,"Noto Sans JP",sans-serif;font-size:clamp(21px,3.8vw,34px);font-weight:800;color:#1e3448}
+.demo-modal .ticket-route-subline{justify-content:flex-start;background:#e9e2d4;border:0;border-left:3px solid #ad8a52}
+.demo-modal .ticket-main-half>h2{font-size:clamp(17px,2.5vw,23px);font-weight:700}
+.demo-modal .ticket-stub-half{gap:9px;padding:19px 10px;border-left:1px dashed #a98b5c;border-radius:0 5px 5px 0}
+.demo-modal .ticket-stub-half small{writing-mode:horizontal-tb;font-size:7px}
+.demo-modal .ticket-stub-half strong{font-size:10px}
+.demo-modal .ticket-barcode{width:86%;height:48px;gap:1px;padding:5px 0;border-top:1px solid #d2c5ac;border-bottom:1px solid #d2c5ac}
+.demo-modal .ticket-barcode i{background:#1e2f3d;width:1px}
+.demo-modal .ticket-barcode i:nth-child(2n){width:2px}
+.demo-modal .ticket-barcode i:nth-child(5n){width:3px;margin-right:2px}
+@media(max-width:600px){.demo-modal .boarding-ticket{min-height:248px}.demo-modal .ticket-main-half{padding:17px 11px}.demo-modal .ticket-topline{font-size:6px;padding-bottom:9px}.demo-modal .ticket-route{gap:5px;margin:23px 0 14px}.demo-modal .ticket-route strong{font-size:clamp(15px,4.6vw,22px)}.demo-modal .ticket-main-half>h2{font-size:15px}.demo-modal .ticket-stub-half{padding:10px 3px;gap:8px}.demo-modal .ticket-barcode{height:30px}}
+</style>
