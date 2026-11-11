@@ -309,7 +309,7 @@ function finishTicketTear(layer){
  if(layer.dataset.opening==="1")return;
  layer.dataset.opening="1";layer.classList.add("is-torn");
  const detail=layer.querySelector(".ticket-detail");
- layer.querySelector(".ticket-stage")?.style.setProperty("--tear-progress","1");
+ layer.querySelector(".ticket-stage")?.style.setProperty("--tear-progress","100%");
  if(detail){detail.hidden=false;requestAnimationFrame(()=>detail.classList.add("is-visible"));}
  const help=layer.querySelector(".ticket-tear-help");if(help)help.textContent="旅の記録を開きました";
 }
@@ -332,7 +332,7 @@ function openTravelTicket(tripId){
  layer.addEventListener("click",event=>{if(event.target===layer)closeTicketExperience();});
  const track=layer.querySelector(".tear-track"),progress=layer.querySelector(".tear-progress"),grip=layer.querySelector(".tear-grip");let drawing=false,maxProgress=0;
  track.addEventListener("pointerdown",e=>{const r=track.getBoundingClientRect();if(e.clientY>r.top+r.height*.18)return;drawing=true;maxProgress=Math.max(0,Math.min(1,(e.clientY-r.top)/r.height));track.setPointerCapture(e.pointerId);});
- track.addEventListener("pointermove",e=>{if(!drawing)return;const r=track.getBoundingClientRect();const pct=Math.max(0,Math.min(1,(e.clientY-r.top)/r.height));maxProgress=Math.max(maxProgress,pct);progress.style.height=(maxProgress*100)+"%";grip.style.top=(maxProgress*100)+"%";layer.querySelector(".ticket-stage")?.style.setProperty("--tear-progress",String(maxProgress));if(maxProgress>=.88){drawing=false;finishTicketTear(layer);}});
+ track.addEventListener("pointermove",e=>{if(!drawing)return;const r=track.getBoundingClientRect();const pct=Math.max(0,Math.min(1,(e.clientY-r.top)/r.height));maxProgress=Math.max(maxProgress,pct);progress.style.height=(maxProgress*100)+"%";grip.style.top=(maxProgress*100)+"%";layer.querySelector(".ticket-stage")?.style.setProperty("--tear-progress",(maxProgress*100)+"%");if(maxProgress>=.88){drawing=false;finishTicketTear(layer);}});
  track.addEventListener("pointerup",()=>drawing=false);track.addEventListener("pointercancel",()=>drawing=false);
  layer.querySelector("[data-ticket-itinerary]").addEventListener("click",()=>{closeTicketExperience();openItinerary(trip.id);});
  layer.querySelector("[data-ticket-edit]").addEventListener("click",()=>{closeTicketExperience();const f=$("#tripEditForm");f.elements.id.value=trip.id;f.elements.title.value=trip.title||"";f.elements.area.value=trip.area||"";f.elements.date.value=trip.date||"";f.elements.endDate.value=trip.endDate||"";f.elements.description.value=trip.description||"";f.elements.budgetAmount.value=trip.budgetAmount||"";f.elements.budgetCurrency.value=trip.budgetCurrency||"JPY";f.elements.stops.value=(trip.stops||[]).join(", ");f.elements.visibility.value=trip.visibility||"private";openDialog("#tripEditDialog");});
