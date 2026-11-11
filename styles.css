@@ -1751,3 +1751,6 @@ body.has-opened-ticket #mytrips .map-card{display:block;margin-top:18px}
  .ticket-experience.is-torn .ticket-main-half,
  .ticket-experience.is-torn .ticket-stub-half{animation:none!important;opacity:0;transform:none}
 }
+
+/* The route map now belongs to its own ticket detail, not a detached page card. */
+#mytrips .map-card{display:none!important}
