@@ -24,3 +24,11 @@ jobs:
       - name: Validate Wrangler configuration without deploying
         working-directory: worker
         run: npx --yes wrangler@4 deploy --dry-run --outdir /tmp/tabi-log-worker-dry-run --config wrangler.toml
+      - name: Apply D1 migrations to an isolated local database
+        working-directory: worker
+        run: npx --yes wrangler@4 d1 migrations apply tabi-log-db --local --config wrangler.toml
+      - name: Verify local photo storage schema
+        working-directory: worker
+        run: |
+          npx --yes wrangler@4 d1 execute tabi-log-db --local --command "PRAGMA table_info(posts)" --config wrangler.toml | tee /tmp/tabi-log-post-columns.txt
+          grep -q "media_data" /tmp/tabi-log-post-columns.txt
