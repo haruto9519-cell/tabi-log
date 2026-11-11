@@ -1393,7 +1393,7 @@ body.ticket-open{overflow:hidden}
 .ticket-experience.is-torn .ticket-stage .ticket-reveal-preview{position:relative;clip-path:inset(0);overflow:visible;min-height:300px;transition:clip-path .72s cubic-bezier(.18,.72,.2,1)}
 .ticket-reveal-preview .ticket-detail{display:block;width:100%;max-width:none;margin:0;padding:20px clamp(16px,3.5vw,34px) 30px;box-sizing:border-box;border:0;border-top:1px solid #d7c9b0;border-radius:0;background:transparent;box-shadow:none;opacity:0;transform:translateY(14px);transition:opacity .48s .12s,transform .48s .12s}
 .ticket-reveal-preview .ticket-detail.is-visible{opacity:1;transform:translateY(0)}
-.ticket-stage>.ticket-detail{display:none!important}
+.ticket-stage>.ticket-detail{display:none!important}.ticket-experience.is-torn .ticket-stage>.ticket-detail{display:block!important;visibility:visible!important;position:relative;z-index:2;opacity:1;transform:none;pointer-events:auto}
 .ticket-experience.is-torn .ticket-stage .boarding-ticket{position:absolute;top:0;left:0;right:0;width:100%;pointer-events:none}
 .ticket-route-subline{display:flex;align-items:center;justify-content:center;gap:8px;margin:-8px 0 19px;padding:7px 10px;border-top:1px solid #d9cdb8;border-bottom:1px solid #d9cdb8;color:#8b795d;font-size:10px;letter-spacing:.04em}
 .ticket-route-subline span{font-size:9px;color:#82745c}
