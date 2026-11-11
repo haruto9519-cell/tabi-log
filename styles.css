@@ -1569,3 +1569,20 @@ body.has-opened-ticket #mytrips .map-card{display:block;margin-top:18px}
  .ticket-detail-management .btn{font-size:11px;padding:10px 7px}
  .ticket-detail-grid{grid-template-columns:minmax(0,1fr)}
 }
+
+.ticket-place-action{
+ padding:7px 10px;
+ border:1px solid #ded5c5;
+ border-radius:20px;
+ background:#fffdf8;
+ color:#6f716d;
+ font:inherit;
+ font-size:10px;
+ line-height:1.4;
+}
+.ticket-place-action.visited{
+ background:#e8efe7;
+ color:#4c7558;
+ border-color:#cbd9c8;
+}
+.ticket-place-action:disabled{opacity:1;cursor:default}
