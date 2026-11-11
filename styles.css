@@ -1439,3 +1439,99 @@ body.ticket-open{overflow:hidden}
 .ticket-experience .ticket-topline{border-bottom:1px solid #d9cdb8;padding-bottom:10px;text-shadow:0 1px #fff8}
 .ticket-experience .ticket-fields{border-top:1px solid #cfc2a9}
 .ticket-experience .ticket-barcode{border-top:1px solid #d5c7ad;padding-top:7px}
+
+
+/* Airline-inspired keepsake boarding pass: realistic print hierarchy, no invented flight data. */
+.ticket-experience .boarding-ticket{
+  min-height:292px;
+  border-radius:5px;
+  background:#f5f0e5;
+  box-shadow:0 26px 70px #0008,0 2px 5px #0003;
+  filter:drop-shadow(0 2px 0 #fff4);
+}
+.ticket-experience .ticket-main-half,
+.ticket-experience .ticket-stub-half{
+  background-color:#f8f5ec;
+  background-image:
+    radial-gradient(#9c8b6a18 .55px,transparent .8px),
+    linear-gradient(115deg,#fffef9 0%,#f6f1e6 46%,#eee7d8 100%);
+  background-size:5px 5px,100% 100%;
+  box-shadow:inset 0 0 0 1px #d1c3a7, inset 0 0 24px #b7a27b12;
+}
+.ticket-experience .ticket-main-half{padding:clamp(20px,4vw,38px);border-radius:5px 0 0 5px}
+.ticket-experience .ticket-main-half:before,.ticket-experience .ticket-stub-half:before{inset:8px;border:1px solid #c8b89455;border-radius:2px}
+.ticket-experience .ticket-topline{
+  position:relative;z-index:1;align-items:center;padding:0 0 12px;
+  border-bottom:2px solid #243b50;color:#253d52;font-size:9px;letter-spacing:.16em;
+}
+.ticket-experience .ticket-brand{font-weight:800;letter-spacing:.19em}
+.ticket-experience .ticket-brand b{color:#a27c43;font-weight:800}
+.ticket-experience .ticket-doc-type{font-size:7px;letter-spacing:.2em;color:#8c795a}
+.ticket-experience .ticket-route{position:relative;z-index:1;align-items:center;margin:27px 0 19px;gap:16px}
+.ticket-experience .ticket-route>div{flex:1;min-width:0}
+.ticket-experience .ticket-route small,.ticket-experience .ticket-flight small,.ticket-experience .ticket-fields small{
+  color:#8f7953;font-size:7px;letter-spacing:.2em;font-weight:700
+}
+.ticket-experience .ticket-route strong{font-family:Arial,"Noto Sans JP",sans-serif;font-size:clamp(21px,3.8vw,34px);font-weight:800;letter-spacing:-.035em;color:#1e3448;line-height:1.08}
+.ticket-experience .ticket-flight strong{font-family:Arial,"Noto Sans JP",sans-serif;font-size:clamp(13px,2vw,18px);font-weight:700;letter-spacing:0}
+.ticket-experience .ticket-route-line{display:flex;align-items:center;justify-content:center;gap:3px;flex:0 0 76px!important;color:#a78249}
+.ticket-experience .ticket-route-line i{display:block;width:17px;border-top:1px dashed #a88a5d}
+.ticket-experience .ticket-route-line b{font-size:19px;font-weight:400;transform:rotate(0deg)}
+.ticket-experience .ticket-route-subline{
+  position:relative;z-index:1;margin:0 0 18px;padding:8px 10px;
+  background:#e9e2d4;border:0;border-left:3px solid #ad8a52;
+  color:#6d6659;font-size:9px;justify-content:flex-start
+}
+.ticket-experience .ticket-main-half>h2{
+  position:relative;z-index:1;margin:0 0 19px;font-size:clamp(17px,2.5vw,23px);
+  font-weight:700;letter-spacing:.015em;color:#263c50
+}
+.ticket-experience .ticket-fields{
+  position:relative;z-index:1;grid-template-columns:1.5fr 1fr 1fr;
+  padding-top:13px;border-top:1px solid #cfc2a9
+}
+.ticket-experience .ticket-fields>div{min-width:0}
+.ticket-experience .ticket-fields b{font-size:10px;color:#26394a;overflow-wrap:anywhere}
+.ticket-experience .ticket-stub-half{
+  position:relative;gap:9px;padding:19px 10px;border-radius:0 5px 5px 0;
+  border-left:1px dashed #a98b5c;text-align:center
+}
+.ticket-experience .ticket-stub-half:after{
+  content:"";position:absolute;left:-9px;top:-9px;width:16px;height:16px;border-radius:50%;
+  background:#142337;box-shadow:0 0 0 1px #b79a69
+}
+.ticket-experience .ticket-stub-half small{writing-mode:horizontal-tb;font-size:7px;letter-spacing:.2em;color:#8b7249}
+.ticket-experience .ticket-stub-code{font:700 9px/1 Arial,sans-serif;letter-spacing:.16em;color:#243b50}
+.ticket-experience .ticket-barcode{width:86%;height:48px;gap:1px;padding:5px 0;border-top:1px solid #d2c5ac;border-bottom:1px solid #d2c5ac}
+.ticket-experience .ticket-barcode i{background:#1e2f3d;width:1px}
+.ticket-experience .ticket-barcode i:nth-child(2n){width:2px}
+.ticket-experience .ticket-barcode i:nth-child(5n){width:3px;margin-right:2px}
+.ticket-experience .ticket-stub-half strong{font-size:10px;line-height:1.35;color:#293d50}
+.ticket-experience .ticket-stub-half span{font-size:7px;letter-spacing:.08em;color:#756b5b}
+.ticket-experience .ticket-stub-half>b{font:700 8px/1 Arial,sans-serif;letter-spacing:.15em;color:#a17e49}
+.ticket-experience .ticket-perforation{z-index:6}
+.ticket-experience .perforation-label{font-size:6px;color:#967b51}
+.ticket-experience .ticket-tear-help{font-size:10px;letter-spacing:.1em}
+@media(max-width:600px){
+ .ticket-experience .boarding-ticket{min-height:248px}
+ .ticket-experience .ticket-main-half{padding:17px 11px}
+ .ticket-experience .ticket-topline{font-size:6px;letter-spacing:.1em;padding-bottom:9px}
+ .ticket-experience .ticket-doc-type{font-size:5px}
+ .ticket-experience .ticket-route{gap:5px;margin:23px 0 14px}
+ .ticket-experience .ticket-route-line{flex-basis:34px!important;gap:1px}
+ .ticket-experience .ticket-route-line i{width:6px}
+ .ticket-experience .ticket-route-line b{font-size:13px}
+ .ticket-experience .ticket-route strong{font-size:clamp(15px,4.6vw,22px)}
+ .ticket-experience .ticket-flight strong{font-size:11px}
+ .ticket-experience .ticket-route-subline{font-size:7px;padding:6px 5px;margin-bottom:13px}
+ .ticket-experience .ticket-main-half>h2{font-size:15px;margin-bottom:13px}
+ .ticket-experience .ticket-fields{grid-template-columns:1fr;gap:6px;padding-top:9px}
+ .ticket-experience .ticket-fields small{display:inline;margin-right:5px;font-size:6px}
+ .ticket-experience .ticket-fields b{font-size:8px}
+ .ticket-experience .ticket-stub-half{padding:10px 3px;gap:8px}
+ .ticket-experience .ticket-stub-half small{font-size:5px}
+ .ticket-experience .ticket-stub-code{font-size:7px}
+ .ticket-experience .ticket-barcode{height:30px;width:90%}
+ .ticket-experience .ticket-stub-half strong{font-size:8px}
+ .ticket-experience .ticket-stub-half>b{font-size:6px}
+}
