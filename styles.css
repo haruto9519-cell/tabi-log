@@ -1535,3 +1535,16 @@ body.ticket-open{overflow:hidden}
  .ticket-experience .ticket-stub-half strong{font-size:8px}
  .ticket-experience .ticket-stub-half>b{font-size:6px}
 }
+
+
+/* Ticket collection is the primary view; reveal the map only after a ticket is opened. */
+#mytrips .planner-layout{display:block}
+#mytrips .trip-column{width:100%;max-width:none}
+#mytrips .map-card{display:none}
+body.has-opened-ticket #mytrips .map-card{display:block;margin-top:18px}
+#mytrips .ticket-card{cursor:pointer}
+#mytrips .ticket-card:focus-visible{outline:3px solid #b18b52;outline-offset:3px}
+#mytrips .ticket-card .ticket-card-main{min-width:0}
+#mytrips .ticket-card .ticket-card-stub{flex-shrink:0}
+@media(min-width:900px){#mytrips #tripCards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}#mytrips #tripCards>.empty-state{grid-column:1/-1}}
+@media(max-width:600px){#mytrips #tripCards{display:grid;grid-template-columns:1fr;gap:10px}#mytrips .ticket-card{min-width:0}}
