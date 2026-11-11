@@ -329,6 +329,25 @@ function closeTicketExperience(){
  layer.classList.remove("is-open","is-torn");document.body.classList.remove("ticket-open");
  setTimeout(()=>layer.remove(),420);
 }
+function openMapMemoryComposer(trip,place,map){
+ selectedTrip=trip.id;refreshTripSelect();
+ const form=$("#postForm");form.reset();refreshTripSelect();
+ form.elements.tripId.value=trip.id;refreshPostPlaces(trip.id);
+ form.elements.place.value=place.name;form.elements.title.value=place.name+"の記録";
+ form.elements.story.value="";map?.closePopup();openDialog("#postDialog");
+}
+function openDiaryEditor(post){
+ const form=$("#diaryEditForm");
+ form.elements.id.value=post.id;form.elements.title.value=post.title||"";
+ form.elements.place.value=post.place||"";form.elements.capturedAt.value=String(post.date||"").slice(0,16);
+ form.elements.story.value=post.story||"";form.elements.visibility.value=post.visibility||"private";
+ form.elements.mediaReplace.value="";openDialog("#diaryEditDialog");
+}
+function makeMapEditButton(post){
+ const button=document.createElement("button");button.type="button";
+ button.className="map-pin-edit-memory";button.textContent="日記・写真を編集";
+ button.addEventListener("click",()=>openDiaryEditor(post));return button;
+}
 function renderTicketMap(trip,layer){
  const host=layer.querySelector("#ticketRouteMap");
  if(!host)return;
@@ -352,24 +371,32 @@ function renderTicketMap(trip,layer){
   const popup=document.createElement("div");popup.className="tabi-map-popup";
   const heading=document.createElement("strong");heading.textContent=place.name;popup.append(heading);
   const state=document.createElement("div");state.className="map-pin-state";state.textContent=visited?"訪問済み":"旅行予定";popup.append(state);
-  const photos=document.createElement("div");photos.className="ticket-map-popup-photos";popup.append(photos);
-  const related=posts.filter(post=>post.tripId===trip.id&&String(post.place||"").trim()===place.name&&(post.mediaKey||post.mediaType));
-  if(!related.length){const empty=document.createElement("small");empty.textContent="この場所に紐づく写真はありません";photos.append(empty);}
-  marker.bindPopup(popup);
-  marker.on("popupopen",async()=>{
-   photos.replaceChildren();
-   for(const post of related){
-    try{
-     const blob=await loadPostMedia(post);if(!blob)continue;
-     const media=document.createElement(blob.type.startsWith("video/")?"video":"img");
-     media.src=URL.createObjectURL(blob);layer._ticketObjectUrls=[...(layer._ticketObjectUrls||[]),media.src];
-     media.alt=post.title||place.name;
-     if(media.tagName==="VIDEO"){media.controls=true;media.muted=true;media.playsInline=true;}
-     photos.append(media);
-    }catch(error){console.warn("地図の写真を読み込めませんでした",error);}
-   }
-   if(!photos.children.length){const empty=document.createElement("small");empty.textContent="写真を読み込めませんでした";photos.append(empty);}
-  });
+   const related=posts.filter(post=>post.tripId===trip.id&&String(post.place||"").trim()===place.name&&post.author===profile.name);
+   const addMemory=document.createElement("button");addMemory.type="button";addMemory.className="map-pin-add-photo";addMemory.textContent="＋ この場所に日記・写真を追加";
+   addMemory.addEventListener("click",()=>openMapMemoryComposer(trip,place,map));popup.append(addMemory);
+   const diaryBox=document.createElement("div");diaryBox.className="ticket-map-popup-diaries";popup.append(diaryBox);
+   const photos=document.createElement("div");photos.className="ticket-map-popup-photos";popup.append(photos);
+   marker.bindPopup(popup);
+   marker.on("popupopen",async()=>{
+    diaryBox.replaceChildren();photos.replaceChildren();
+    if(!related.length){const empty=document.createElement("small");empty.textContent="この場所の日記・写真はまだありません";diaryBox.append(empty);}
+    for(const post of related){
+     const row=document.createElement("div");row.className="map-pin-memory-row";
+     const title=document.createElement("b");title.textContent=post.title||"旅の記録";row.append(title);
+     if(post.story){const story=document.createElement("p");story.textContent=post.story;row.append(story);}
+     row.append(makeMapEditButton(post));diaryBox.append(row);
+     if(post.mediaKey||post.mediaType){
+      try{
+       const blob=await loadPostMedia(post);if(!blob)continue;
+       const media=document.createElement(blob.type.startsWith("video/")?"video":"img");
+       media.src=URL.createObjectURL(blob);layer._ticketObjectUrls=[...(layer._ticketObjectUrls||[]),media.src];
+       media.alt=post.title||place.name;
+       if(media.tagName==="VIDEO"){media.controls=true;media.muted=true;media.playsInline=true;}
+       photos.append(media);
+      }catch(error){console.warn("地図の写真を読み込めませんでした",error);}
+     }
+    }
+   });
  });
  if(bounds.length>1)L.polyline(bounds,{color:"#b18b52",weight:4,opacity:.82,dashArray:"7 7"}).addTo(map);
  if(bounds.length===1)map.setView(bounds[0],13);else map.fitBounds(bounds,{padding:[28,28],maxZoom:13});
@@ -507,26 +534,31 @@ function renderMap(){
   const diary=posts.filter(post=>post.tripId===t.id&&String(post.place||"").trim()===p.name);
   const count=document.createElement("div");count.className="map-pin-count";count.textContent=diary.length?diary.length+"件の記録":"まだ写真・日記はありません";popup.append(count);
   const photoBox=document.createElement("div");photoBox.className="map-pin-photos";popup.append(photoBox);
-  const addPhoto=document.createElement("button");addPhoto.type="button";addPhoto.className="map-pin-add-photo";addPhoto.textContent="📷 この場所に写真を追加";
-  addPhoto.addEventListener("click",()=>{
-   selectedTrip=t.id;
-   refreshTripSelect();
-   const form=$("#postForm");
-   form.elements.tripId.value=t.id;
-   refreshPostPlaces(t.id);
-   form.elements.place.value=p.name;
-   form.elements.title.value=p.name+"の写真";
-   form.elements.story.value="";
-   routeLeafletMap.closePopup();
-   openDialog("#postDialog");
-  });
+  const addPhoto=document.createElement("button");addPhoto.type="button";addPhoto.className="map-pin-add-photo";addPhoto.textContent="＋ この場所に日記・写真を追加";
+  addPhoto.addEventListener("click",()=>openMapMemoryComposer(t,p,routeLeafletMap));
   popup.append(addPhoto);
+  const diaryBox=document.createElement("div");diaryBox.className="map-pin-diaries";popup.append(diaryBox);
   marker.bindPopup(popup);
   marker.on("popupopen",async()=>{
-   photoBox.replaceChildren();
+   diaryBox.replaceChildren();photoBox.replaceChildren();
+   if(!diary.length){const empty=document.createElement("small");empty.textContent="この場所の日記・写真はまだありません";diaryBox.append(empty);}
    for(const entry of diary){
+    const row=document.createElement("div");row.className="map-pin-memory-row";
+    const title=document.createElement("b");title.textContent=entry.title||"旅の記録";row.append(title);
+    if(entry.story){const story=document.createElement("p");story.textContent=entry.story;row.append(story);}
+    row.append(makeMapEditButton(entry));diaryBox.append(row);
     if(!entry.mediaKey&&!entry.mediaType)continue;
-    try{const blob=await loadPostMedia(entry);if(!blob)continue;const item=document.createElement("div");item.className="map-pin-photo-item";const img=document.createElement(blob.type.startsWith("video/")?"video":"img");img.alt=entry.title||p.name;img.src=URL.createObjectURL(blob);if(img.tagName==="VIDEO"){img.controls=true;img.muted=true;img.playsInline=true;}item.append(img);const remove=document.createElement("button");remove.type="button";remove.className="map-pin-photo-delete";remove.textContent="写真を削除";remove.addEventListener("click",async()=>{if(!confirm("この写真を削除しますか？\nこの写真に紐づく日記も削除されます。"))return;remove.disabled=true;try{await deleteDiaryEntry(entry);renderAll();toast("✓ 写真を削除しました");}catch(error){remove.disabled=false;toast(error.message||"削除できませんでした");}});item.append(remove);photoBox.append(item);}catch{}
+    try{
+     const blob=await loadPostMedia(entry);if(!blob)continue;
+     const item=document.createElement("div");item.className="map-pin-photo-item";
+     const img=document.createElement(blob.type.startsWith("video/")?"video":"img");
+     img.alt=entry.title||p.name;img.src=URL.createObjectURL(blob);
+     if(img.tagName==="VIDEO"){img.controls=true;img.muted=true;img.playsInline=true;}
+     item.append(img);item.append(makeMapEditButton(entry));
+     const remove=document.createElement("button");remove.type="button";remove.className="map-pin-photo-delete";remove.textContent="日記ごと削除";
+     remove.addEventListener("click",async()=>{if(!confirm("この日記と写真を削除しますか？"))return;remove.disabled=true;try{await deleteDiaryEntry(entry);renderAll();toast("記録を削除しました");}catch(error){remove.disabled=false;toast(error.message||"削除できませんでした");}});
+     item.append(remove);photoBox.append(item);
+    }catch(error){console.warn("地図の写真を読み込めませんでした",error);}
    }
   });
   const pill=document.createElement("button");pill.type="button";pill.className="stop-pill";pill.textContent=(visited?"✓ ":"")+p.name;
