@@ -177,3 +177,32 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape"&&modal.classList.con
 <style>
 .demo-modal .ticket-perforation{background:transparent}
 </style>
+
+<style>
+/* The perforation is part of the paper before the tear, not a permanent overlay. */
+.demo-modal.torn .ticket-perforation{
+  opacity:0;
+  visibility:hidden;
+  pointer-events:none;
+  transition:opacity .16s .06s,visibility 0s .24s;
+}
+.demo-modal.torn .ticket-perforation::before,
+.demo-modal.torn .ticket-perforation::after,
+.demo-modal.torn .tear-track,
+.demo-modal.torn .perforation-label{
+  opacity:0;
+  visibility:hidden;
+}
+/* More convincing printed boarding-pass stock and ink. */
+.demo-modal .ticket-main-half,
+.demo-modal .ticket-stub-half{
+  background-color:#f7f3e9;
+  background-image:radial-gradient(#a99a7b20 .55px,transparent .75px),linear-gradient(135deg,#fffdf8 0%,#f3eddf 58%,#eae1d1 100%);
+  background-size:4px 4px,100% 100%;
+  box-shadow:inset 0 0 0 1px #d5c7ad,0 12px 32px #0004;
+}
+.demo-modal .ticket-topline{border-bottom:1px solid #d9cdb8;padding-bottom:10px;text-shadow:0 1px #fff8}
+.demo-modal .ticket-fields{border-top:1px solid #cfc2a9}
+.demo-modal .ticket-stub-half{border-left:0}
+.demo-modal .ticket-barcode{border-top:1px solid #d5c7ad;padding-top:7px}
+</style>
