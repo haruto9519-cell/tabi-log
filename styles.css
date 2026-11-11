@@ -1094,3 +1094,58 @@ footer{max-width:1600px;margin:0 auto}
  .hero h1{font-size:29px}
  .feature-card{min-height:175px}
 }
+
+/* TRAVELER ID — identity-led app home, not a marketing hero */
+.traveler-home{
+ min-height:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(340px,.9fr);
+ align-items:center;gap:clamp(24px,5vw,76px);
+ padding:42px max(5vw,28px);
+ background:radial-gradient(ellipse at 78% 45%,#34475a 0%,#1b2d40 38%,#101d2c 78%);
+}
+.traveler-home:before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.18;background:repeating-linear-gradient(135deg,transparent 0 28px,#d2b77f 29px,transparent 30px 58px);mask-image:linear-gradient(90deg,transparent 40%,#000)}
+.traveler-intro,.traveler-card{position:relative;z-index:1}
+.traveler-intro .kicker{font-size:8px;color:#d3b982;letter-spacing:.2em}
+.traveler-overline{margin:22px 0 5px;color:#d2b77f;font-size:9px;letter-spacing:.24em}
+.traveler-home h1{font-size:clamp(30px,3.4vw,46px);line-height:1.42;margin:8px 0 12px;font-weight:500;letter-spacing:.025em}
+.traveler-home h1 em{font-style:normal;color:#e0c795}
+.traveler-copy{max-width:440px;color:#d3d7d9;font-size:11px;line-height:2}
+.traveler-actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:20px}
+.traveler-actions .btn{font-size:10px;padding:11px 15px}
+.traveler-card{
+ max-width:530px;width:100%;justify-self:center;padding:22px 24px 16px;
+ color:#283647;background:linear-gradient(145deg,#faf8f1,#e8e1d2);
+ border:1px solid #c5a873;border-radius:7px;
+ box-shadow:0 22px 65px #050d18a6, inset 0 0 0 5px #ffffff35;
+ transform:rotate(.4deg);
+}
+.traveler-card:before{content:"";position:absolute;inset:9px;border:1px solid #bca77e55;border-radius:3px;pointer-events:none}
+.traveler-card-top,.traveler-card-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;color:#92784e;font-size:8px;letter-spacing:.17em}
+.record-seal{display:grid;place-items:center;width:33px;height:33px;border:1px solid #b99b66;border-radius:50%;color:#9a7949;font-family:Georgia,serif;font-size:12px}
+.traveler-identity{display:flex;align-items:center;gap:17px;padding:20px 0 17px}
+.traveler-avatar{width:65px;height:65px;display:grid;place-items:center;flex:0 0 65px;border-radius:50%;background:linear-gradient(145deg,#293e53,#101e2e);border:2px solid #c5a873;box-shadow:0 0 0 4px #c6a46a22;color:#e3c991;font-size:25px}
+.traveler-name{display:grid;gap:4px;min-width:0}
+.traveler-name small{font-size:8px;letter-spacing:.2em;color:#9c8052}
+.traveler-name strong{font-size:20px;font-weight:600;color:#1e3043;overflow-wrap:anywhere}
+.traveler-name span{font-size:10px;color:#74766f;overflow-wrap:anywhere}
+.traveler-divider{display:flex;align-items:center;gap:9px;color:#9b8054;font-size:7px;letter-spacing:.13em}
+.traveler-divider i{height:1px;flex:1;background:#d0c4ac}
+.traveler-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin:16px 0 15px}
+.traveler-stats>div{display:grid;gap:4px;padding:0 13px;border-right:1px solid #d6cbb8}
+.traveler-stats>div:first-child{padding-left:0}
+.traveler-stats>div:last-child{border:0;padding-right:0}
+.traveler-stats strong{font-family:Georgia,serif;font-size:31px;font-weight:400;line-height:1.1;color:#203449}
+.traveler-stats span{font-size:8px;letter-spacing:.16em;color:#9a7b4c}
+.traveler-stats small{font-size:9px;color:#76766e}
+.traveler-card-foot{border-top:1px solid #d8cdb9;padding-top:12px;font-size:7px}
+@media(max-width:760px){
+ .traveler-home{display:flex;flex-direction:column;align-items:stretch;gap:21px;padding:26px 16px 24px}
+ .traveler-home h1{font-size:29px;line-height:1.42}
+ .traveler-overline{margin-top:16px;font-size:8px}
+ .traveler-copy{font-size:10px;line-height:1.8}
+ .traveler-actions{margin-top:14px}
+ .traveler-card{max-width:none;padding:18px 18px 14px;transform:none}
+ .traveler-avatar{width:56px;height:56px;flex-basis:56px;font-size:22px}
+ .traveler-name strong{font-size:18px}
+ .traveler-stats strong{font-size:27px}
+}
+@media(prefers-reduced-motion:reduce){.traveler-card{transform:none}}
