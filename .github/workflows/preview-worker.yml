@@ -52,6 +52,7 @@ jobs:
                echo "$response" | grep -q '"expensesSchemaReady":true' &&
                echo "$response" | grep -q '"planImportsSchemaReady":true' &&
                echo "$response" | grep -q '"stopCoordinatesSchemaReady":true' &&
+               echo "$response" | grep -q '"arrivalTicketSchemaReady":true' &&
                echo "$response" | grep -q '"mediaSchemaReady":true' &&
                echo "$response" | grep -q '"mediaStorageReady":true' &&
                echo "$response" | grep -q '"mediaStorageProvider":"cloudflare-d1"'; then
