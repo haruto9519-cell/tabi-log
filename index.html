@@ -26,30 +26,35 @@
   <small>ログイン後、旅行一覧に戻って取り込み結果を表示します。</small>
  </div>
 </section>
-<section class="hero traveler-home" aria-label="マイトラベルプロフィール">
- <div class="traveler-intro">
-  <span class="kicker">MY TRAVEL ID　/　PERSONAL ARCHIVE</span>
-  <p class="traveler-overline">YOUR JOURNEY, YOUR STORY</p>
-  <h1>旅した証が、<br><em>あなたのプロフィールになる。</em></h1>
-  <p class="traveler-copy">訪れた場所、残した景色、重ねてきた時間。旅の履歴を、自分だけのトラベルプロフィールに。</p>
-  <div class="traveler-actions">
-   <a class="btn gold" href="#mytrips">旅の履歴を見る <span>↗</span></a>
-   <button class="btn outline-light" id="openDiaryEntry">＋ 思い出を残す</button><button class="btn outline-light" id="heroTrip">プランを作る ↗</button>
+<section class="hero traveler-home" aria-label="トラベラープロフィール">
+ <div class="social-profile">
+  <div class="social-profile-head">
+   <div class="social-avatar-ring"><div class="traveler-avatar" id="travelerAvatar">旅</div></div>
+   <div class="social-profile-main">
+    <div class="social-profile-top"><strong id="travelerName">旅好きユーザー</strong><a class="social-edit-link" href="#mypage">プロフィール設定</a></div>
+    <div class="social-profile-stats">
+     <div><b id="statPosts">0</b><span>投稿</span></div>
+     <div><b id="statTrips">0</b><span>旅行</span></div>
+     <div><b id="statSaved">0</b><span>保存</span></div>
+    </div>
+    <p id="travelerBio">旅の記録を、少しずつ。</p>
+   </div>
+  </div>
+  <div class="social-profile-mobile-stats">
+   <div><b id="mobileStatPosts">0</b><span>投稿</span></div>
+   <div><b id="mobileStatTrips">0</b><span>旅行</span></div>
+   <div><b id="mobileStatSaved">0</b><span>保存</span></div>
+  </div>
+  <div class="social-highlights" aria-label="旅のカテゴリー">
+   <a href="#diary"><span class="highlight-ring"><i>✧</i></span><small>思い出</small></a>
+   <a href="#mytrips"><span class="highlight-ring"><i>⌖</i></span><small>旅の記録</small></a>
+   <a href="#expenses"><span class="highlight-ring"><i>￥</i></span><small>旅の予算</small></a>
+   <a href="#mypage"><span class="highlight-ring highlight-add"><i>＋</i></span><small>マイページ</small></a>
   </div>
  </div>
- <div class="traveler-card">
-  <div class="traveler-card-top"><span>AILERON　/　TRAVELER'S RECORD</span><span class="record-seal">TL</span></div>
-  <div class="traveler-identity">
-   <div class="traveler-avatar" id="travelerAvatar">旅</div>
-   <div class="traveler-name"><small>TRAVELER</small><strong id="travelerName">旅好きユーザー</strong><span id="travelerBio">旅の記録を、少しずつ。</span></div>
-  </div>
-  <div class="traveler-divider"><span>MY JOURNEY STATUS</span><i></i><span>PRIVATE ARCHIVE</span></div>
-  <div class="traveler-stats">
-   <div><strong id="statTrips">0</strong><span>TRIPS</span><small>保存した旅行</small></div>
-   <div><strong id="statPosts">0</strong><span>MEMORIES</span><small>日記・思い出</small></div>
-   <div><strong id="statSaved">0</strong><span>SAVED</span><small>保存した旅</small></div>
-  </div>
-  <div class="traveler-card-foot"><span>THE WORLD IS YOURS TO DISCOVER</span><span>✦</span></div>
+ <div class="social-profile-actions">
+  <a class="btn gold" href="#diary">思い出を見る</a>
+  <button class="btn outline-light" id="openDiaryEntry">＋ 投稿する</button>
  </div>
 </section>
 <section class="feature-hub" id="features">
