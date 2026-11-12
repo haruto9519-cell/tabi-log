@@ -27,6 +27,13 @@ jobs:
       - name: Apply D1 migrations to an isolated local database
         working-directory: worker
         run: npx --yes wrangler@4 d1 migrations apply tabi-log-db --local --config wrangler.toml
+      - name: Smoke-test account deletion SQL on isolated local D1
+        working-directory: worker
+        run: |
+          npx --yes wrangler@4 d1 execute tabi-log-db --local --file=tests/account_deletion_smoke.sql --config wrangler.toml | tee /tmp/tabi-log-account-delete-smoke.txt
+          grep -q "PASS" /tmp/tabi-log-account-delete-smoke.txt
+          npx --yes wrangler@4 d1 execute tabi-log-db --local --command "PRAGMA table_info(share_links)" --config wrangler.toml | tee /tmp/tabi-log-share-columns.txt
+          grep -q "owner_id" /tmp/tabi-log-share-columns.txt
       - name: Verify local photo storage schema
         working-directory: worker
         run: |

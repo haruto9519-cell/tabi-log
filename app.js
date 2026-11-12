@@ -889,6 +889,45 @@ const diaryTimelineElement=$("#diaryTimeline");if(diaryTimelineElement)diaryTime
 function openProfileEditor(){const currentTicket=document.getElementById("ticketExperience");if(currentTicket?._ticketTrip?.id)activeTicketId=currentTicket._ticketTrip.id;const f=$("#profileForm"),dialog=$("#profileDialog");if(!f||!dialog){toast("プロフィール編集画面を読み込めませんでした");return;}f.elements.name.value=profile.name||"";f.elements.bio.value=profile.bio||"";f.elements.avatar.value="";f.elements.removeAvatar.checked=false;if(!dialog.open)dialog.showModal();}
 $("#profileForm").addEventListener("submit",async e=>{e.preventDefault();const returnTicketId=activeTicketId||document.getElementById("ticketExperience")?._ticketTrip?.id||"";const form=e.currentTarget,f=new FormData(form),old=profile.name,file=f.get("avatar"),nextName=String(f.get("name")||"").trim();if(!nextName){toast("表示名を入力してください");form.elements.name.focus();return;}const next={...profile,name:nextName.slice(0,30),bio:String(f.get("bio")||"").trim().slice(0,140)};try{if(file&&file.size){if(!file.type.match(/^image\/(jpeg|png|webp)$/))throw new Error("JPG・PNG・WebP画像を選択してください");if(file.size>5*1024*1024)throw new Error("画像は5MB以下にしてください");const key="profile-avatar-"+(activeAccountStorageId||"guest");await mediaPut(key,file);next.avatarMediaKey=key;}else if(f.get("removeAvatar")==="on"){if(profile.avatarMediaKey)await mediaDelete(profile.avatarMediaKey);next.avatarMediaKey="";}profile=next;posts.forEach(p=>{if(p.author===old)p.author=profile.name});save();closeDialog("#profileDialog");renderAll();if(returnTicketId&&trips.some(item=>item.id===returnTicketId))restoreTicketAfterSave(returnTicketId);toast("プロフィールを更新しました");}catch(error){toast(error.message||"画像を保存できませんでした");}});
 $("#privacySettings").onclick=()=>openDialog("#privacyDialog");
+$("#deleteAccountButton")?.addEventListener("click",async()=>{
+ if(!signedInUser||!sessionToken){toast("アカウント削除にはGoogleログインが必要です");return;}
+ if(!API_BASE){toast("アカウント削除APIに接続できません");return;}
+ const typed=prompt("旅ログのアカウントと保存データを削除します。続行するには DELETE と入力してください。");
+ if(typed!=="DELETE"){toast("削除をキャンセルしました");return;}
+ if(!confirm("旅行・日記・写真クラウドデータ・支出・ログインセッションを削除します。この操作は取り消せません。Googleアカウント自体は削除されません。続行しますか？"))return;
+ const accountId=String(signedInUser.id);
+ let revokeFailures=0;
+ for(const [tripId,record] of Object.entries(shareRecords||{})){
+  if(!record?.url)continue;
+  if(!record.revokeKey){revokeFailures++;continue;}
+  try{
+   const token=new URL(record.url).searchParams.get("token");
+   if(!token)continue;
+   const response=await fetch(API_BASE+"/api/shares/"+encodeURIComponent(token),{method:"DELETE",headers:{"content-type":"application/json"},body:JSON.stringify({revokeKey:record.revokeKey})});
+   if(!response.ok&&response.status!==404)revokeFailures++;
+  }catch{revokeFailures++;}
+ }
+ if(revokeFailures){
+  toast("共有リンクをすべて無効化できませんでした。通信を確認してから再度お試しください");
+  return;
+ }
+ try{
+  const response=await fetch(API_BASE+"/api/account",{method:"DELETE",headers:{authorization:"Bearer "+sessionToken,"content-type":"application/json"},body:JSON.stringify({confirmation:"DELETE"})});
+  const data=await response.json();
+  if(!response.ok||!data.ok)throw new Error(data.error||"アカウントを削除できませんでした");
+  const mediaKeys=[...new Set([...posts.map(post=>post.mediaKey).filter(Boolean),profile.avatarMediaKey].filter(Boolean))];
+  let localMediaFailures=0;
+  for(const key of mediaKeys){try{await mediaDelete(key);}catch{localMediaFailures++;}}
+  for(const key of Object.keys(LOCAL_STATE_DEFAULTS))localStorage.removeItem(accountStorageKey(accountId,key));
+  sessionStorage.removeItem(SESSION_KEY);
+  sessionToken="";signedInUser=null;activeAccountStorageId=null;
+  posts=[];trips=[];expenses=[];saved=[];following=[];blocked=[];
+  profile={name:"旅好きユーザー",bio:"旅の記録を、少しずつ。"};shareRecords={};selectedTrip=null;
+  renderAuth();renderAll();
+  toast(localMediaFailures?"クラウドデータを削除しました。端末内メディアの一部は削除できませんでした":"旅ログのアカウントと保存データを削除しました。Googleアカウントは残っています");
+ }catch(error){toast(error.message||"アカウント削除に失敗しました");}
+});
+
 function refreshExpenseTripSelect(selectedId=""){const select=$("#expenseTripSelect");const own=trips.filter(t=>t.isMine);select.innerHTML=own.map(t=>`<option value="${t.id}">${esc(t.title)}</option>`).join("");if(selectedId&&own.some(t=>t.id===selectedId))select.value=selectedId;}
 const openExpenseButton=$("#openExpense");if(openExpenseButton)openExpenseButton.onclick=()=>{const form=$("#expenseForm");if(!form)return;form.reset();form.elements.id.value="";refreshExpenseTripSelect(selectedTrip||"");if(!form.elements.tripId.options.length){toast("先に旅行を作成してください");return;}form.elements.date.value=new Date().toISOString().slice(0,10);openDialog("#expenseDialog");};
 $("#expenseForm").addEventListener("submit",e=>{e.preventDefault();const form=e.currentTarget,data=new FormData(form),id=String(data.get("id")||""),tripId=String(data.get("tripId")||""),amount=Number(data.get("amount"));if(!trips.some(t=>t.id===tripId&&t.isMine)){toast("旅行を選択してください");return;}if(!Number.isSafeInteger(amount)||amount<0||amount>100000000){toast("金額を確認してください");return;}const item={id:id||uid(),tripId,date:String(data.get("date")||""),category:String(data.get("category")||"その他"),amount,currency:String(data.get("currency")||"JPY"),note:String(data.get("note")||"").trim()};if(!item.date){toast("日付を入力してください");return;}const index=expenses.findIndex(x=>x.id===id);if(index>=0)expenses[index]=item;else expenses.unshift(item);save();closeDialog("#expenseDialog");renderAll();toast(id?"支出を更新しました":"支出を記録しました");});
@@ -919,7 +958,7 @@ if(b.dataset.shareTrip){
  if(!confirm("共有する内容を確認してください。旅行名・エリア・訪問先・訪問済み状態・公開設定の日記本文を共有します。写真、非公開の日記、正確な位置情報は含めません。共有URLを知っている人は閲覧できます。自宅・学校・現在地など個人の居場所が分かる内容は共有しないでください。発行しますか？"))return;
  const safeLocations=(t.stopLocations||[]).filter(point=>Number.isFinite(Number(point.latitude))&&Number.isFinite(Number(point.longitude))).map(point=>({...point,latitude:Math.round(Number(point.latitude)*10)/10,longitude:Math.round(Number(point.longitude)*10)/10}));
  const payload={trip:{title:t.title,area:t.area,date:t.date,description:t.description,tripType:t.tripType||"standard",relatedWork:t.relatedWork||"",stops:t.stops||[],visited:t.actual||[],locations:safeLocations,entries,author:profile.name}};
- try{const res=await fetch(API_BASE+"/api/shares",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(payload)});const data=await res.json();if(!res.ok||!data.ok)throw new Error(data.error||"共有リンクを作成できませんでした");shareRecords[t.id]={url:data.url,revokeKey:data.revokeKey,expiresAt:data.expiresAt};save();renderTrips();try{await navigator.clipboard.writeText(data.url);toast("共有URLを発行してコピーしました")}catch{prompt("共有URLを発行しました。コピーしてください",data.url)}}catch(err){toast(err.message||"共有URLの発行に失敗しました")}
+ try{const res=await fetch(API_BASE+"/api/shares",{method:"POST",headers:{"content-type":"application/json",...(sessionToken?{authorization:"Bearer "+sessionToken}:{})},body:JSON.stringify(payload)});const data=await res.json();if(!res.ok||!data.ok)throw new Error(data.error||"共有リンクを作成できませんでした");shareRecords[t.id]={url:data.url,revokeKey:data.revokeKey,expiresAt:data.expiresAt};save();renderTrips();try{await navigator.clipboard.writeText(data.url);toast("共有URLを発行してコピーしました")}catch{prompt("共有URLを発行しました。コピーしてください",data.url)}}catch(err){toast(err.message||"共有URLの発行に失敗しました")}
 }
  if(b.dataset.deleteTrip){
   if(!confirm("この旅程を削除しますか？\\n関連する日程・支出も削除されます。"))return;

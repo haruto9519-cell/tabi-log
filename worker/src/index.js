@@ -162,6 +162,7 @@ async function logoutSession(request, env) {
 }
 async function createShare(request, env) {
   if (!env.DB) return bad(request, "共有APIのデータベースが未設定です", 503);
+  const owner = await userFrom(request, env);
   const length = Number(request.headers.get("content-length") || 0);
   if (length > 20000) return bad(request, "記録が大きすぎます。文章や立ち寄り先を減らしてください", 413);
   const raw = await request.text();
@@ -186,8 +187,8 @@ async function createShare(request, env) {
   const revokeHash = await sha256(revokeKey);
   const id = uuid();
   const expiresAt = now + 60 * 60 * 24 * 365;
-  await env.DB.prepare("INSERT INTO share_links(id,token_hash,revoke_hash,payload_json,created_at,expires_at) VALUES(?,?,?,?,?,?)")
-    .bind(id, tokenHash, revokeHash, JSON.stringify(payload), now, expiresAt).run();
+  await env.DB.prepare("INSERT INTO share_links(id,token_hash,revoke_hash,payload_json,created_at,expires_at,owner_id) VALUES(?,?,?,?,?,?,?)")
+    .bind(id, tokenHash, revokeHash, JSON.stringify(payload), now, expiresAt, owner?.id || null).run();
   return json(request, {
     ok: true,
     url: "https://tabi-log.pages.dev/share.html?token=" + token,
@@ -283,7 +284,7 @@ export default {
     const path = url.pathname;
     if (request.method === "OPTIONS") return new Response(null, { headers: cors(request) });
     if (path === "/api/health" && request.method === "GET") {
-      const database = { configured: Boolean(env.DB), mediaStorageReady: false, mediaStorageProvider: "unavailable", mediaSchemaReady: false, archiveSchemaReady: false, coreSchemaReady: false, shareSchemaReady: false, itinerarySchemaReady: false, expensesSchemaReady: false, planImportsSchemaReady: false, stopCoordinatesSchemaReady: false };
+      const database = { configured: Boolean(env.DB), mediaStorageReady: false, mediaStorageProvider: "unavailable", mediaSchemaReady: false, archiveSchemaReady: false, coreSchemaReady: false, shareSchemaReady: false, shareOwnerSchemaReady: false, itinerarySchemaReady: false, expensesSchemaReady: false, planImportsSchemaReady: false, stopCoordinatesSchemaReady: false };
       if (env.DB) {
         try {
           const result = await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table'").all();
@@ -299,6 +300,8 @@ export default {
           database.arrivalTicketSchemaReady = ["origin_country","arrival_airport","first_attraction"].every(name => tripColumnNames.has(name));
           database.pilgrimageSchemaReady = ["trip_type","related_work"].every(name => tripColumnNames.has(name));
           database.shareSchemaReady = ["share_links","share_rate_limits"].every(name => tables.has(name));
+          const shareColumns = await env.DB.prepare("PRAGMA table_info(share_links)").all();
+          database.shareOwnerSchemaReady = (shareColumns.results || []).some(column => column.name === "owner_id");
           database.authSchemaReady = tables.has("auth_sessions");
           database.itinerarySchemaReady = tables.has("itinerary_items");
           database.expensesSchemaReady = tables.has("travel_expenses");
@@ -310,7 +313,7 @@ export default {
           database.querySucceeded = false;
         }
       }
-      return json(request, { ok: true, service: "tabi-log-api", version: "2.5-pilgrimage-collection", database });
+      return json(request, { ok: true, service: "tabi-log-api", version: "2.6-account-deletion", database });
     }
     if (path === "/api/auth/session" && request.method === "POST") return createAuthSession(request, env);
     if (path === "/api/auth/logout" && request.method === "POST") return logoutSession(request, env);
@@ -354,6 +357,37 @@ export default {
     }
     if (!user) return bad(request, "ログイン状態を確認できません。再度ログインしてください。", 401);
     await env.DB.prepare("INSERT OR IGNORE INTO users(id,display_name) VALUES(?,?)").bind(user.id, user.name).run();
+    if (path === "/api/account" && request.method === "DELETE") {
+      const parsed = await readJson(request, 1024);
+      if (parsed.error) return parsed.error;
+      if (parsed.data.confirmation !== "DELETE") return bad(request, "削除確認の入力が正しくありません", 400);
+      const mediaRows = await env.DB.prepare("SELECT media_key FROM posts WHERE user_id=?").bind(user.id).all();
+      const mediaKeys = (mediaRows.results || []).map(row => row.media_key).filter(key => typeof key === "string" && key.startsWith("users/" + user.id + "/posts/"));
+      const statements = [
+        env.DB.prepare("DELETE FROM likes WHERE user_id=? OR post_id IN (SELECT id FROM posts WHERE user_id=?)").bind(user.id, user.id),
+        env.DB.prepare("DELETE FROM comments WHERE user_id=? OR post_id IN (SELECT id FROM posts WHERE user_id=?)").bind(user.id, user.id),
+        env.DB.prepare("DELETE FROM follows WHERE follower_id=? OR followed_id=?").bind(user.id, user.id),
+        env.DB.prepare("DELETE FROM saved_trips WHERE user_id=? OR trip_id IN (SELECT id FROM trips WHERE user_id=?)").bind(user.id, user.id),
+        env.DB.prepare("DELETE FROM blocks WHERE blocker_id=? OR blocked_id=?").bind(user.id, user.id),
+        env.DB.prepare("DELETE FROM reports WHERE reporter_id=?").bind(user.id),
+        env.DB.prepare("DELETE FROM travel_expenses WHERE user_id=? OR trip_id IN (SELECT id FROM trips WHERE user_id=?)").bind(user.id, user.id),
+        env.DB.prepare("DELETE FROM itinerary_items WHERE trip_id IN (SELECT id FROM trips WHERE user_id=?)").bind(user.id),
+        env.DB.prepare("DELETE FROM trip_stops WHERE trip_id IN (SELECT id FROM trips WHERE user_id=?)").bind(user.id),
+        env.DB.prepare("DELETE FROM posts WHERE user_id=?").bind(user.id),
+        env.DB.prepare("DELETE FROM trips WHERE user_id=?").bind(user.id),
+        env.DB.prepare("DELETE FROM plan_imports WHERE claimed_by=?").bind(user.id),
+        env.DB.prepare("DELETE FROM share_links WHERE owner_id=?").bind(user.id),
+        env.DB.prepare("DELETE FROM auth_sessions WHERE user_id=?").bind(user.id),
+        env.DB.prepare("DELETE FROM users WHERE id=?").bind(user.id)
+      ];
+      await env.DB.batch(statements);
+      if (env.MEDIA_BUCKET) {
+        for (const key of mediaKeys) {
+          try { await env.MEDIA_BUCKET.delete(key); } catch (error) { console.warn("Account media cleanup failed:", key, error); }
+        }
+      }
+      return json(request, { ok: true, deleted: true }, 200, { "cache-control": "no-store" });
+    }
     if (path === "/api/me" && request.method === "GET") {
       return json(request, { ok: true, user: { id: user.id, name: user.name } });
     }
