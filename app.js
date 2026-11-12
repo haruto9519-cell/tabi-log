@@ -998,7 +998,7 @@ async function exportTabiLogBackup(){
  }
 }
 $("#exportBackupButton")?.addEventListener("click",()=>{
- if(confirm("旅行・日記・支出・プロフィールと、端末内にある写真をバックアップファイルに保存します。ファイルには個人情報が含まれるため、安全な場所で保管してください。続けますか？"))exportTabiLogBackup();
+ if(confirm("旅行・日記・支出・プロフィールと、端末内にある写真・動画をバックアップファイルに保存します。ファイルには個人情報が含まれるため、安全な場所で保管してください。続けますか？"))exportTabiLogBackup();
 });
 
 async function restoreTabiLogBackup(file){
@@ -1013,16 +1013,16 @@ async function restoreTabiLogBackup(file){
   if(!data.profile||typeof data.profile!=="object"||Array.isArray(data.profile))throw new Error("プロフィール情報を読み込めません");
   const photos=backup.photos&&typeof backup.photos==="object"&&!Array.isArray(backup.photos)?backup.photos:{};
   const invalidMediaPost=data.posts.find(post=>post.mediaKey&&typeof post.mediaKey!=="string");
-  if(invalidMediaPost)throw new Error("日記の写真参照情報が正しくありません");
+  if(invalidMediaPost)throw new Error("日記のメディア参照情報が正しくありません");
   const mediaPosts=data.posts.filter(post=>post.mediaKey);
   const missingPhotoPosts=mediaPosts.filter(post=>!photos[post.mediaKey]||typeof photos[post.mediaKey].dataUrl!=="string");
-  if(missingPhotoPosts.length)throw new Error("バックアップに写真データが含まれていない日記が"+missingPhotoPosts.length+"件あります。写真を含む完全なバックアップを選んでください");
+  if(missingPhotoPosts.length)throw new Error("バックアップに写真・動画データが含まれていない日記が"+missingPhotoPosts.length+"件あります。写真・動画を含む完全なバックアップを選んでください");
   for(const post of mediaPosts){
     const record=photos[post.mediaKey];
     const match=record.dataUrl.match(/^data:(image\/(?:jpeg|png|webp)|video\/(?:mp4|webm|quicktime));base64,([A-Za-z0-9+/]*={0,2})$/i);
-    if(!match)throw new Error("写真データの形式が正しくありません");
+    if(!match)throw new Error("写真・動画データの形式が正しくありません");
     const mime=match[1].toLowerCase();
-    if(String(record.type||mime).toLowerCase()!==mime)throw new Error("写真の形式情報が一致しません");
+    if(String(record.type||mime).toLowerCase()!==mime)throw new Error("メディアの形式情報が一致しません");
     if(match[2].length>Math.ceil((mime.startsWith("video/")?20:5)*1024*1024/3)*4)throw new Error(mime.startsWith("video/")?"20MBを超える動画が含まれています":"5MBを超える写真が含まれています");
   }
   const remappedPosts=data.posts.map(post=>({...post}));
