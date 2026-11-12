@@ -313,7 +313,7 @@ export default {
           database.querySucceeded = false;
         }
       }
-      return json(request, { ok: true, service: "tabi-log-api", version: "2.5-pilgrimage-collection", database });
+      return json(request, { ok: true, service: "tabi-log-api", version: "2.6-account-deletion", database });
     }
     if (path === "/api/auth/session" && request.method === "POST") return createAuthSession(request, env);
     if (path === "/api/auth/logout" && request.method === "POST") return logoutSession(request, env);
