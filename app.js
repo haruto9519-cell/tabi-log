@@ -1088,6 +1088,7 @@ async function restoreTabiLogBackup(file){
   const stateKeys=Object.keys(currentLocalState());
   const previousStorage=new Map(stateKeys.map(key=>{const storageKey=activeAccountStorageId?accountStorageKey(activeAccountStorageId,key):"tabilog_"+key;return [storageKey,localStorage.getItem(storageKey)];}));
   const previousState=currentLocalState();
+  const previousSelectedTrip=selectedTrip;
   try{
     for(const post of remappedPosts){
       const oldKey=post.mediaKey;
@@ -1124,6 +1125,7 @@ async function restoreTabiLogBackup(file){
     for(const [key,value] of previousStorage){try{if(value===null)localStorage.removeItem(key);else localStorage.setItem(key,value);}catch{}}
     posts=previousState.posts;trips=previousState.trips;expenses=previousState.expenses;saved=previousState.saved;
     following=previousState.following;blocked=previousState.blocked;profile=previousState.profile;shareRecords=previousState.shares;
+    selectedTrip=previousSelectedTrip;
     for(const key of restoredKeys)try{await mediaDelete(key)}catch{}
     throw error;
   }
