@@ -66,7 +66,7 @@ async function load(){
   if(!res.ok||!data.ok)throw new Error(data.error||"この共有記録は表示できません");
   const t=data.trip;
   document.title=(t.title||"旅の記録")+" — 旅ログ";
-  root.innerHTML='<h1>'+esc(t.title)+'</h1><div class="share-meta">'+esc(t.area)+' '+(t.date?'· '+date(t.date):'')+(t.author?' · '+esc(t.author):'')+'</div>'+(t.tripType==='pilgrimage'?'<div class="share-pilgrimage"><b>聖地巡礼</b><span>'+esc(t.relatedWork||'作品名未設定')+'</span></div>':'')+'<p class="share-description">'+esc(t.description||"")'</p>'+
+  root.innerHTML='<h1>'+esc(t.title)+'</h1><div class="share-meta">'+esc(t.area)+' '+(t.date?'· '+date(t.date):'')+(t.author?' · '+esc(t.author):'')+'</div>'+(t.tripType==='pilgrimage'?'<div class="share-pilgrimage"><b>聖地巡礼</b><span>'+esc(t.relatedWork||'作品名未設定')+'</span></div>':'')+'<p class="share-description">'+esc(t.description||"")+"</p>"+
    ((t.stops||[]).length?'<section class="share-section"><h2>旅の予定</h2><div class="share-stops">'+t.stops.map(x=>'<span class="share-stop">'+esc(x)+'</span>').join("")+'</div></section>':'')+
    ((t.visited||[]).length?'<section class="share-section"><h2>訪れた場所</h2><div class="share-stops">'+t.visited.map(x=>'<span class="share-stop">✓ '+esc(x)+'</span>').join("")+'</div></section>':'')+
    renderSharedMap(t.locations||[]) +
