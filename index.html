@@ -5,7 +5,7 @@
 <meta name="theme-color" content="#101c2b">
 <meta name="description" content="Aileronで作成した旅行プランに、訪問記録・写真・日記を重ねて残せる旅行ログ。Googleログイン中は写真をクラウドにも同期できます。">
 <title>旅ログ — 自分の旅を、ひとつに。</title>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""><link rel="stylesheet" href="styles.css?v=20261111-map-memory-v3">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""><link rel="stylesheet" href="styles.css?v=20261112-travel-collection-v1">
 </head>
 <body>
 <a class="skip-link" href="#main-content">本文へスキップ</a>
@@ -93,7 +93,7 @@
  <div class="two-fields"><label>出発地<input name="departurePlace" maxlength="60" placeholder="例：東京・新宿"></label><label>目的地<input name="area" required maxlength="60" placeholder="京都・奈良"></label></div>
  <label>開始日<input name="date" type="date"></label>
  <label>終了日<input name="endDate" type="date"></label>
- <label>旅行のテーマ・メモ<textarea name="description" maxlength="500" placeholder="この旅行で楽しみたいこと、宿泊先や準備メモなど"></textarea></label>
+ <label>旅行の種類<select name="tripType"><option value="standard">通常の旅行</option><option value="pilgrimage">アニメ・映画などの聖地巡礼</option></select></label><label>作品名・シリーズ名（任意）<input name="relatedWork" maxlength="100" placeholder="例：作品名・シリーズ名"></label><label>旅行のテーマ・メモ<textarea name="description" maxlength="500" placeholder="この旅行で楽しみたいこと、宿泊先や準備メモなど"></textarea></label>
  <div class="two-fields"><label>旅行予算<input name="budgetAmount" type="number" min="0" max="100000000" step="1" placeholder="例：80000"></label><label>通貨<select name="budgetCurrency"><option value="JPY">JPY・円</option><option value="USD">USD・米ドル</option><option value="EUR">EUR・ユーロ</option></select></label></div>
  <label>最初の訪問先（任意）<input name="stops" maxlength="500" placeholder="清水寺, 伏見稲荷大社, 奈良公園"></label>
  <p class="hint">ログイン中は旅行データをクラウドにも同期します。写真・動画は端末内に保存されます。</p>
@@ -118,7 +118,7 @@
  <div class="two-fields"><label>出発地<input name="departurePlace" maxlength="60" placeholder="例：東京・新宿"></label><label>目的地<input name="area" required maxlength="60"></label></div>
  <label>開始日<input name="date" type="date"></label>
  <label>終了日<input name="endDate" type="date"></label>
- <label>旅行のテーマ・メモ<textarea name="description" maxlength="500"></textarea></label>
+ <label>旅行の種類<select name="tripType"><option value="standard">通常の旅行</option><option value="pilgrimage">アニメ・映画などの聖地巡礼</option></select></label><label>作品名・シリーズ名（任意）<input name="relatedWork" maxlength="100"></label><label>旅行のテーマ・メモ<textarea name="description" maxlength="500"></textarea></label>
  <div class="two-fields"><label>旅行予算<input name="budgetAmount" type="number" min="0" max="100000000" step="1"></label><label>通貨<select name="budgetCurrency"><option value="JPY">JPY・円</option><option value="USD">USD・米ドル</option><option value="EUR">EUR・ユーロ</option></select></label></div>
  <label>訪問先（カンマ区切り）<input name="stops" maxlength="500"></label>
  <label>公開設定<select name="visibility"><option value="private">自分のみ</option><option value="public">公開</option></select></label>
@@ -153,6 +153,6 @@
 <!-- 旧データ互換用。SNS画面としては表示しません。 -->
 <section hidden aria-hidden="true"><input id="feedSearch"><select id="feedSort"><option value="recommend">おすすめ</option></select><button class="chip" data-category="すべて"></button><div id="feed"></div></section>
 <div id="toast" role="status" aria-live="polite"></div>
-<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script><script id="googleIdentityScript" src="https://accounts.google.com/gsi/client" async defer></script><script src="config.js?v=20261111-preview-api-v8"></script><script src="app.js?v=20261112-null-guard-v3"></script>
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script><script id="googleIdentityScript" src="https://accounts.google.com/gsi/client" async defer></script><script src="config.js?v=20261111-preview-api-v8"></script><script src="app.js?v=20261112-pilgrimage-v2"></script>
 <script>document.addEventListener("DOMContentLoaded",()=>{const b=document.getElementById("openDiaryEntry");if(b)b.addEventListener("click",()=>document.getElementById("openPost")?.click());});</script>
 </body></html>
