@@ -77,6 +77,17 @@ async function uploadPendingPostMedia(){
  for(const post of posts.filter(item=>item.author===profile.name&&item.mediaKey&&!item.cloudMediaSynced)){
   let blob=await mediaGet(post.mediaKey).catch(()=>null);
   if(!blob){allUploaded=false;continue;}
+  if(String(blob.type||post.mediaType||"").startsWith("video/")){
+   if(post.cloudMediaKey){
+    try{
+     const response=await fetch(API_BASE+"/api/media/"+encodeURIComponent(post.id),{method:"DELETE",headers:{authorization:"Bearer "+sessionToken}});
+     const data=await response.json();
+     if(!response.ok||!data.ok)throw new Error(data.error||"以前の写真コピーを削除できませんでした");
+     post.cloudMediaKey="";post.cloudMediaSynced=false;
+    }catch(error){allUploaded=false;console.warn("動画への差し替え後に古いクラウド写真を削除できませんでした:",post.id,error);}
+   }
+   continue;
+  }
   try{
    const cloudBlob=blob.size>1350000?await compressPhotoForCloud(blob):blob;
    const response=await fetch(API_BASE+"/api/media/"+encodeURIComponent(post.id),{method:"PUT",headers:{authorization:"Bearer "+sessionToken,"content-type":cloudBlob.type||post.mediaType||"image/jpeg"},body:cloudBlob});
@@ -703,7 +714,7 @@ async function processPendingImport(){
  }catch(error){toast(error.message||"旅行プランの取り込みに失敗しました");}
 }
 
-function renderDiary(){const timeline=$("#diaryTimeline");if(!timeline)return;let mine=posts.filter(p=>p.author===profile.name).sort((a,b)=>String(b.date).localeCompare(String(a.date)));timeline.innerHTML=mine.length?mine.map(p=>`<div class="timeline-item"><div class="timeline-date">${esc(p.date||"今日")}</div><div class="timeline-line"></div><article class="timeline-card"><div class="timeline-thumb" id="diary-thumb-${p.id}">${p.mediaKey||p.mediaType?"📷":p.symbol||"📍"}</div><div class="timeline-content"><small>📍 ${esc(p.place)}</small><h3>${esc(p.title)}</h3><p>${esc(p.story)}</p><div class="timeline-actions"><button class="action" type="button" data-edit-diary="${p.id}">編集</button><button class="action" type="button" data-delete-diary="${p.id}">削除</button></div></div></article></div>`).join(""):`<div class="empty-state">ここに日記・思い出が時系列で並びます。「日記を追加」から記録できます。</div>`;mine.forEach(async p=>{if(!p.mediaKey&&!p.mediaType)return;try{const blob=await loadPostMedia(p);const thumb=$("#diary-thumb-"+p.id);if(blob&&thumb){const media=document.createElement(blob.type.startsWith("video/")?"video":"img");media.src=URL.createObjectURL(blob);media.alt=p.title||"旅行の思い出";if(media.tagName==="VIDEO"){media.controls=true;media.muted=true;media.playsInline=true;}thumb.replaceChildren(media);}}catch(error){console.warn("写真の読み込みに失敗:",error);}});}
+function renderDiary(){const timeline=$("#diaryTimeline");if(!timeline)return;let mine=posts.filter(p=>p.author===profile.name).sort((a,b)=>String(b.date).localeCompare(String(a.date)));timeline.innerHTML=mine.length?mine.map(p=>`<div class="timeline-item"><div class="timeline-date">${esc(p.date||"今日")}</div><div class="timeline-line"></div><article class="timeline-card"><div class="timeline-thumb" id="diary-thumb-${p.id}">${p.mediaKey||p.mediaType?(String(p.mediaType||"").startsWith("video/")?"🎬":"📷"):p.symbol||"📍"}</div><div class="timeline-content"><small>📍 ${esc(p.place)}</small><h3>${esc(p.title)}</h3><p>${esc(p.story)}</p><div class="timeline-actions"><button class="action" type="button" data-edit-diary="${p.id}">編集</button><button class="action" type="button" data-delete-diary="${p.id}">削除</button></div></div></article></div>`).join(""):`<div class="empty-state">ここに日記・思い出が時系列で並びます。「日記を追加」から記録できます。</div>`;mine.forEach(async p=>{if(!p.mediaKey&&!p.mediaType)return;try{const blob=await loadPostMedia(p);const thumb=$("#diary-thumb-"+p.id);if(blob&&thumb){const media=document.createElement(blob.type.startsWith("video/")?"video":"img");media.src=URL.createObjectURL(blob);media.alt=p.title||"旅行の思い出";if(media.tagName==="VIDEO"){media.controls=true;media.muted=true;media.playsInline=true;}thumb.replaceChildren(media);}}catch(error){console.warn("写真の読み込みに失敗:",error);}});}
 function renderProfile(){let mine=posts.filter(p=>p.author===profile.name);$("#profileName").textContent=profile.name;$("#profileBio").textContent=profile.bio;if($("#travelerName"))$("#travelerName").textContent=profile.name;if($("#travelerBio"))$("#travelerBio").textContent=profile.bio;$("#profilePostCount").textContent=mine.length;$("#profileTripCount").textContent=trips.filter(t=>t.isMine).length;if($("#followingCount"))$("#followingCount").textContent=0;$("#statTrips").textContent=trips.filter(t=>t.isMine).length;$("#statPosts").textContent=mine.length;$("#statSaved").textContent=saved.length;if($("#mobileStatTrips"))$("#mobileStatTrips").textContent=trips.filter(t=>t.isMine).length;if($("#mobileStatPosts"))$("#mobileStatPosts").textContent=mine.length;if($("#mobileStatSaved"))$("#mobileStatSaved").textContent=saved.length;}renderAvatarImage();
 function renderExpenses(){
  const host=$("#expenseList"),summary=$("#expenseSummary");if(!host||!summary)return;
@@ -784,14 +795,17 @@ $("#postForm").addEventListener("submit",async e=>{
  if(f.get("visibility")==="public"&&(!signedInUser||!sessionToken)){toast("公開するにはGoogleログインしてください");return;}
  let file=f.get("mediaLibrary");
  if(!file||!file.size)file=f.get("mediaCamera");
+ if(!file||!file.size)file=f.get("mediaVideo");
+ const isVideo=Boolean(file&&file.size&&String(file.type||"").startsWith("video/"));
  if(file&&file.size){
-  const allowedTypes=["image/jpeg","image/png","image/webp"];
-  if(!allowedTypes.includes(file.type)){toast("保存できる形式はJPEG・PNG・WebPです");return;}
-  if(file.size>5*1024*1024){toast("写真1枚の上限は5MBです");return;}
+  const allowedTypes=["image/jpeg","image/png","image/webp","video/mp4","video/webm","video/quicktime"];
+  if(!allowedTypes.includes(file.type)){toast("写真はJPEG・PNG・WebP、動画はMP4・WebM・MOVに対応しています");return;}
+  const maxBytes=isVideo?20*1024*1024:5*1024*1024;
+  if(file.size>maxBytes){toast(isVideo?"動画1本の上限は20MBです":"写真1枚の上限は5MBです");return;}
  }
  const linkedTripId=String(f.get("tripId")||"");
  const postId=uid();
- const p={id:postId,title:f.get("title"),place:f.get("place"),story:f.get("story"),author:profile.name,date:f.get("capturedAt")||new Date().toISOString(),category:f.get("category"),visual:"v4",symbol:"📷",likes:0,liked:false,saved:false,visibility:f.get("visibility"),tripId:linkedTripId,mediaKey:file&&file.size?postId:null,driveFileId:null,mediaType:file&&file.size?file.type:"",cloudMediaSynced:false,approxLocation:false,comments:[]};
+ const p={id:postId,title:f.get("title"),place:f.get("place"),story:f.get("story"),author:profile.name,date:f.get("capturedAt")||new Date().toISOString(),category:f.get("category"),visual:"v4",symbol:isVideo?"🎬":"📷",likes:0,liked:false,saved:false,visibility:f.get("visibility"),tripId:linkedTripId,mediaKey:file&&file.size?postId:null,driveFileId:null,mediaType:file&&file.size?file.type:"",cloudMediaSynced:false,approxLocation:false,comments:[]};
  if(file&&file.size){
   try{await mediaPut(postId,file);}
   catch{toast("端末内への写真保存に失敗しました");return;}
@@ -811,14 +825,15 @@ $("#postForm").addEventListener("submit",async e=>{
  const successDialog=$("#saveSuccessDialog");
  const successTitle=$("#saveSuccessTitle");
  const successMessage=$("#saveSuccessMessage");
- successTitle.textContent=file&&file.size?"写真を保存しました":"日記を保存しました";
+ const mediaKind=file&&file.size?(isVideo?"動画":"写真"):"";
+ successTitle.textContent=file&&file.size?mediaKind+"を保存しました":"日記を保存しました";
  successMessage.textContent="この端末に保存しました。クラウド同期を確認しています。";
  try{
   if(!successDialog.open)successDialog.showModal();
  }catch(error){
   console.warn("保存完了ダイアログを表示できません:",error);
  }
- toast("✓ "+(file&&file.size?"写真と日記":"日記")+"を保存しました");
+ toast("✓ "+(file&&file.size?mediaKind+"と日記":"日記")+"を保存しました");
  renderAll();
  if(returnTicketId&&trips.some(item=>item.id===returnTicketId))restoreTicketAfterSave(returnTicketId);
  if(signedInUser&&sessionToken){
@@ -826,8 +841,13 @@ $("#postForm").addEventListener("submit",async e=>{
   try{
    const cloudSaved=await syncCloudData();
    if(cloudSaved){
-    successMessage.textContent=file&&file.size?(p.cloudMediaSynced?"日記と写真をクラウドに保存しました。別の端末でも表示できます。":"日記はクラウドに同期しました。写真はこのブラウザ内に保存されています。別端末へ移す場合はバックアップを利用してください。"):"日記をクラウドにも同期しました。";
-    toast(file&&file.size?(p.cloudMediaSynced?"✓ 写真もクラウドに保存しました":"日記を同期しました（写真はこの端末内に保存）"):"✓ 日記を保存し、クラウドにも同期しました");
+    if(isVideo){
+     successMessage.textContent="動画はこの端末内に保存しました。動画のクラウド同期は未対応です。別の端末へ移す場合は、動画を含むバックアップを利用してください。";
+     toast("日記を同期しました（動画はこの端末内のみ）");
+    }else{
+     successMessage.textContent=file&&file.size?(p.cloudMediaSynced?"日記と写真をクラウドに保存しました。別の端末でも表示できます。":"日記はクラウドに同期しました。写真はこのブラウザ内に保存されています。別端末へ移す場合はバックアップを利用してください。"):"日記をクラウドにも同期しました。";
+     toast(file&&file.size?(p.cloudMediaSynced?"✓ 写真もクラウドに保存しました":"日記を同期しました（写真はこの端末内に保存）"):"✓ 日記を保存し、クラウドにも同期しました");
+    }
    }else{
     successMessage.textContent="端末には保存しましたが、クラウド同期は未完了です。別の端末にはまだ反映されていません。";
     toast("端末には保存済みですが、クラウド同期は未完了です");
@@ -838,10 +858,32 @@ $("#postForm").addEventListener("submit",async e=>{
    toast("端末には保存済みですが、クラウド同期を確認できません");
   }
  }else{
-  successMessage.textContent=file&&file.size?"写真と日記はこの端末に保存しました。別の端末には自動で同期されません。":"日記をこの端末に保存しました。ログインしていない場合、別の端末には自動で同期されません。";
+  successMessage.textContent=file&&file.size?(isVideo?"動画と日記はこの端末に保存しました。動画はクラウド同期されません。別の端末へ移す場合はバックアップを利用してください。":"写真と日記はこの端末に保存しました。別の端末には自動で同期されません。"):"日記をこの端末に保存しました。ログインしていない場合、別の端末には自動で同期されません。";
  }
 });
-$("#diaryEditForm").addEventListener("submit",async e=>{e.preventDefault();const returnTicketId=activeTicketId||document.getElementById("ticketExperience")?._ticketTrip?.id||"";const f=e.currentTarget,id=f.elements.id.value,p=posts.find(x=>x.id===id&&x.author===profile.name);if(!p){toast("編集する日記が見つかりません");return;}const data=new FormData(f);let file=data.get("mediaReplace");if(file&&file.size){const allowed=["image/jpeg","image/png","image/webp"];if(!allowed.includes(file.type)){toast("保存できる形式はJPEG・PNG・WebPです");return;}if(file.size>5*1024*1024){toast("写真1枚の上限は5MBです");return;}try{await mediaPut(p.id,file);p.mediaKey=p.id;p.mediaType=file.type;p.cloudMediaSynced=false;}catch{toast("端末内への保存に失敗しました");return;}}p.title=String(data.get("title")||"").trim();p.place=String(data.get("place")||"").trim();p.story=String(data.get("story")||"").trim();p.date=String(data.get("capturedAt")||"");p.visibility=String(data.get("visibility")||"private");save();closeDialog("#diaryEditDialog");renderAll();if(returnTicketId&&trips.some(item=>item.id===returnTicketId))restoreTicketAfterSave(returnTicketId);let synced=true;if(signedInUser&&sessionToken){clearTimeout(cloudSyncTimer);synced=await syncCloudData();}toast(file&&file.size?(synced&&p.cloudMediaSynced?"写真をクラウドに更新しました":"日記を更新しました（写真はこの端末内に保存）"):"日記を更新しました");});
+$("#diaryEditForm").addEventListener("submit",async e=>{
+ e.preventDefault();
+ const returnTicketId=activeTicketId||document.getElementById("ticketExperience")?._ticketTrip?.id||"";
+ const f=e.currentTarget,id=f.elements.id.value,p=posts.find(x=>x.id===id&&x.author===profile.name);
+ if(!p){toast("編集する日記が見つかりません");return;}
+ const data=new FormData(f),file=data.get("mediaReplace");
+ if(file&&file.size){
+  const isVideo=String(file.type||"").startsWith("video/");
+  const allowed=["image/jpeg","image/png","image/webp","video/mp4","video/webm","video/quicktime"];
+  if(!allowed.includes(file.type)){toast("写真はJPEG・PNG・WebP、動画はMP4・WebM・MOVに対応しています");return;}
+  const maxBytes=isVideo?20*1024*1024:5*1024*1024;
+  if(file.size>maxBytes){toast(isVideo?"動画1本の上限は20MBです":"写真1枚の上限は5MBです");return;}
+  try{await mediaPut(p.id,file);p.mediaKey=p.id;p.mediaType=file.type;p.cloudMediaSynced=false;}
+  catch{toast("端末内への保存に失敗しました");return;}
+ }
+ p.title=String(data.get("title")||"").trim();p.place=String(data.get("place")||"").trim();p.story=String(data.get("story")||"").trim();p.date=String(data.get("capturedAt")||"");p.visibility=String(data.get("visibility")||"private");
+ save();closeDialog("#diaryEditDialog");renderAll();
+ if(returnTicketId&&trips.some(item=>item.id===returnTicketId))restoreTicketAfterSave(returnTicketId);
+ let synced=true;if(signedInUser&&sessionToken){clearTimeout(cloudSyncTimer);synced=await syncCloudData();}
+ if(file&&file.size&&String(file.type||"").startsWith("video/"))toast(synced?"動画をこの端末に保存しました（クラウド同期未対応）":"動画は端末内保存済み。日記のクラウド同期は未完了です");
+ else if(file&&file.size)toast(synced&&p.cloudMediaSynced?"写真をクラウドに更新しました":"日記を更新しました（写真はこの端末内に保存）");
+ else toast("日記を更新しました");
+});
 const diaryTimelineElement=$("#diaryTimeline");if(diaryTimelineElement)diaryTimelineElement.addEventListener("click",async e=>{const b=e.target.closest("button");if(!b)return;const id=b.dataset.editDiary||b.dataset.deleteDiary;if(!id)return;const p=posts.find(x=>x.id===id&&x.author===profile.name);if(!p)return;if(b.dataset.editDiary){const f=$("#diaryEditForm");f.elements.id.value=p.id;f.elements.title.value=p.title||"";f.elements.place.value=p.place||"";f.elements.capturedAt.value=String(p.date||"").slice(0,16);f.elements.story.value=p.story||"";f.elements.visibility.value=p.visibility||"private";openDialog("#diaryEditDialog");return;}if(b.dataset.deleteDiary&&confirm(p.mediaKey?"この日記と写真を削除しますか？":"この日記を削除しますか？")){try{await deleteDiaryEntry(p);renderAll();toast(p.mediaKey?"✓ 写真と日記を削除しました":"✓ 日記を削除しました");}catch(err){toast(err.message||"削除に失敗しました");}}});
 
 function openProfileEditor(){const currentTicket=document.getElementById("ticketExperience");if(currentTicket?._ticketTrip?.id)activeTicketId=currentTicket._ticketTrip.id;const f=$("#profileForm"),dialog=$("#profileDialog");if(!f||!dialog){toast("プロフィール編集画面を読み込めませんでした");return;}f.elements.name.value=profile.name||"";f.elements.bio.value=profile.bio||"";f.elements.avatar.value="";f.elements.removeAvatar.checked=false;if(!dialog.open)dialog.showModal();}
@@ -913,10 +955,12 @@ async function exportTabiLogBackup(){
   for(const key of keys){
    const blob=await mediaGet(key);
    if(!blob){missingPhotos.push(key);continue;}
-   if(blob.size>5*1024*1024)throw new Error("5MBを超える写真があるためバックアップを中止しました");
    const relatedPost=state.posts.find(post=>post.mediaKey===key);
    const type=String(blob.type||relatedPost?.mediaType||"").toLowerCase();
-   if(!["image/jpeg","image/png","image/webp"].includes(type))throw new Error("対応していない形式の写真があるためバックアップを中止しました");
+   const isVideo=type.startsWith("video/");
+   const maxBytes=isVideo?20*1024*1024:5*1024*1024;
+   if(blob.size>maxBytes)throw new Error(isVideo?"20MBを超える動画があるためバックアップを中止しました":"5MBを超える写真があるためバックアップを中止しました");
+   if(!["image/jpeg","image/png","image/webp","video/mp4","video/webm","video/quicktime"].includes(type))throw new Error("対応していない形式の写真・動画があるためバックアップを中止しました");
    const dataUrl=await new Promise((resolve,reject)=>{
     const reader=new FileReader();
     reader.onload=()=>resolve(reader.result);
@@ -945,7 +989,7 @@ async function exportTabiLogBackup(){
   link.click();
   link.remove();
   setTimeout(()=>URL.revokeObjectURL(url),30000);
-  toast("バックアップファイルを作成しました（写真"+keys.length+"枚を含む）。端末のダウンロード一覧で保存を確認してください");
+  toast("バックアップファイルを作成しました（写真・動画"+keys.length+"件を含む）。端末のダウンロード一覧で保存を確認してください");
  }catch(error){
   console.error("バックアップの作成に失敗:",error);
   toast(error.message||"バックアップを作成できませんでした。端末の空き容量を確認してください");
@@ -954,7 +998,7 @@ async function exportTabiLogBackup(){
  }
 }
 $("#exportBackupButton")?.addEventListener("click",()=>{
- if(confirm("旅行・日記・支出・プロフィールと、端末内にある写真をバックアップファイルに保存します。ファイルには個人情報が含まれるため、安全な場所で保管してください。続けますか？"))exportTabiLogBackup();
+ if(confirm("旅行・日記・支出・プロフィールと、端末内にある写真・動画をバックアップファイルに保存します。ファイルには個人情報が含まれるため、安全な場所で保管してください。続けますか？"))exportTabiLogBackup();
 });
 
 async function restoreTabiLogBackup(file){
@@ -969,17 +1013,17 @@ async function restoreTabiLogBackup(file){
   if(!data.profile||typeof data.profile!=="object"||Array.isArray(data.profile))throw new Error("プロフィール情報を読み込めません");
   const photos=backup.photos&&typeof backup.photos==="object"&&!Array.isArray(backup.photos)?backup.photos:{};
   const invalidMediaPost=data.posts.find(post=>post.mediaKey&&typeof post.mediaKey!=="string");
-  if(invalidMediaPost)throw new Error("日記の写真参照情報が正しくありません");
+  if(invalidMediaPost)throw new Error("日記のメディア参照情報が正しくありません");
   const mediaPosts=data.posts.filter(post=>post.mediaKey);
   const missingPhotoPosts=mediaPosts.filter(post=>!photos[post.mediaKey]||typeof photos[post.mediaKey].dataUrl!=="string");
-  if(missingPhotoPosts.length)throw new Error("バックアップに写真データが含まれていない日記が"+missingPhotoPosts.length+"件あります。写真を含む完全なバックアップを選んでください");
+  if(missingPhotoPosts.length)throw new Error("バックアップに写真・動画データが含まれていない日記が"+missingPhotoPosts.length+"件あります。写真・動画を含む完全なバックアップを選んでください");
   for(const post of mediaPosts){
     const record=photos[post.mediaKey];
-    const match=record.dataUrl.match(/^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/]*={0,2})$/i);
-    if(!match)throw new Error("写真データの形式が正しくありません");
+    const match=record.dataUrl.match(/^data:(image\/(?:jpeg|png|webp)|video\/(?:mp4|webm|quicktime));base64,([A-Za-z0-9+/]*={0,2})$/i);
+    if(!match)throw new Error("写真・動画データの形式が正しくありません");
     const mime=match[1].toLowerCase();
-    if(String(record.type||mime).toLowerCase()!==mime)throw new Error("写真の形式情報が一致しません");
-    if(match[2].length>Math.ceil(5*1024*1024/3)*4)throw new Error("5MBを超える写真が含まれています");
+    if(String(record.type||mime).toLowerCase()!==mime)throw new Error("メディアの形式情報が一致しません");
+    if(match[2].length>Math.ceil((mime.startsWith("video/")?20:5)*1024*1024/3)*4)throw new Error(mime.startsWith("video/")?"20MBを超える動画が含まれています":"5MBを超える写真が含まれています");
   }
   const remappedPosts=data.posts.map(post=>({...post}));
   const restoredKeys=[];
@@ -991,13 +1035,13 @@ async function restoreTabiLogBackup(file){
       const oldKey=post.mediaKey;
       if(!oldKey||!photos[oldKey]?.dataUrl)continue;
       const record=photos[oldKey];
-      const match=record.dataUrl.match(/^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/]*={0,2})$/i);
+      const match=record.dataUrl.match(/^data:(image\/(?:jpeg|png|webp)|video\/(?:mp4|webm|quicktime));base64,([A-Za-z0-9+/]*={0,2})$/i);
       if(!match)throw new Error("写真データの形式が正しくありません");
       const mime=match[1].toLowerCase();
       if(String(record.type||mime).toLowerCase()!==mime)throw new Error("写真の形式情報が一致しません");
       const base64=match[2];
       const binary=atob(base64);
-      if(binary.length>5*1024*1024)throw new Error("5MBを超える写真が含まれています");
+      if(binary.length>(mime.startsWith("video/")?20:5)*1024*1024)throw new Error(mime.startsWith("video/")?"20MBを超える動画が含まれています":"5MBを超える写真が含まれています");
       const bytes=new Uint8Array(binary.length);
       for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
       const blob=new Blob([bytes],{type:record.type||"image/jpeg"});

@@ -77,7 +77,7 @@
 <section id="mypage" class="section profile-section">
  <div class="section-heading"><div><span class="kicker">YOUR PROFILE</span><h2>マイページ</h2><p>旅行記録の設定とプロフィールを管理。</p></div></div>
  <div class="profile-banner"><div class="profile-avatar" id="profileAvatar">旅</div><div class="profile-info"><h2 id="profileName">旅好きユーザー</h2><p id="profileBio">自分の旅を、少しずつ。</p><div class="profile-counts"><span><b id="profilePostCount">0</b> 記録</span><span><b id="profileTripCount">0</b> 旅行</span><span id="followingCount" hidden>0</span></div></div><button class="btn light" id="editProfile" type="button" aria-haspopup="dialog" aria-controls="profileDialog">プロフィール編集</button></div>
- <div class="settings-row"><div><b>データのバックアップ</b><p>旅行・日記・プロフィールと、この端末に保存されている写真をJSONファイルに保存・復元できます。写真が見つからない場合やファイルが90MBを超える場合は、不完全なバックアップを防ぐため保存を中止します。復元は現在のデータを置き換えるため、先に現在のデータも保存してください。バックアップファイルは安全な場所で保管してください。</p></div><div class="backup-actions"><button class="btn ghost" id="exportBackupButton" type="button">バックアップを保存</button><button class="btn ghost" id="importBackupButton" type="button">バックアップを復元</button><input id="importBackupFile" type="file" accept="application/json,.json" hidden></div></div>
+ <div class="settings-row"><div><b>データのバックアップ</b><p>旅行・日記・プロフィールと、この端末に保存されている写真・動画をJSONファイルに保存・復元できます。写真・動画が見つからない場合やファイルが90MBを超える場合は、不完全なバックアップを防ぐため保存を中止します。復元は現在のデータを置き換えるため、先に現在のデータも保存してください。バックアップファイルは安全な場所で保管してください。</p></div><div class="backup-actions"><button class="btn ghost" id="exportBackupButton" type="button">バックアップを保存</button><button class="btn ghost" id="importBackupButton" type="button">バックアップを復元</button><input id="importBackupFile" type="file" accept="application/json,.json" hidden></div></div>
  <div class="settings-row"><div><b>プライバシーと共有</b><p>旅行記録は自分のみを初期設定にし、共有は専用URLを発行したものだけにします。</p></div><button class="btn ghost" id="privacySettings">設定を確認</button></div>
 </section>
 </div>
@@ -137,8 +137,8 @@
  <label>タイトル<input name="title" required maxlength="70" placeholder="例：朝の清水寺を訪れた"></label>
  <div class="two-fields"><label>場所<input name="place" list="postPlaceOptions" required maxlength="80" placeholder="訪問先のピン名を選ぶか入力"></label><datalist id="postPlaceOptions"></datalist><label>日時<input name="capturedAt" type="datetime-local"></label></div>
  <label>思い出・日記<textarea name="story" required maxlength="2000" placeholder="訪れた場所、体験したこと、感じたことを残そう"></textarea></label>
- <div class="photo-source-options"><label>📷 カメラで撮影<input name="mediaCamera" type="file" accept="image/jpeg,image/png,image/webp" capture="environment"></label><label>🖼️ 写真ライブラリから選択<input name="mediaLibrary" type="file" accept="image/jpeg,image/png,image/webp"></label></div>
- <p class="hint">写真は端末内に元データを保存します。Googleログイン中は圧縮したコピーをクラウドにも保存し、同じアカウントで別の端末から閲覧できます。ログインしていない場合は端末内のみです。JPEG・PNG・WebP、1枚5MBまで。クラウド保存用コピーは1.35MB以下に圧縮します。動画は現在非対応です。</p>
+ <div class="photo-source-options"><label>📷 カメラで撮影<input name="mediaCamera" type="file" accept="image/jpeg,image/png,image/webp" capture="environment"></label><label>🖼️ 写真ライブラリから選択<input name="mediaLibrary" type="file" accept="image/jpeg,image/png,image/webp"></label><label>🎬 動画を選択<input name="mediaVideo" type="file" accept="video/mp4,video/webm,video/quicktime"></label></div>
+ <p class="hint">写真は端末内に元データを保存し、Googleログイン中は圧縮コピーをクラウドにも保存します（写真1枚5MBまで）。動画はMP4・WebM・MOV、1本20MBまで端末内に保存できます。動画のクラウド同期は未対応です。動画を別端末へ移す場合は、写真・動画を含むJSONバックアップを利用してください。</p>
  <label>公開範囲<select name="visibility"><option value="private">自分のみ</option><option value="public">みんなに公開</option></select></label><p class="hint">公開した記録は誰でも閲覧できます。住所・連絡先・顔がはっきり分かる写真・今いる場所など、個人を特定できる情報は載せないでください。</p><input type="hidden" name="category" value="旅の記録">
  <button class="btn navy full" type="submit">記録を保存</button>
 </form></dialog>
@@ -149,8 +149,8 @@
  <label>タイトル<input name="title" required maxlength="70"></label>
  <div class="two-fields"><label>場所<input name="place" required maxlength="80"></label><label>日時<input name="capturedAt" type="datetime-local"></label></div>
  <label>思い出・日記<textarea name="story" required maxlength="2000"></textarea></label>
- <label>写真を差し替える（任意）<input name="mediaReplace" type="file" accept="image/jpeg,image/png,image/webp"></label>
- <p class="hint">新しい写真を選ぶと、この記録の写真を差し替えます。端末には元データを保存し、Googleログイン中はクラウド用コピーも同期します。</p>
+ <label>写真を差し替える（任意）<input name="mediaReplace" type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime"></label>
+ <p class="hint">写真はクラウド同期できます。動画はMP4・WebM・MOV、1本20MBまで端末内に保存できますが、クラウド同期は未対応です。</p>
  <label>公開設定<select name="visibility"><option value="private">自分のみ</option><option value="public">公開</option></select></label>
  <button class="btn navy full" type="submit">変更を保存</button>
 </form></dialog>
