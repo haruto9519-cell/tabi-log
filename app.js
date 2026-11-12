@@ -898,7 +898,8 @@ $("#deleteAccountButton")?.addEventListener("click",async()=>{
  const accountId=String(signedInUser.id);
  let revokeFailures=0;
  for(const [tripId,record] of Object.entries(shareRecords||{})){
-  if(!record?.url||!record?.revokeKey)continue;
+  if(!record?.url)continue;
+  if(!record.revokeKey){revokeFailures++;continue;}
   try{
    const token=new URL(record.url).searchParams.get("token");
    if(!token)continue;
