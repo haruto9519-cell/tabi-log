@@ -61,6 +61,12 @@
   <div class="trip-column"><div class="subhead"><b>あなたの旅行</b><span id="tripTotal"></span></div><div class="trip-list-controls"><input id="tripSearch" type="search" placeholder="旅行名・目的地を検索" aria-label="旅行を検索"><select id="tripStatusFilter" aria-label="旅行の表示"><option value="active">通常の旅行</option><option value="archived">アーカイブ</option><option value="all">すべて</option></select><select id="tripSort" aria-label="旅行の並び順"><option value="date-desc">日付が新しい順</option><option value="date-asc">日付が古い順</option><option value="name">名前順</option></select></div><div id="tripCards"></div></div>
   <div class="map-card">
    <div class="map-header"><div><b id="mapTitle">訪問先リスト</b><small>選択した旅行の立ち寄り先</small></div><span class="map-pill">PLACE LIST</span></div>
+   <div class="map-route-tools">
+    <label class="map-route-consent"><input id="routeExternalConsent" type="checkbox"> 外部サービスに訪問先の座標を送信してルート検索する</label>
+    <label class="map-route-mode">移動方法 <select id="routeMode" aria-label="ルートの移動方法"><option value="car">車・道路</option><option value="foot">徒歩</option></select></label>
+    <p id="routeStatus" role="status" aria-live="polite">外部送信はオフです。点線は訪問順の概略線です。</p>
+    <small>許可すると、選択中の旅行の訪問先座標がFOSSGISの経路検索サーバーへ送信され、サーバーのログに記録される場合があります。地図・経路データ：<a href="https://www.openstreetmap.org/fixthemap" target="_blank" rel="noopener">OpenStreetMap（地図の修正）</a> / <a href="https://routing.openstreetmap.de/about.html" target="_blank" rel="noopener">FOSSGIS経路サービス</a></small>
+   </div>
    <div id="routeMap" class="route-map" aria-label="旅行の訪問先地図"></div>
    <div id="mapStopList" class="map-stop-list"></div>
   </div>
