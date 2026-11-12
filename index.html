@@ -79,6 +79,7 @@
  <div class="profile-banner"><div class="profile-avatar" id="profileAvatar">旅</div><div class="profile-info"><h2 id="profileName">旅好きユーザー</h2><p id="profileBio">自分の旅を、少しずつ。</p><div class="profile-counts"><span><b id="profilePostCount">0</b> 記録</span><span><b id="profileTripCount">0</b> 旅行</span><span id="followingCount" hidden>0</span></div></div><button class="btn light" id="editProfile" type="button" aria-haspopup="dialog" aria-controls="profileDialog">プロフィール編集</button></div>
  <div class="settings-row"><div><b>データのバックアップ</b><p>旅行・日記・プロフィールと、この端末に保存されている写真・動画をJSONファイルに保存・復元できます。写真・動画が見つからない場合やファイルが90MBを超える場合は、不完全なバックアップを防ぐため保存を中止します。復元は現在のデータを置き換えるため、先に現在のデータも保存してください。バックアップファイルは安全な場所で保管してください。</p></div><div class="backup-actions"><button class="btn ghost" id="exportBackupButton" type="button">バックアップを保存</button><button class="btn ghost" id="importBackupButton" type="button">バックアップを復元</button><input id="importBackupFile" type="file" accept="application/json,.json" hidden></div></div>
  <div class="settings-row"><div><b>プライバシーと共有</b><p>旅行記録は自分のみを初期設定にし、共有は専用URLを発行したものだけにします。</p></div><button class="btn ghost" id="privacySettings">設定を確認</button></div>
+ <div class="settings-row account-delete-row"><div><b>アカウントと保存データの削除</b><p>Googleログイン中の旅ログのクラウドデータ、ログイン状態、この端末のアカウント別データを削除します。Googleアカウント自体は削除されません。ゲスト用データや、別端末に残る未ログイン時のデータは対象外です。</p></div><button class="btn danger" id="deleteAccountButton" type="button">旅ログのアカウントを削除</button></div>
 </section>
 </div>
 </main>
