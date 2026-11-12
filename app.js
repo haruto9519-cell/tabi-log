@@ -510,6 +510,77 @@ function openItinerary(tripId){
  $("#itinerarySaveButton").textContent="予定を追加";renderItineraryItems();openDialog("#itineraryDialog");
 }
 let routeLeafletMap=null, routeMapLayer=null, routeTileLayer=null, routeTileFallbackUsed=false;
+const routeResultCache=new Map();
+let routeAbortController=null,routeInFlightKey="",lastRouteRequestAt=0;
+function cancelPendingRoute(){
+ if(routeAbortController)routeAbortController.abort();
+ routeAbortController=null;routeInFlightKey="";
+}
+function addApproximateRoute(points,layer){
+ if(points.length>1)L.polyline(points,{color:"#c49a5e",weight:3,opacity:.65,dashArray:"7 8"}).addTo(layer);
+}
+function paintRealRoute(result,mode,layer,map){
+ const line=L.polyline(result.latLngs,{color:"#b68b4f",weight:5,opacity:.92}).addTo(layer);
+ if(line.getBounds().isValid())map.fitBounds(line.getBounds(),{padding:[32,32],maxZoom:13});
+ const km=(Number(result.distance||0)/1000);
+ const minutes=Math.round(Number(result.duration||0)/60);
+ const distanceLabel=km>=10?km.toFixed(0):km.toFixed(1);
+ const status=$("#routeStatus");
+ if(status)status.textContent=(mode==="foot"?"徒歩ルート":"車の道路ルート")+"： 約"+distanceLabel+"km・約"+minutes+"分（経路データ：OpenStreetMap / FOSSGIS）";
+}
+async function drawTripRoute(points,layer,map){
+ const status=$("#routeStatus");
+ if(points.length<2){
+  cancelPendingRoute();
+  if(status)status.textContent="ルート検索には座標付きの訪問先が2か所以上必要です。";
+  return;
+ }
+ const consent=$("#routeExternalConsent")?.checked===true;
+ const mode=$("#routeMode")?.value==="foot"?"foot":"car";
+ const coordinates=points.map(([lat,lon])=>Number(lon).toFixed(6)+","+Number(lat).toFixed(6)).join(";");
+ if(!consent){
+  cancelPendingRoute();addApproximateRoute(points,layer);
+  if(status)status.textContent="外部送信はオフです。表示中の点線は訪問順の概略線で、道路・徒歩の実経路ではありません。";
+  return;
+ }
+ const key=mode+"|"+coordinates;
+ if(routeInFlightKey&&routeInFlightKey!==key)cancelPendingRoute();
+ const cached=routeResultCache.get(key);
+ if(cached){paintRealRoute(cached,mode,layer,map);return;}
+ if(routeInFlightKey===key){
+  if(status)status.textContent=(mode==="foot"?"徒歩":"車")+"ルートを検索中…";
+  return;
+ }
+ const controller=new AbortController();
+ routeAbortController=controller;routeInFlightKey=key;
+ if(status)status.textContent=(mode==="foot"?"徒歩":"車")+"ルートを検索中…";
+ try{
+  const wait=Math.max(0,1200-(Date.now()-lastRouteRequestAt));
+  if(wait)await new Promise(resolve=>setTimeout(resolve,wait));
+  if(controller.signal.aborted)return;
+  lastRouteRequestAt=Date.now();
+  const profile=mode==="foot"?"routed-foot":"routed-car";
+  const url="https://routing.openstreetmap.de/"+profile+"/route/v1/driving/"+coordinates+"?overview=full&geometries=geojson&steps=false";
+  const response=await fetch(url,{signal:controller.signal,headers:{Accept:"application/json"},referrerPolicy:"strict-origin-when-cross-origin"});
+  if(!response.ok)throw new Error("経路サービスの応答："+response.status);
+  const data=await response.json(),route=data.routes?.[0];
+  if(data.code!=="Ok"||!Array.isArray(route?.geometry?.coordinates))throw new Error("この訪問順のルートを取得できませんでした");
+  const latLngs=route.geometry.coordinates.map(pair=>[Number(pair[1]),Number(pair[0])]).filter(pair=>Number.isFinite(pair[0])&&Number.isFinite(pair[1])&&Math.abs(pair[0])<=90&&Math.abs(pair[1])<=180);
+  if(!latLngs.length)throw new Error("経路データが空でした");
+  const result={latLngs,distance:Number(route.distance)||0,duration:Number(route.duration)||0};
+  routeResultCache.set(key,result);
+  if(routeResultCache.size>12)routeResultCache.delete(routeResultCache.keys().next().value);
+  if(controller.signal.aborted)return;
+  paintRealRoute(result,mode,layer,map);
+ }catch(error){
+  if(controller.signal.aborted)return;
+  addApproximateRoute(points,layer);
+  if(status)status.textContent="実ルートを取得できませんでした。点線は訪問順の概略線です（実際の経路ではありません）。";
+  console.warn("ルート検索に失敗しました:",error);
+ }finally{
+  if(routeInFlightKey===key){routeInFlightKey="";routeAbortController=null;}
+ }
+}
 function addRouteBaseTiles(){
  const primary=L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{
   maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
@@ -527,6 +598,7 @@ function addRouteBaseTiles(){
  });
  routeTileLayer=primary.addTo(routeLeafletMap);
 }
+
 function renderMap(){
  const t=trips.find(x=>x.id===selectedTrip),host=$("#routeMap"),list=$("#mapStopList");
  const title=$("#mapTitle");
@@ -546,6 +618,7 @@ function renderMap(){
  }
  routeMapLayer.clearLayers();
  if(!t){
+  cancelPendingRoute();
   host.insertAdjacentHTML("beforeend",'<div class="map-overlay-empty">Aileronから旅行プランを取り込むと、ここに地図が表示されます。</div>');
   setTimeout(()=>routeLeafletMap?.invalidateSize({pan:false}),150);
   return;
@@ -556,6 +629,7 @@ function renderMap(){
   return p?.name&&p?.latitude!==null&&p?.latitude!==undefined&&p?.latitude!==""&&p?.longitude!==null&&p?.longitude!==undefined&&p?.longitude!==""&&Number.isFinite(lat)&&lat>=-90&&lat<=90&&Number.isFinite(lon)&&lon>=-180&&lon<=180;
  });
  if(!valid.length){
+  cancelPendingRoute();
   host.insertAdjacentHTML("beforeend",'<div class="map-overlay-empty">この旅行には有効な地図座標がありません。立ち寄り先の座標を確認してください。</div>');
   setTimeout(()=>routeLeafletMap?.invalidateSize({pan:false}),150);
   return;
@@ -603,7 +677,7 @@ function renderMap(){
   pill.addEventListener("click",()=>{routeLeafletMap.setView(point,13);marker.openPopup();});
   if(list)list.append(pill);
  });
- if(valid.length>1)L.polyline(bounds,{color:"#c49a5e",weight:4,opacity:.85,dashArray:"7 7"}).addTo(routeMapLayer);
+ drawTripRoute(bounds,routeMapLayer,routeLeafletMap);
  routeLeafletMap.fitBounds(bounds,{padding:[28,28],maxZoom:12});
  setTimeout(()=>routeLeafletMap?.invalidateSize({pan:false}),100);
  setTimeout(()=>routeLeafletMap?.invalidateSize({pan:false}),450);
@@ -611,6 +685,8 @@ function renderMap(){
 window.addEventListener("resize",()=>{
  if(routeLeafletMap)setTimeout(()=>routeLeafletMap.invalidateSize({pan:false}),100);
 });
+$("#routeExternalConsent")?.addEventListener("change",()=>renderMap());
+$("#routeMode")?.addEventListener("change",()=>{if($("#routeExternalConsent")?.checked)renderMap();});
 async function processPendingImport(){
  const token=new URLSearchParams(location.search).get("import");
  if(!token||!signedInUser||!sessionToken)return;
