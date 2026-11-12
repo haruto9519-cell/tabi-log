@@ -252,6 +252,24 @@ function activateAccountStorage(user){
  }
  activeAccountStorageId=userId;
 }
+function expenseSyncMetaKey(userId=signedInUser?.id){return userId?accountStorageKey(userId,"expense_sync_meta"):"tabilog_expense_sync_meta";}
+function readExpenseSyncMeta(remoteExpenses){
+ const key=expenseSyncMetaKey();
+ let stored=null;
+ try{const raw=localStorage.getItem(key);stored=raw?JSON.parse(raw):null;}catch{}
+ return TabiLogExpenseSync.normalizeMeta(stored,remoteExpenses,expenses);
+}
+function writeExpenseSyncMeta(meta){localStorage.setItem(expenseSyncMetaKey(),JSON.stringify(meta));}
+function markExpenseSyncDirty(id){
+ if(!signedInUser)return;
+ const meta=readExpenseSyncMeta([]);
+ writeExpenseSyncMeta(TabiLogExpenseSync.markDirty(meta,id));
+}
+function markExpenseSyncDeleted(id){
+ if(!signedInUser)return;
+ const meta=readExpenseSyncMeta([]);
+ writeExpenseSyncMeta(TabiLogExpenseSync.markDeleted(meta,id));
+}
 function save(){
  writeLocalState(currentLocalState());
  if(signedInUser&&!cloudSyncHydrating){
@@ -304,9 +322,8 @@ async function syncCloudData(){
     else if(p.mediaType&&!local.mediaType)local.mediaType=p.mediaType;
    }
   // Signed-in cloud data is authoritative for expenses so deletions on another device do not reappear.
-  const firstCloudSyncKey="tabilog_account_"+encodeURIComponent(String(signedInUser.id))+"_cloud_initialized";
-  const isFirstCloudSync=localStorage.getItem(firstCloudSyncKey)!=="1";
-  const mergedExpenses=isFirstCloudSync?[...remoteExpenses,...expenses.filter(local=>!remoteExpenses.some(remoteItem=>remoteItem.id===local.id)&&trips.some(t=>t.id===local.tripId&&t.source==="native"))]:remoteExpenses;
+  const expenseSyncMeta=readExpenseSyncMeta(remoteExpenses);
+  const mergedExpenses=TabiLogExpenseSync.merge(remoteExpenses,expenses,expenseSyncMeta);
   expenses.splice(0,expenses.length,...mergedExpenses);
   if(!selectedTrip&&trips.length)selectedTrip=trips[0].id;
   writeLocalState(currentLocalState());
@@ -341,6 +358,7 @@ async function syncCloudData(){
   if(!savedResponse.ok||!savedData.ok)throw new Error(savedData.error||"クラウドへの保存に失敗しました");
   const mediaUploaded=await uploadPendingPostMedia();
   localStorage.setItem(firstCloudSyncKey,"1");
+  writeExpenseSyncMeta(TabiLogExpenseSync.afterSuccess(expenseSyncMeta,payload.expenses.map(item=>item.id)));
   writeLocalState(currentLocalState());
   renderAll();
   return mediaUploaded;
@@ -919,6 +937,7 @@ $("#deleteAccountButton")?.addEventListener("click",async()=>{
   let localMediaFailures=0;
   for(const key of mediaKeys){try{await mediaDelete(key);}catch{localMediaFailures++;}}
   for(const key of Object.keys(LOCAL_STATE_DEFAULTS))localStorage.removeItem(accountStorageKey(accountId,key));
+  localStorage.removeItem(accountStorageKey(accountId,"expense_sync_meta"));
   sessionStorage.removeItem(SESSION_KEY);
   sessionToken="";signedInUser=null;activeAccountStorageId=null;
   posts=[];trips=[];expenses=[];saved=[];following=[];blocked=[];
@@ -930,8 +949,8 @@ $("#deleteAccountButton")?.addEventListener("click",async()=>{
 
 function refreshExpenseTripSelect(selectedId=""){const select=$("#expenseTripSelect");const own=trips.filter(t=>t.isMine);select.innerHTML=own.map(t=>`<option value="${t.id}">${esc(t.title)}</option>`).join("");if(selectedId&&own.some(t=>t.id===selectedId))select.value=selectedId;}
 const openExpenseButton=$("#openExpense");if(openExpenseButton)openExpenseButton.onclick=()=>{const form=$("#expenseForm");if(!form)return;form.reset();form.elements.id.value="";refreshExpenseTripSelect(selectedTrip||"");if(!form.elements.tripId.options.length){toast("先に旅行を作成してください");return;}form.elements.date.value=new Date().toISOString().slice(0,10);openDialog("#expenseDialog");};
-$("#expenseForm").addEventListener("submit",e=>{e.preventDefault();const form=e.currentTarget,data=new FormData(form),id=String(data.get("id")||""),tripId=String(data.get("tripId")||""),amount=Number(data.get("amount"));if(!trips.some(t=>t.id===tripId&&t.isMine)){toast("旅行を選択してください");return;}if(!Number.isSafeInteger(amount)||amount<0||amount>100000000){toast("金額を確認してください");return;}const item={id:id||uid(),tripId,date:String(data.get("date")||""),category:String(data.get("category")||"その他"),amount,currency:String(data.get("currency")||"JPY"),note:String(data.get("note")||"").trim()};if(!item.date){toast("日付を入力してください");return;}const index=expenses.findIndex(x=>x.id===id);if(index>=0)expenses[index]=item;else expenses.unshift(item);save();closeDialog("#expenseDialog");renderAll();toast(id?"支出を更新しました":"支出を記録しました");});
-const expenseListElement=$("#expenseList");if(expenseListElement)expenseListElement.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;const id=b.dataset.expenseEdit||b.dataset.expenseDelete,item=expenses.find(x=>x.id===id);if(!item)return;if(b.dataset.expenseEdit){const f=$("#expenseForm");refreshExpenseTripSelect(item.tripId);f.elements.id.value=item.id;f.elements.tripId.value=item.tripId;f.elements.date.value=item.date;f.elements.category.value=item.category;f.elements.amount.value=item.amount;f.elements.currency.value=item.currency||"JPY";f.elements.note.value=item.note||"";openDialog("#expenseDialog");return;}if(b.dataset.expenseDelete&&confirm("この支出を削除しますか？")){expenses=expenses.filter(x=>x.id!==id);save();renderAll();toast("支出を削除しました");}});
+$("#expenseForm").addEventListener("submit",e=>{e.preventDefault();const form=e.currentTarget,data=new FormData(form),id=String(data.get("id")||""),tripId=String(data.get("tripId")||""),amount=Number(data.get("amount"));if(!trips.some(t=>t.id===tripId&&t.isMine)){toast("旅行を選択してください");return;}if(!Number.isSafeInteger(amount)||amount<0||amount>100000000){toast("金額を確認してください");return;}const item={id:id||uid(),tripId,date:String(data.get("date")||""),category:String(data.get("category")||"その他"),amount,currency:String(data.get("currency")||"JPY"),note:String(data.get("note")||"").trim()};if(!item.date){toast("日付を入力してください");return;}const index=expenses.findIndex(x=>x.id===id);if(index>=0)expenses[index]=item;else expenses.unshift(item);markExpenseSyncDirty(item.id);save();closeDialog("#expenseDialog");renderAll();toast(id?"支出を更新しました":"支出を記録しました");});
+const expenseListElement=$("#expenseList");if(expenseListElement)expenseListElement.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;const id=b.dataset.expenseEdit||b.dataset.expenseDelete,item=expenses.find(x=>x.id===id);if(!item)return;if(b.dataset.expenseEdit){const f=$("#expenseForm");refreshExpenseTripSelect(item.tripId);f.elements.id.value=item.id;f.elements.tripId.value=item.tripId;f.elements.date.value=item.date;f.elements.category.value=item.category;f.elements.amount.value=item.amount;f.elements.currency.value=item.currency||"JPY";f.elements.note.value=item.note||"";openDialog("#expenseDialog");return;}if(b.dataset.expenseDelete&&confirm("この支出を削除しますか？")){markExpenseSyncDeleted(id);expenses=expenses.filter(x=>x.id!==id);save();renderAll();toast("支出を削除しました");}});
 $("#feed").addEventListener("click",async e=>{let b=e.target.closest("button");if(!b)return;let p=posts.find(x=>x.id===b.dataset.like||x.id===b.dataset.save||x.id===b.dataset.comment||x.id===b.dataset.remix||x.id===b.dataset.report);if(b.dataset.follow){let n=b.dataset.follow;following=following.includes(n)?following.filter(x=>x!==n):[...following,n];save();renderAll();toast(following.includes(n)?"フォローしました":"フォローを解除しました");return}if(b.dataset.block){let n=b.dataset.block;if(confirm(n+"さんの投稿を非表示にしますか？")){blocked=[...new Set([...blocked,n])];save();renderAll();toast("投稿を非表示にしました")}return}if(!p)return;
 if(b.dataset.like){p.liked=!p.liked;p.likes+=p.liked?1:-1;save();renderFeed()}
 if(b.dataset.save){p.saved=!p.saved;saved=p.saved?[...new Set([...saved,p.id])]:saved.filter(x=>x!==p.id);save();renderAll();toast(p.saved?"保存しました":"保存を解除しました")}
