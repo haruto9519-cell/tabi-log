@@ -284,7 +284,7 @@ export default {
     const path = url.pathname;
     if (request.method === "OPTIONS") return new Response(null, { headers: cors(request) });
     if (path === "/api/health" && request.method === "GET") {
-      const database = { configured: Boolean(env.DB), mediaStorageReady: false, mediaStorageProvider: "unavailable", mediaSchemaReady: false, archiveSchemaReady: false, coreSchemaReady: false, shareSchemaReady: false, itinerarySchemaReady: false, expensesSchemaReady: false, planImportsSchemaReady: false, stopCoordinatesSchemaReady: false };
+      const database = { configured: Boolean(env.DB), mediaStorageReady: false, mediaStorageProvider: "unavailable", mediaSchemaReady: false, archiveSchemaReady: false, coreSchemaReady: false, shareSchemaReady: false, shareOwnerSchemaReady: false, itinerarySchemaReady: false, expensesSchemaReady: false, planImportsSchemaReady: false, stopCoordinatesSchemaReady: false };
       if (env.DB) {
         try {
           const result = await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table'").all();
@@ -300,6 +300,8 @@ export default {
           database.arrivalTicketSchemaReady = ["origin_country","arrival_airport","first_attraction"].every(name => tripColumnNames.has(name));
           database.pilgrimageSchemaReady = ["trip_type","related_work"].every(name => tripColumnNames.has(name));
           database.shareSchemaReady = ["share_links","share_rate_limits"].every(name => tables.has(name));
+          const shareColumns = await env.DB.prepare("PRAGMA table_info(share_links)").all();
+          database.shareOwnerSchemaReady = (shareColumns.results || []).some(column => column.name === "owner_id");
           database.authSchemaReady = tables.has("auth_sessions");
           database.itinerarySchemaReady = tables.has("itinerary_items");
           database.expensesSchemaReady = tables.has("travel_expenses");
