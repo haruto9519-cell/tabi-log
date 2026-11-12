@@ -295,6 +295,7 @@ export default {
           const tripColumnNames = new Set((tripColumns.results || []).map(column => column.name));
           database.archiveSchemaReady = tripColumnNames.has("archived");
           database.arrivalTicketSchemaReady = ["origin_country","arrival_airport","first_attraction"].every(name => tripColumnNames.has(name));
+          database.pilgrimageSchemaReady = ["trip_type","related_work"].every(name => tripColumnNames.has(name));
           database.shareSchemaReady = ["share_links","share_rate_limits"].every(name => tables.has(name));
           database.authSchemaReady = tables.has("auth_sessions");
           database.itinerarySchemaReady = tables.has("itinerary_items");
@@ -307,7 +308,7 @@ export default {
           database.querySucceeded = false;
         }
       }
-      return json(request, { ok: true, service: "tabi-log-api", version: "2.4-d1-media", database });
+      return json(request, { ok: true, service: "tabi-log-api", version: "2.5-pilgrimage-collection", database });
     }
     if (path === "/api/auth/session" && request.method === "POST") return createAuthSession(request, env);
     if (path === "/api/auth/logout" && request.method === "POST") return logoutSession(request, env);
@@ -399,13 +400,13 @@ export default {
     }
     if (path === "/api/sync" && request.method === "GET") {
       const tripRows = await env.DB.prepare(
-        "SELECT t.id,t.title,t.area,t.description,t.visibility,t.start_date,t.end_date,t.budget_amount,t.budget_currency,t.archived,t.source,t.origin_country,t.arrival_airport,t.first_attraction,s.name AS stop_name,s.note AS stop_note,s.sort_order,s.latitude AS stop_latitude,s.longitude AS stop_longitude,s.external_place_id FROM trips t LEFT JOIN trip_stops s ON s.trip_id=t.id WHERE t.user_id=? AND t.source IN ('native','aileron') ORDER BY t.created_at DESC,s.sort_order ASC"
+        "SELECT t.id,t.title,t.area,t.description,t.visibility,t.start_date,t.end_date,t.budget_amount,t.budget_currency,t.archived,t.source,t.origin_country,t.arrival_airport,t.first_attraction,t.trip_type,t.related_work,s.name AS stop_name,s.note AS stop_note,s.sort_order,s.latitude AS stop_latitude,s.longitude AS stop_longitude,s.external_place_id FROM trips t LEFT JOIN trip_stops s ON s.trip_id=t.id WHERE t.user_id=? AND t.source IN ('native','aileron') ORDER BY t.created_at DESC,s.sort_order ASC"
       ).bind(user.id).all();
       const tripMap = new Map();
       for (const row of tripRows.results || []) {
         if (!tripMap.has(row.id)) tripMap.set(row.id, {
           id: row.id, title: row.title, area: row.area, description: row.description,
-          origin_country: row.origin_country || "", arrival_airport: row.arrival_airport || "", first_attraction: row.first_attraction || "",
+          origin_country: row.origin_country || "", arrival_airport: row.arrival_airport || "", first_attraction: row.first_attraction || "", trip_type: row.trip_type || "standard", related_work: row.related_work || "",
           visibility: row.visibility, start_date: row.start_date, end_date: row.end_date, budget_amount: row.budget_amount || 0, budget_currency: row.budget_currency || "JPY", archived: Boolean(row.archived),
           source: row.source, stops: [], stopLocations: [], actual: [], dayPlans: []
         });
@@ -460,6 +461,8 @@ export default {
         const budgetAmount = Number(item?.budget_amount || 0);
         const budgetCurrency = cleanText(item?.budget_currency || "JPY", 3).toUpperCase();
         const archived = item?.archived === true;
+        const tripType = item?.trip_type === "pilgrimage" ? "pilgrimage" : "standard";
+        const relatedWork = cleanText(item?.related_work, 100);
         if (!id || !title || !area || !visibility || startDate === undefined || endDate === undefined || !Number.isSafeInteger(budgetAmount) || budgetAmount < 0 || budgetAmount > 100000000 || !/^[A-Z]{3}$/.test(budgetCurrency)) {
           return bad(request, "旅行データの形式を確認してください");
         }
@@ -508,7 +511,7 @@ export default {
             }
           }
         }
-        normalizedTrips.push({ id, title, area, description, visibility, startDate, endDate, budgetAmount, budgetCurrency, archived, stops, dayPlans });
+        normalizedTrips.push({ id, title, area, description, visibility, startDate, endDate, budgetAmount, budgetCurrency, archived, tripType, relatedWork, stops, dayPlans });
       }
       const totalStops = normalizedTrips.reduce((sum, item) => sum + item.stops.length, 0);
       const totalItineraryItems = normalizedTrips.reduce((sum, item) => sum + item.dayPlans.length, 0);
@@ -557,8 +560,8 @@ export default {
       const statements = [];
       for (const item of normalizedTrips) {
         statements.push(env.DB.prepare(
-          "INSERT INTO trips(id,user_id,title,area,description,visibility,source,external_plan_id,start_date,end_date,budget_amount,budget_currency,archived) VALUES(?,?,?,?,?,?,'native',NULL,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET title=excluded.title,area=excluded.area,description=excluded.description,visibility=excluded.visibility,start_date=excluded.start_date,end_date=excluded.end_date,budget_amount=excluded.budget_amount,budget_currency=excluded.budget_currency,archived=excluded.archived,updated_at=CURRENT_TIMESTAMP WHERE trips.user_id=excluded.user_id"
-        ).bind(item.id, user.id, item.title, item.area, item.description, item.visibility, item.startDate, item.endDate, item.budgetAmount, item.budgetCurrency, item.archived ? 1 : 0));
+          "INSERT INTO trips(id,user_id,title,area,description,visibility,source,external_plan_id,start_date,end_date,budget_amount,budget_currency,archived,trip_type,related_work) VALUES(?,?,?,?,?,?,'native',NULL,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET title=excluded.title,area=excluded.area,description=excluded.description,visibility=excluded.visibility,start_date=excluded.start_date,end_date=excluded.end_date,budget_amount=excluded.budget_amount,budget_currency=excluded.budget_currency,archived=excluded.archived,trip_type=excluded.trip_type,related_work=excluded.related_work,updated_at=CURRENT_TIMESTAMP WHERE trips.user_id=excluded.user_id"
+        ).bind(item.id, user.id, item.title, item.area, item.description, item.visibility, item.startDate, item.endDate, item.budgetAmount, item.budgetCurrency, item.archived ? 1 : 0, item.tripType, item.relatedWork));
         statements.push(env.DB.prepare("DELETE FROM trip_stops WHERE trip_id=?").bind(item.id));
         for (const stop of item.stops) {
           statements.push(env.DB.prepare(
