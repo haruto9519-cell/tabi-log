@@ -49,6 +49,8 @@ function cleanShare(input) {
     area: cleanText(input.area, 80),
     date: cleanText(input.date, 30),
     description: cleanText(input.description, 500),
+    tripType: input.tripType === "pilgrimage" ? "pilgrimage" : "standard",
+    relatedWork: cleanText(input.relatedWork, 100),
     stops: cleanList(input.stops, 30, 100),
     visited: cleanList(input.visited, 30, 100),
     locations: Array.isArray(input.locations) ? input.locations.slice(0, 30).map(x => ({
