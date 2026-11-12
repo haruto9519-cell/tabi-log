@@ -11,7 +11,7 @@ function drawShareCard(t){
  c.fillStyle="#d7ad6c";c.font="bold 20px Arial,sans-serif";c.fillText("MY TRAVEL STORY",76,82);
  c.fillStyle="#ffffff";c.font="bold 54px Arial,sans-serif";
  const title=String(t.title||"旅の記録");c.fillText(title.length>19?title.slice(0,18)+"…":title,76,155);
- c.fillStyle="#d8e3e8";c.font="24px Arial,sans-serif";c.fillText(String(t.area||""),78,202);
+ c.fillStyle="#d8e3e8";c.font="24px Arial,sans-serif";c.fillText(String(t.area||""),78,202);if(t.tripType==="pilgrimage"){c.fillStyle="#d7ad6c";c.font="bold 18px Arial,sans-serif";c.fillText("PILGRIMAGE · "+String(t.relatedWork||"聖地巡礼").slice(0,34),78,245);}
  c.strokeStyle="rgba(215,173,108,.9)";c.lineWidth=5;c.setLineDash([12,10]);c.beginPath();c.moveTo(105,345);c.lineTo(700,345);c.stroke();c.setLineDash([]);
  const stops=(t.locations||[]).length?(t.locations||[]).map(x=>x.name):(t.stops||[]);
  const n=Math.max(1,Math.min(6,stops.length));
@@ -40,7 +40,7 @@ function setupShareTools(t){
   canvas.toBlob(blob=>{if(!blob)return;const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="tabi-log-share-card.png";a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);},"image/png");
  });
  host.querySelector("#copyShareCaption").addEventListener("click",async()=>{
-  const caption="こんな旅をしてきました。\n"+(t.title||"旅の記録")+"｜"+(t.area||"")+"\n\nこの旅のプランを作る： https://aileron-japan-travel.pages.dev/\n旅の写真・記録を見る： "+location.href;
+  const caption=(t.tripType==="pilgrimage"?"作品の舞台を巡る旅を記録しました。\n":"こんな旅をしてきました。\n")+(t.title||"旅の記録")+"｜"+(t.area||"")+(t.relatedWork?"\n作品："+t.relatedWork:"")+"\n\nこの旅のプランを作る： https://aileron-japan-travel.pages.dev/\n旅の写真・記録を見る： "+location.href;
   try{await navigator.clipboard.writeText(caption);host.querySelector("#copyShareCaption").textContent="コピーしました";}catch{prompt("投稿文をコピーしてください",caption);}
  });
 }
@@ -66,7 +66,7 @@ async function load(){
   if(!res.ok||!data.ok)throw new Error(data.error||"この共有記録は表示できません");
   const t=data.trip;
   document.title=(t.title||"旅の記録")+" — 旅ログ";
-  root.innerHTML='<h1>'+esc(t.title)+'</h1><div class="share-meta">'+esc(t.area)+' '+(t.date?'· '+date(t.date):'')+(t.author?' · '+esc(t.author):'')+'</div><p class="share-description">'+esc(t.description||"")+'</p>'+
+  root.innerHTML='<h1>'+esc(t.title)+'</h1><div class="share-meta">'+esc(t.area)+' '+(t.date?'· '+date(t.date):'')+(t.author?' · '+esc(t.author):'')+'</div>'+(t.tripType==='pilgrimage'?'<div class="share-pilgrimage"><b>聖地巡礼</b><span>'+esc(t.relatedWork||'作品名未設定')+'</span></div>':'')+'<p class="share-description">'+esc(t.description||"")'</p>'+
    ((t.stops||[]).length?'<section class="share-section"><h2>旅の予定</h2><div class="share-stops">'+t.stops.map(x=>'<span class="share-stop">'+esc(x)+'</span>').join("")+'</div></section>':'')+
    ((t.visited||[]).length?'<section class="share-section"><h2>訪れた場所</h2><div class="share-stops">'+t.visited.map(x=>'<span class="share-stop">✓ '+esc(x)+'</span>').join("")+'</div></section>':'')+
    renderSharedMap(t.locations||[]) +
