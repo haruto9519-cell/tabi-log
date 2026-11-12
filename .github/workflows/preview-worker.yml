@@ -43,9 +43,10 @@ jobs:
           for attempt in $(seq 1 12); do
             response="$(curl -fsS -H 'Cache-Control: no-cache' "$url?check=${GITHUB_RUN_ID}-${attempt}" || true)"
             echo "$response"
-            if echo "$response" | grep -q '"version":"2.4-d1-media"' &&
+            if echo "$response" | grep -q '"version":"2.6-account-deletion"' &&
                echo "$response" | grep -q '"coreSchemaReady":true' &&
                echo "$response" | grep -q '"shareSchemaReady":true' &&
+               echo "$response" | grep -q '"shareOwnerSchemaReady":true' &&
                echo "$response" | grep -q '"authSchemaReady":true' &&
                echo "$response" | grep -q '"itinerarySchemaReady":true' &&
                echo "$response" | grep -q '"archiveSchemaReady":true' &&
