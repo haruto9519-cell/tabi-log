@@ -2111,3 +2111,6 @@ body.has-opened-ticket #mytrips .map-card{display:block;margin-top:18px}
 .map-route-tools>small a{color:#7a633e;text-decoration:underline}
 
 .timeline-thumb video,.map-pin-photo-item video,.map-pin-photos video{display:block;width:100%;max-width:100%;max-height:320px;object-fit:contain;background:#111;border-radius:inherit}
+
+.btn.danger{border:1px solid #b65b58;background:#fff;color:#a43f3c}.btn.danger:hover{background:#fff4f3;border-color:#a43f3c}
+.account-delete-row{border-color:#ead1cf}
