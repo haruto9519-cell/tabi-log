@@ -33,7 +33,7 @@ function drawShareCard(t){
 }
 function setupShareTools(t){
  const host=document.createElement("section");host.className="share-section share-card-tools";
- host.innerHTML='<h2>SNSに投稿する</h2><p>カード画像を保存し、投稿文に2つのサービスURLを添えて共有できます。</p><div class="share-actions"><button type="button" class="btn navy" id="downloadShareCard">シェアカード画像を保存</button><button type="button" class="btn gold" id="copyShareCaption">投稿文とURLをコピー</button></div><p class="share-note">写真は現在、端末内に保存される仕様のため、この公開カードには写真を含めていません。写真の公開共有はクラウド写真保存機能の実装後に追加します。</p>';
+ host.innerHTML='<h2>SNSに投稿する</h2><p>カード画像を保存し、投稿文に2つのサービスURLを添えて共有できます。</p><div class="share-actions"><button type="button" class="btn navy" id="downloadShareCard">シェアカード画像を保存</button><button type="button" class="btn gold" id="copyShareCaption">投稿文とURLをコピー</button></div><p class="share-note">写真はプライベートな記録として扱い、共有ページやシェアカードには含めません。写真を共有したい場合も、共有URLの閲覧者には公開されない設計です。</p>';
  root.append(host);
  const canvas=drawShareCard(t);
  host.querySelector("#downloadShareCard").addEventListener("click",()=>{
