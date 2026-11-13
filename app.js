@@ -155,6 +155,9 @@ async function restoreSession(){
  }
  signedInUser=data.user;
  activateAccountStorage(signedInUser);
+ // Re-render immediately after switching from guest data to this account's data.
+ // Otherwise stale guest ticket cards can remain visible while trips points at the account array.
+ renderAll();
  renderAuth();
  try{
   const synced=await syncCloudData();
@@ -174,6 +177,8 @@ async function handleGoogleCredential(response){
   sessionStorage.setItem(SESSION_KEY,sessionToken);
   signedInUser=data.user;
   activateAccountStorage(signedInUser);
+  // Refresh the visible ticket list as soon as account-scoped data is activated.
+  renderAll();
   renderAuth();
   await syncCloudData();
   await processPendingImport();
