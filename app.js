@@ -154,7 +154,7 @@ async function restoreSession(){
   return;
  }
  signedInUser=data.user;
- const hadAccountProfile=Boolean(localStorage.getItem(accountStorageKey(signedInUser.id,"profile")));
+ const hadAccountProfile=Boolean(localStorage.getItem(accountStorageKey(signedInUser.id,"profile"))||(localStorage.getItem("tabilog_legacy_account_migrated")!=="1"&&localStorage.getItem("tabilog_profile")!==null));
  activateAccountStorage(signedInUser);
  await syncProfileWithServer(signedInUser,hadAccountProfile);
  // Re-render immediately after switching from guest data to this account's data.
@@ -178,7 +178,7 @@ async function handleGoogleCredential(response){
   sessionToken=data.sessionToken;
   sessionStorage.setItem(SESSION_KEY,sessionToken);
   signedInUser=data.user;
-  const hadAccountProfile=Boolean(localStorage.getItem(accountStorageKey(signedInUser.id,"profile")));
+  const hadAccountProfile=Boolean(localStorage.getItem(accountStorageKey(signedInUser.id,"profile"))||(localStorage.getItem("tabilog_legacy_account_migrated")!=="1"&&localStorage.getItem("tabilog_profile")!==null));
   activateAccountStorage(signedInUser);
   await syncProfileWithServer(signedInUser,hadAccountProfile);
   // Refresh the visible ticket list as soon as account-scoped data is activated.
