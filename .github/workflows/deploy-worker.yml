@@ -50,12 +50,13 @@ jobs:
           for attempt in $(seq 1 12); do
             response="$(curl -fsS -H 'Cache-Control: no-cache' "https://tabi-log.haruto-9519.workers.dev/api/health?release=${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-${attempt}" || true)"
             echo "$response"
-            if echo "$response" | grep -q '"version":"2.6-account-deletion"' &&
+            if echo "$response" | grep -q '"version":"2.7-profile-persistence"' &&
                echo "$response" | grep -q '"configured":true' &&
                echo "$response" | grep -q '"coreSchemaReady":true' &&
                echo "$response" | grep -q '"shareSchemaReady":true' &&
                echo "$response" | grep -q '"shareOwnerSchemaReady":true' &&
                echo "$response" | grep -q '"authSchemaReady":true' &&
+               echo "$response" | grep -q '"profileSchemaReady":true' &&
                echo "$response" | grep -q '"itinerarySchemaReady":true' &&
                echo "$response" | grep -q '"archiveSchemaReady":true' &&
                echo "$response" | grep -q '"expensesSchemaReady":true' &&
