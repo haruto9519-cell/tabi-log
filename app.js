@@ -489,9 +489,10 @@ function restoreTicketAfterSave(tripId){
  if(layer)window.setTimeout(()=>{if(document.getElementById("ticketExperience")===layer&&layer.isConnected)finishTicketTear(layer);},80);
 }
 function openTravelTicket(tripId){
- const trip=trips.find(item=>item.id===tripId);if(!trip)return;
- activeTicketId=tripId;
- selectedTrip=tripId;document.body.classList.add("has-opened-ticket");try{renderMap();}catch(error){console.warn("チケット表示中の地図更新をスキップしました",error);}
+ const trip=trips.find(item=>String(item.id)===String(tripId));
+ if(!trip){toast("この旅行を読み込めませんでした。旅行一覧を更新してください。");console.warn("チケットに対応する旅行が見つかりません:",tripId);return;}
+ activeTicketId=trip.id;
+ selectedTrip=trip.id;document.body.classList.add("has-opened-ticket");try{renderMap();}catch(error){console.warn("チケット表示中の地図更新をスキップしました",error);}
  const previous=document.getElementById("ticketExperience");
  previous?._ticketMap?.remove();
  (previous?._ticketObjectUrls||[]).forEach(url=>URL.revokeObjectURL(url));
