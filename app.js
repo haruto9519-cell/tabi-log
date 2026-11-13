@@ -286,6 +286,7 @@ function save(){
   cloudSyncTimer=setTimeout(()=>syncCloudData(),1200);
  }
 }
+// Keep account profile data durable across browser reloads and Google sign-ins.
 async function syncProfileWithServer(user,preferLocal=true){
  if(!user?.id||!sessionToken||!API_BASE)return;
  try{
