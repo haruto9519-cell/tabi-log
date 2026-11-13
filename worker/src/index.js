@@ -316,6 +316,7 @@ export default {
           database.querySucceeded = false;
         }
       }
+      // Profile name and bio are persisted on the authenticated account.
       return json(request, { ok: true, service: "tabi-log-api", version: "2.7-profile-persistence", database });
     }
     if (path === "/api/auth/session" && request.method === "POST") return createAuthSession(request, env);
