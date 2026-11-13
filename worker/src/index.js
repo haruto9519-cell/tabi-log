@@ -128,9 +128,9 @@ async function userFrom(request, env) {
   const tokenHash = await sha256(token);
   const now = Math.floor(Date.now() / 1000);
   const row = await env.DB.prepare(
-    "SELECT s.user_id,u.display_name FROM auth_sessions s JOIN users u ON u.id=s.user_id WHERE s.token_hash=? AND s.revoked_at IS NULL AND s.expires_at>?"
+    "SELECT s.user_id,u.display_name,u.bio FROM auth_sessions s JOIN users u ON u.id=s.user_id WHERE s.token_hash=? AND s.revoked_at IS NULL AND s.expires_at>?"
   ).bind(tokenHash, now).first();
-  return row ? { id: row.user_id, name: row.display_name, tokenHash } : null;
+  return row ? { id: row.user_id, name: row.display_name, bio: row.bio || "", tokenHash } : null;
 }
 async function createAuthSession(request, env) {
   if (!env.DB) return bad(request, "認証データベースが未設定です", 503);
@@ -140,8 +140,9 @@ async function createAuthSession(request, env) {
   if (!googleToken) return bad(request, "Googleログイン情報がありません", 401);
   const user = await verifyGoogleIdToken(googleToken, env);
   if (!user) return bad(request, "Googleログインを確認できませんでした。もう一度お試しください", 401);
-  await env.DB.prepare("INSERT INTO users(id,display_name) VALUES(?,?) ON CONFLICT(id) DO UPDATE SET display_name=excluded.display_name")
+  await env.DB.prepare("INSERT OR IGNORE INTO users(id,display_name) VALUES(?,?)")
     .bind(user.id, user.name).run();
+  const savedProfile = await env.DB.prepare("SELECT display_name,bio FROM users WHERE id=?").bind(user.id).first();
   const sessionToken = randomToken(32);
   const tokenHash = await sha256(sessionToken);
   const now = Math.floor(Date.now() / 1000);
@@ -149,7 +150,7 @@ async function createAuthSession(request, env) {
   await env.DB.prepare("DELETE FROM auth_sessions WHERE expires_at<=? OR revoked_at IS NOT NULL").bind(now).run();
   await env.DB.prepare("INSERT INTO auth_sessions(token_hash,user_id,created_at,expires_at) VALUES(?,?,?,?)")
     .bind(tokenHash, user.id, now, expiresAt).run();
-  return json(request, { ok: true, sessionToken, expiresAt, user: { id: user.id, name: user.name } });
+  return json(request, { ok: true, sessionToken, expiresAt, user: { id: user.id, name: savedProfile?.display_name || user.name, bio: savedProfile?.bio || "" } });
 }
 async function logoutSession(request, env) {
   const origin = request.headers.get("Origin") || "";
@@ -389,7 +390,16 @@ export default {
       return json(request, { ok: true, deleted: true }, 200, { "cache-control": "no-store" });
     }
     if (path === "/api/me" && request.method === "GET") {
-      return json(request, { ok: true, user: { id: user.id, name: user.name } });
+      return json(request, { ok: true, user: { id: user.id, name: user.name, bio: user.bio || "" } });
+    }
+    if (path === "/api/profile" && request.method === "PUT") {
+      const parsed = await readJson(request, 2048);
+      if (parsed.error) return parsed.error;
+      const name = typeof parsed.data.name === "string" ? parsed.data.name.trim().slice(0, 30) : "";
+      const bio = typeof parsed.data.bio === "string" ? parsed.data.bio.trim().slice(0, 140) : "";
+      if (!name) return bad(request, "表示名を入力してください");
+      await env.DB.prepare("UPDATE users SET display_name=?,bio=? WHERE id=?").bind(name, bio, user.id).run();
+      return json(request, { ok: true, profile: { name, bio } }, 200, { "cache-control": "no-store" });
     }
     const mediaMatch = path.match(/^\/api\/media\/([A-Za-z0-9_-]{1,80})$/);
     if (mediaMatch && ["GET", "PUT", "DELETE"].includes(request.method)) {
