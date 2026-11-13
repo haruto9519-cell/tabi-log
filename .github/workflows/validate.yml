@@ -24,6 +24,7 @@ jobs:
           test -f config.js
           test -f share.html
           test -f worker/migrations/0002_share_links.sql
+          test -f worker/migrations/0012_user_profile_bio.sql
       - name: Validate Wrangler configuration without deploying
         working-directory: worker
         run: npx --yes wrangler@4 deploy --dry-run --outdir /tmp/tabi-log-worker-dry-run --config wrangler.toml
@@ -42,6 +43,8 @@ jobs:
         run: |
           npx --yes wrangler@4 d1 execute tabi-log-db --local --command "PRAGMA table_info(posts)" --config wrangler.toml | tee /tmp/tabi-log-post-columns.txt
           grep -q "media_data" /tmp/tabi-log-post-columns.txt
+          npx --yes wrangler@4 d1 execute tabi-log-db --local --command "PRAGMA table_info(users)" --config wrangler.toml | tee /tmp/tabi-log-user-columns.txt
+          grep -q "bio" /tmp/tabi-log-user-columns.txt
           npx --yes wrangler@4 d1 execute tabi-log-db --local --command "PRAGMA table_info(trips)" --config wrangler.toml | tee /tmp/tabi-log-trip-columns.txt
           grep -q "origin_country" /tmp/tabi-log-trip-columns.txt
           grep -q "arrival_airport" /tmp/tabi-log-trip-columns.txt
